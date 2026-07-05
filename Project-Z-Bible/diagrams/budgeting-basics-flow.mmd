@@ -1,0 +1,9 @@
+%% Used in chapters/09-budget-tracker.md — "Budgeting basics"
+flowchart LR
+    A[Plan a category total] --> B[Spend against it, logging each purchase]
+    B --> C[Compare actual vs planned]
+    C --> D{Running over?}
+    D -- Yes --> E[Cut scope in this OR another category]
+    D -- No --> F[Continue, recheck next purchase]
+    E --> B
+    F --> B

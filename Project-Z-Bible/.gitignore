@@ -17,7 +17,7 @@ exports/*.html
 templates/reference.docx
 
 # Rendered diagrams -- regenerate with build/render-diagrams.sh
-assets/images/diagrams/*.svg
+assets/images/diagrams/*.png
 !assets/images/diagrams/.gitkeep
 
 # Stray LaTeX auxiliary files (pandoc/xelatex can drop these in the cwd on some runs)

@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
-# Renders every diagrams/*.mmd Mermaid source to an SVG in assets/images/diagrams/,
+# Renders every diagrams/*.mmd Mermaid source to a PNG in assets/images/diagrams/,
 # using Mermaid CLI (mmdc). This step is optional: export-pdf.sh and export-docx.sh
 # both work without it (Mermaid code blocks are simply shown as source text), but
 # running this first gives you rendered diagrams in the PDF/DOCX output.
+#
+# Renders to PNG rather than SVG deliberately: Mermaid's default flowchart
+# renderer draws node text as HTML inside an SVG <foreignObject>, which
+# rsvg-convert (used by pandoc to place images into the PDF/DOCX) can't read --
+# it silently drops that text, leaving empty boxes. A PNG is a screenshot of
+# what the headless browser actually rendered, so the text (with correct
+# spacing/wrapping) is baked into the pixels and always shows up correctly
+# regardless of what downstream tool places the image.
 #
 # Install mermaid-cli if needed:
 #   npm install -g @mermaid-js/mermaid-cli
@@ -50,12 +58,13 @@ count=0
 for mmd in "$DIAGRAMS_DIR"/*.mmd; do
   [[ -e "$mmd" ]] || continue
   base="$(basename "$mmd" .mmd)"
-  out="$OUT_DIR/$base.svg"
+  out="$OUT_DIR/$base.png"
   echo "Rendering $base.mmd -> ${out#"$ROOT_DIR"/}"
   mmdc -i "$mmd" -o "$out" \
     -b transparent \
     -c "$MERMAID_CONFIG" \
-    -p "$PUPPETEER_CONFIG"
+    -p "$PUPPETEER_CONFIG" \
+    -s 3
   count=$((count + 1))
 done
 

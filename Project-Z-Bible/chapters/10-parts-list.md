@@ -12,6 +12,51 @@
 3. Log the final purchase in the [Expense Tracker](#expense-tracker) and
    [Modification Log](#modification-log) once bought and installed.
 
+## For first-timers: how to fill out a quote request
+
+> **💡 Tip:** Copy this template into an email or message to a shop/supplier for each
+> category — a specific, written request gets a more accurate, comparable quote than a
+> verbal "how much for brakes?"
+
+```
+Vehicle: 2005/2006 Nissan 350Z, automatic transmission (JATCO RE5R05A), [trim]
+Category: [e.g., Brakes]
+Parts needed: [copy the relevant table rows from this chapter]
+Use case: street-driven, occasional spirited driving, working toward ~500 whp
+Questions:
+ - What brand/part number would you recommend for each item, and why?
+ - What's the installed price (parts + labor), itemized?
+ - What's your experience with this exact platform?
+ - What warranty applies to parts and labor separately?
+```
+
+## New vs. used parts — where each makes sense
+
+| Category | New recommended | Used can be fine, if... |
+|---|---|---|
+| Brake pads/rotors/lines | Yes, always | N/A — these are wear items, buy new |
+| Brake fluid | Yes, always | N/A — fluid must be fresh |
+| Coilovers | Preferred new | Used is OK if verifiably low-mileage, inspected for leaking dampers, and includes fresh bushings |
+| Wheels | Either | Used is fine if structurally inspected (no cracks/bends) and correctly sized |
+| Turbo kit | Preferred new for a first build | Used only with full documentation and a shop inspection before install — see [Buyer's Guide](#the-350z-buyers-guide) note on buying pre-modified cars |
+| Transmission (built) | N/A — this is a service, not a part purchase | — |
+| ECU / tuning hardware | Either | Used is fine if verified compatible with your exact ECU/ECU generation |
+
+> **⚠️ Caution:** Never buy a used turbo, injectors, or fuel pump without knowing their
+> actual history — a worn or damaged component in any of these categories can fail
+> catastrophically under boost with very little warning.
+
+## Verifying a part before it goes on the car
+
+> **✅ Checklist**
+> - [ ] Confirm the part is listed as fitting your exact model year and trim
+> - [ ] Check for any known revision/generation differences (e.g., a part that changed
+>   partway through 2005–2006 production)
+> - [ ] Inspect for shipping damage before installing, not after
+> - [ ] Keep the original packaging/receipt until the install is verified successful
+> - [ ] For anything safety-critical (brakes, suspension, fuel system), confirm the specific
+>   part is rated for your application, not just "will physically bolt on"
+
 ## Phase 1 — Foundation parts
 
 ### Mechanical refresh
@@ -111,3 +156,32 @@
 > **⚠️ Caution:** Body kit and wrap items are explicitly optional and should not compete
 > with Phase 1/Phase 2 performance budget unless the total budget has room after the
 > [Definition of Done](#project-vision) is met. See the Budget Tracker's contingency note.
+
+## Suggested order to actually place orders
+
+> **✅ Checklist — avoids parts sitting around or being ordered out of sequence**
+> - [ ] Order Phase 1 mechanical/fluid items first — cheap, needed immediately, no dependencies
+> - [ ] Order brake and suspension parts together — cross-check clearance between them, and
+>   with wheels, before either ships
+> - [ ] Order wheels/tires last within Phase 1, once brake caliper clearance is confirmed
+> - [ ] Within Phase 2, order the transmission build first (longest lead time) while sourcing
+>   fuel system and turbo parts in parallel
+> - [ ] Order tuning hardware last, timed to arrive just before the shop installs the turbo kit
+
+## Frequently asked questions
+
+> **Q: Should I buy all the Phase 1 parts at once, or as I go?**
+> As you go is usually safer for a first build — it lets each category's fitment/clearance
+> questions get resolved with the actual parts in hand before committing to the next
+> category, and keeps cash flow aligned with the [Budget Tracker](#budget-tracker).
+
+> **Q: A shop is recommending a brand/part not listed here — is that a problem?**
+> Not at all — this list is deliberately brand-agnostic. Evaluate any specific recommendation
+> against the *category's* purpose and the sizing/reasoning in the relevant chapter (Brake
+> Guide, Suspension Guide, Turbo Planning Guide, etc.), not against a specific brand name.
+
+> **Q: What if a part I want is discontinued or hard to find?**
+> Confirm a same-purpose equivalent from another manufacturer meets the same category's
+> reasoning in this book (e.g., a brake kit from a different brand that meets the same
+> sizing guidance in the [Brake Guide](#brake-guide)) — the specific brand matters far less
+> than the part meeting the actual requirement.

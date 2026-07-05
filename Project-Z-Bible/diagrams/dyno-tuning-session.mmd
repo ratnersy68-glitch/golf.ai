@@ -1,0 +1,10 @@
+%% Used in chapters/08-phase2-500hp-plan.md — "What actually happens during a dyno tuning session"
+flowchart TD
+    A[Car strapped to chassis dyno rollers] --> B[Baseline pull at current/safe tune]
+    B --> C[Tuner reviews AFR, knock, boost traces]
+    C --> D{Safe to increase?}
+    D -- Yes --> E[Small adjustment: fuel, timing, or boost]
+    E --> F[Another pull]
+    F --> C
+    D -- No / at target --> G[Final pull confirms target power]
+    G --> H[Tuner provides final dyno sheet + tune backup]

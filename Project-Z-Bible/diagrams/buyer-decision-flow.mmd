@@ -1,0 +1,14 @@
+%% Used in chapters/04-350z-buyers-guide.md — shopping/decision flowchart
+flowchart TD
+    A[Find a listing] --> B{Seller answers questions in writing?}
+    B -- No --> Z[Move on]
+    B -- Yes --> C{VIN checks out - year, history, title?}
+    C -- No --> Z
+    C -- Yes --> D{Walk-around video looks clean?}
+    D -- No --> Z
+    D -- Yes --> E[Schedule an in-person look + PPI]
+    E --> F{Passes Inspection Checklist?}
+    F -- No, minor issues --> G[Renegotiate price to cover fixes]
+    F -- No, major issues --> Z
+    F -- Yes --> H[Proceed to purchase]
+    G --> H

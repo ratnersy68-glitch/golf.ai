@@ -8,6 +8,22 @@ the brakes should already have margin, not be playing catch-up.
 > **🛑 Critical:** Braking upgrades are Phase 1, not Phase 2. Stopping power should always
 > lead power, never follow it.
 
+## How the brake system actually works (for first-timers)
+
+```mermaid
+%% diagram-id: brake-hydraulic-flow
+flowchart LR
+    A[Foot presses brake pedal] --> B[Master cylinder creates hydraulic pressure]
+    B --> C[Pressure travels through brake lines to each caliper]
+    C --> D[Caliper piston pushes pad against rotor]
+    D --> E[Friction converts motion into heat]
+    E --> F[Car slows down]
+```
+
+Every component in this chapter exists to make one of those five steps work better under
+more demanding conditions (higher speed, higher weight-transfer, repeated hard stops) than
+the stock system was designed for.
+
 ## Sizing guidance by power level
 
 | Power target | Recommended front brake spec | Recommended rear brake spec | Notes |
@@ -40,9 +56,28 @@ the brakes should already have margin, not be playing catch-up.
 | Street + spirited driving (this build's default) | Street/track blend semi-metallic | Good bite when cold, resists fade better, slightly more dust/noise |
 | Track-focused | Full track compound | Best fade resistance at temperature; poor cold bite, dusty, noisy — not ideal daily |
 
+## Brake fluid types explained (DOT 3 vs. 4 vs. 5.1)
+
+> **📌 Note for beginners:** Higher DOT numbers generally mean a higher boiling point, which
+> matters because brake fluid heats up under hard/repeated braking — a fluid boiling in the
+> line turns to compressible gas bubbles, which is what causes a sudden spongy pedal or
+> total brake fade under hard use.
+
+| Type | Typical dry boiling point | Notes |
+|---|---|---|
+| DOT 3 | Lowest of the common types | Factory-spec on many cars, adequate for light use only |
+| DOT 4 | Higher than DOT 3 | Recommended minimum for this build |
+| DOT 5.1 | Higher still, glycol-based like DOT 3/4 | Best all-around choice for spirited street/occasional track use |
+| DOT 5 | High boiling point but silicone-based | **Do not mix with DOT 3/4/5.1** — different chemistry, incompatible; not recommended for this build |
+
+> **🛑 Critical:** Never mix DOT 5 (silicone) fluid with DOT 3/4/5.1 (glycol-based) fluid —
+> they don't mix properly and can cause seal damage or brake failure. Stick to one glycol-based
+> type and flush fully when changing types.
+
 ## Braking system heat management
 
 ```mermaid
+%% diagram-id: brake-heat-management
 flowchart LR
     A[Brake Pedal Input] --> B[Hydraulic Pressure]
     B --> C[Caliper Clamps Pad to Rotor]
@@ -56,6 +91,42 @@ flowchart LR
 > **⚠️ Caution:** Brake fade under repeated hard stops is a heat management problem, not a
 > "need more brake" problem in isolation — pad compound, rotor mass, and cooling airflow all
 > factor in before jumping straight to a bigger kit.
+
+## How to bed in new brakes (step by step)
+
+> **✅ Checklist — always bed new pads/rotors before hard driving**
+> - [ ] Find a safe, empty stretch of road with no traffic behind you
+> - [ ] Perform 6–10 moderate stops from around 40–50 mph down to about 15 mph, accelerating
+>   back up between each, without coming to a complete stop
+> - [ ] Follow with a slow drive for a few minutes to let everything cool gradually — do not
+>   come to a complete stop and sit immediately after the bedding stops (this can transfer
+>   pad material unevenly onto the hot rotor and cause a pulsation)
+> - [ ] Avoid hard braking for the first 100–200 miles beyond the bedding procedure while
+>   everything fully cures
+> - [ ] Always follow the specific pad manufacturer's bedding procedure if it differs from
+>   the general guidance above — it varies by compound
+
+## How to check pad thickness through the wheel yourself
+
+> **💡 Tip:** With the wheel still on, look through the gaps in the spokes at the caliper —
+> you should be able to see the pad material against the rotor. Compare thickness side to
+> side; a pad that looks like a thin sliver compared to a fresh one (or compared to the other
+> side) needs replacement soon. When in doubt, pull the wheel for a clear look, or have a
+> shop check during a routine service.
+
+## A beginner's guide to bleeding brakes
+
+> **📌 Note:** This is a moderate-difficulty DIY job — doable solo with a one-way bleeder
+> valve tool, easier with a second person pressing the pedal on your call.
+
+> **✅ Checklist**
+> - [ ] Start with the wheel farthest from the master cylinder (typically passenger rear),
+>   finish with the closest (typically driver front) — check your FSM for the exact order
+> - [ ] Keep the fluid reservoir topped up throughout — letting it run dry introduces air
+>   into the whole system and means starting over
+> - [ ] Open the bleeder screw, have your helper slowly press the pedal, close the screw
+>   before they release it, repeat until the fluid runs clear with no bubbles
+> - [ ] Confirm firm pedal feel before driving — a soft/spongy pedal means air remains
 
 ## Install & inspection checklist
 
@@ -78,3 +149,19 @@ flowchart LR
 > fresh, high-temp-rated fluid (DOT 4 or better) on a 1-year interval, not the 2-year stock
 > interval. See [Maintenance Guide](#maintenance-guide).
 
+## Frequently asked questions
+
+> **Q: Do I need a big brake kit if I'm not planning to track the car?**
+> Not necessarily — quality pads, fresh fluid, and stainless lines on the stock (or factory
+> Brembo) hardware can be adequate for street + occasional spirited driving up to roughly the
+> ~400 hp row in the sizing table. A full big-brake kit becomes more important as you
+> approach this book's 500 hp target and the car's weight-transfer under harder braking increases.
+
+> **Q: Why do my brakes feel great cold but fade after a few hard stops?**
+> That's a textbook heat management issue — see the heat management diagram above. Start
+> with a better pad compound and fresh fluid before assuming you need bigger rotors/calipers.
+
+> **Q: Is it normal for new pads to feel worse than the old ones initially?**
+> Yes, briefly — new pads need the bedding procedure above to transfer an even layer of pad
+> material onto the rotor before they reach full effectiveness. Expect a slightly different
+> (not worse, just different) pedal feel during the first 100–200 miles.

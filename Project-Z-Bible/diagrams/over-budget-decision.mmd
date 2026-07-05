@@ -1,0 +1,10 @@
+%% Used in chapters/09-budget-tracker.md — "What to do if you're running over budget"
+flowchart TD
+    A[Running over budget in a category] --> B{Is it a Phase 1 safety item - brakes, suspension, transmission prep?}
+    B -- Yes --> C[Do not cut scope - find savings elsewhere or delay the build timeline]
+    B -- No --> D{Is it cosmetic - body kit, wrap?}
+    D -- Yes --> E[Cut or delay this category first]
+    D -- No --> F[Look for a cheaper equivalent part or shop quote]
+    C --> G[Re-total and confirm plan still fits envelope]
+    E --> G
+    F --> G

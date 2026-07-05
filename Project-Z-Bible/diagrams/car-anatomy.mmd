@@ -1,0 +1,18 @@
+%% Used in chapters/03-beginner-car-guide.md — "Anatomy of the 350Z, front to back"
+flowchart LR
+    subgraph Front
+    RAD[Radiator] --- ENG[Engine - VQ35DE, front-mid mounted]
+    ENG --- INT[Intake / Throttle Body]
+    end
+    subgraph Middle
+    ENG --- TRANS[Transmission - behind engine]
+    TRANS --- DS[Driveshaft - runs under the car to the rear]
+    CAB[Cabin / Pedals / ECU under dash]
+    end
+    subgraph Rear
+    DS --- DIFF[Rear Differential]
+    DIFF --- AXLE1[Left Axle]
+    DIFF --- AXLE2[Right Axle]
+    AXLE1 --- WHEEL1[Rear Wheel]
+    AXLE2 --- WHEEL2[Rear Wheel]
+    end

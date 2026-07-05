@@ -1,0 +1,11 @@
+%% Used in chapters/07-phase1-build-plan.md — "Why this specific order?"
+flowchart LR
+    A[Inspection / deferred maintenance] --> B[Transmission fluid service]
+    A --> C[Cooling system refresh]
+    B --> D[Suspension install]
+    C --> D
+    D --> E[Alignment + corner balance]
+    D --> F[Brake overhaul]
+    E --> G[Wheel & tire fitment confirmed]
+    F --> G
+    G --> H[Baseline dyno pull]

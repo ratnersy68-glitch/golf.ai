@@ -11,6 +11,19 @@ to wrap or repaint: a clean, technical, blueprint-style look rather than a loud 
 package — matte or satin charcoal as the primary body tone with lavender used sparingly as
 an accent (stripes, brake calipers, badges) reads as premium rather than "wrapped car."
 
+## Body kit material choices (for first-timers)
+
+| Material | Pros | Cons |
+|---|---|---|
+| Polyurethane (PU) | Flexible, resists cracking on minor impacts, easier to paint-match | Heavier than fiberglass, slightly more expensive per part |
+| Fiberglass (FRP) | Lighter, cheaper, widely available | More brittle — cracks rather than flexes on impact, often needs more prep work to paint well |
+| Carbon fiber | Lightest, premium appearance | Most expensive, can be brittle, often needs clear-coat maintenance to prevent UV damage |
+| ABS plastic | Durable, factory-like fitment on some parts | Limited to certain part types, harder to modify/fit |
+
+> **💡 Tip for a first build:** Polyurethane is usually the most forgiving choice for a
+> street-driven car that will see real-world driveways, speed bumps, and parking lots —
+> its flexibility means minor impacts are less likely to crack it outright.
+
 ## Body kit considerations
 
 | Component | Function | Consideration for this build |
@@ -36,6 +49,28 @@ an accent (stripes, brake calipers, badges) reads as premium rather than "wrappe
 > a quality wrap over solid factory paint is usually the best cost/flexibility trade-off —
 > it protects the original paint and can be removed without affecting resale.
 
+## Choosing a wrap installer
+
+> **✅ Checklist**
+> - [ ] Ask to see photos of past work, especially close-ups of panel edges and complex
+>   curves (mirrors, door handles) — this is where quality differences show up most
+> - [ ] Ask what vinyl brand/line they use and confirm it's a reputable, known product
+> - [ ] Ask about their warranty on the install labor (separate from the vinyl manufacturer's
+>   own material warranty)
+> - [ ] Ask how they handle removed panels/trim during install (some cut around trim, better
+>   installers remove trim for a cleaner edge)
+
+## Living with a wrap: care and maintenance
+
+> **✅ Checklist**
+> - [ ] Hand wash only, or touchless car washes — brush-based automatic washes can lift edges
+>   and cause micro-scratching on vinyl
+> - [ ] Avoid wax/coatings not specifically rated as vinyl-safe — some traditional waxes can
+>   discolor or degrade certain vinyl finishes (especially matte)
+> - [ ] Address any lifting edge immediately — a small lift left alone catches wind and peels
+>   further, fast
+> - [ ] Park out of direct sun/heat when possible to extend the wrap's lifespan
+
 ## Theme application checklist
 
 > **✅ Checklist — if applying the Lavender & Charcoal theme to the car**
@@ -56,3 +91,20 @@ an accent (stripes, brake calipers, badges) reads as premium rather than "wrappe
 > - [ ] Installer provides care instructions (wash method, wax/coating compatibility)
 > - [ ] Confirm any panels removed for the [Turbo Planning Guide](#turbo-planning-guide)
 >   install (bumper, hood) are wrapped/finished before final reassembly, not after
+
+## Frequently asked questions
+
+> **Q: Will a body kit or wrap affect insurance?**
+> It can, especially for aftermarket body panels that alter crash structure claims — disclose
+> modifications to your insurer regardless (see [Driving Rules](#driving-rules)). A wrap
+> (versus a repaint) is often viewed more favorably since it's reversible.
+
+> **Q: Can I install a body kit myself?**
+> Simple bolt-on pieces (some spoilers, some splitters) are DIY-friendly. Anything requiring
+> paint matching, bumper disassembly, or fitment adjustment is usually better left to a body
+> shop for a first build, to avoid a poor-fitting result that's expensive to redo.
+
+> **Q: Should I do the wrap before or after Phase 2 turbo work?**
+> After — see the caution above about front bumper/intercooler clearance. Panels often need
+> to come off for turbo/intercooler installation, and a fresh wrap risks damage during that
+> work. Sequence cosmetic work after the mechanical work that requires disassembly.
