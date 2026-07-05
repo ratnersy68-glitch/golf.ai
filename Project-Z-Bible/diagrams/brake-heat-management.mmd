@@ -1,0 +1,9 @@
+%% Used in chapters/13-brake-guide.md — "Braking system heat management"
+flowchart LR
+    A[Brake Pedal Input] --> B[Hydraulic Pressure]
+    B --> C[Caliper Clamps Pad to Rotor]
+    C --> D[Kinetic Energy to Heat]
+    D --> E{Heat Dissipated Fast Enough?}
+    E -- Yes --> F[Consistent Pedal Feel]
+    E -- No --> G[Fade: Longer Pedal Travel, Reduced Bite]
+    G --> H[Upgrade Pad Compound / Rotor Size / Add Ducting]

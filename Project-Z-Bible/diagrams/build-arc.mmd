@@ -1,0 +1,21 @@
+%% Used in chapters/02-project-vision.md — "The build arc"
+flowchart TD
+    A[Acquire clean 05-06 350Z AT] --> B[Inspection & Buyer's Due Diligence]
+    B --> C[Phase 1: Foundation]
+    C --> C1[Fluids, gaskets, cooling refresh]
+    C --> C2[Suspension: coilovers, bushings, alignment]
+    C --> C3[Brakes: pads, rotors, lines, fluid]
+    C --> C4[Wheels & tires sized for the plan]
+    C --> C5[Transmission cooler + service]
+    C1 & C2 & C3 & C4 & C5 --> D{Foundation solid?}
+    D -- No --> C
+    D -- Yes --> E[Phase 2: 500 HP Plan]
+    E --> E1[Transmission build/upgrade]
+    E --> E2[Fuel system upgrade]
+    E --> E3[Turbo kit install & tune]
+    E --> E4[Supporting mods: intercooler, exhaust, driveline]
+    E1 & E2 & E3 & E4 --> F[Dyno + tune validation]
+    F --> G{Reliable at target power?}
+    G -- No --> H[Diagnose, re-tune, revisit weak link]
+    H --> F
+    G -- Yes --> I[Reliable 500 HP Street Car]

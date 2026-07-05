@@ -1,0 +1,9 @@
+%% Used in chapters/16-driving-rules.md — "Street vs. spirited driving decision guide"
+flowchart TD
+    A[About to drive] --> B{Fluids/temps normal?}
+    B -- No --> C[Address before driving hard]
+    B -- Yes --> D{Tires warm, road dry, sightlines clear?}
+    D -- No --> E[Keep it easy]
+    D -- Yes --> F{Car within recent maintenance interval?}
+    F -- No --> C
+    F -- Yes --> G[Spirited driving within your skill and the law]

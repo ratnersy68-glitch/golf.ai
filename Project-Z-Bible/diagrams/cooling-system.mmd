@@ -1,0 +1,8 @@
+%% Used in chapters/06-maintenance-guide.md — "Cooling system health"
+flowchart LR
+    A[Radiator] --> B[Coolant Temp]
+    C[Transmission Cooler] --> D[Trans Fluid Temp]
+    E[Intercooler] --> F[Intake Air Temp]
+    B & D & F --> G{All in normal range?}
+    G -- Yes --> H[Drive normally]
+    G -- No --> I[Reduce load / investigate before next hard pull]

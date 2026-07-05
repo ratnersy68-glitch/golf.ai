@@ -1,0 +1,8 @@
+%% Used in chapters/03-beginner-car-guide.md — "Reading a dyno sheet"
+flowchart LR
+    A[Dyno Run] --> B[RPM sweep, e.g. 3000-7000]
+    B --> C[Power curve - whp vs RPM]
+    B --> D[Torque curve - lb-ft vs RPM]
+    B --> E[AFR trace - air/fuel ratio]
+    B --> F[Boost trace - psi over time]
+    C & D & E & F --> G[Tuner reads all four together\nnot just the peak number]

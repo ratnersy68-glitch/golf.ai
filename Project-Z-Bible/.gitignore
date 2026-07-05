@@ -1,0 +1,27 @@
+# Generated build artifacts -- regenerate with build/build-book.sh and friends.
+build/Project-Z-Bible.full.md
+build/Project-Z-Bible.body.md
+build/cover-fragment.tex
+build/cover-fragment-source.md
+build/rendered-svg/
+build/mermaid-config.json
+build/puppeteer-config.json
+
+# Export output -- regenerate with build/export-pdf.sh / build/export-docx.sh
+exports/*.pdf
+exports/*.docx
+exports/*.html
+!exports/.gitkeep
+
+# Auto-generated on first DOCX export; regenerate anytime with export-docx.sh
+templates/reference.docx
+
+# Rendered diagrams -- regenerate with build/render-diagrams.sh
+assets/images/diagrams/*.svg
+!assets/images/diagrams/.gitkeep
+
+# Stray LaTeX auxiliary files (pandoc/xelatex can drop these in the cwd on some runs)
+missfont.log
+*.aux
+*.toc
+*.out

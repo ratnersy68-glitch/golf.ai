@@ -1,0 +1,9 @@
+%% Used in chapters/08-phase2-500hp-plan.md — "The transmission problem"
+flowchart TD
+    A[Stock RE5R05A] --> B{Power target}
+    B -- "up to ~350-400whp, light use" --> C[Shift kit + higher stall]
+    B -- "500whp street, sustained use" --> D[Built transmission - recommended]
+    B -- "no ceiling, budget no object" --> E[Manual swap - out of scope]
+    D --> F[Matched converter stall to turbo spool]
+    D --> G[Auxiliary cooler - from Phase 1 prep]
+    F & G --> H[Reliable power delivery]

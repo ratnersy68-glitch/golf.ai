@@ -1,0 +1,45 @@
+# Project-Z Bible — Theme: Lavender & Charcoal
+# Single source of truth for colors/fonts. templates/style.css and
+# templates/pandoc-metadata.yaml both derive from these values — if you change the
+# palette, update all three files together.
+
+theme:
+  name: "Lavender & Charcoal"
+  style: "premium motorsports handbook — clean, modern, technical, blueprint-inspired"
+
+colors:
+  lavender:
+    hex: "#B9A6E0"
+    use: "Headings, links, accents, primary brand color"
+  deep_lavender:
+    hex: "#6C4F9C"
+    use: "Section rules, callout borders, secondary accents"
+  charcoal:
+    hex: "#1E1F24"
+    use: "Dark backgrounds, cover page, code blocks"
+  soft_charcoal:
+    hex: "#2B2D33"
+    use: "Cards, tables, alternating rows"
+  fog:
+    hex: "#EDEAF5"
+    use: "Body text on dark backgrounds, light-mode background"
+  ink:
+    hex: "#15161A"
+    use: "Body text on light backgrounds"
+  warning_amber:
+    hex: "#E0B96A"
+    use: "Caution callouts (⚠️)"
+  critical_red:
+    hex: "#C9605B"
+    use: "Critical callouts (🛑)"
+
+fonts:
+  heading: "Helvetica Neue, Arial, sans-serif"
+  body: "Georgia, 'Times New Roman', serif"
+  monospace: "'JetBrains Mono', 'Courier New', monospace"
+
+layout:
+  page_size: "Letter"
+  margin_in: 0.9
+  heading_rule: true
+  toc_depth: 2

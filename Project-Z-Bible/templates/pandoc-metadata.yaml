@@ -1,0 +1,46 @@
+---
+title: "Project-Z Bible"
+subtitle: "The 2005–2006 Nissan 350Z Automatic — Reliable 500 HP Street Build"
+author: "Project-Z Build Team"
+date: \today
+lang: en
+
+# --- Table of contents ---
+toc: true
+toc-depth: 2
+number-sections: false
+
+# --- Look & feel (LaTeX/PDF path) ---
+# Colors mirror templates/theme.yaml — Lavender & Charcoal.
+documentclass: report
+papersize: letter
+geometry: margin=0.9in
+fontsize: 11pt
+mainfont: "Georgia"
+sansfont: "Helvetica Neue"
+monofont: "JetBrains Mono"
+colorlinks: true
+linkcolor: deeplavender
+citecolor: deeplavender
+urlcolor: deeplavender
+toccolor: deeplavender
+
+# --- Header/footer rule color for LaTeX (used if a header/footer package is loaded) ---
+# Named colors (not raw hex) are required here -- xcolor/hyperref need a color name
+# registered via \definecolor before colorlinks can reference it.
+# \let\maketitle\relax suppresses pandoc's auto-generated LaTeX title page --
+# chapters/00-cover.md is our own designed cover page, so we don't want both.
+# title/author/date above are kept anyway: they still set the PDF's document
+# properties (visible in a PDF viewer's "Document Info").
+header-includes:
+  - |
+    \usepackage{xcolor}
+    \definecolor{lavender}{HTML}{B9A6E0}
+    \definecolor{deeplavender}{HTML}{6C4F9C}
+    \definecolor{charcoal}{HTML}{1E1F24}
+    \let\maketitle\relax
+
+# --- DOCX path ---
+# The DOCX export additionally uses templates/reference.docx if present
+# (build/export-docx.sh generates one automatically via pandoc if missing).
+---

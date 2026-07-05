@@ -1,0 +1,12 @@
+%% Used in chapters/15-turbo-planning-guide.md — "Turbo system flow"
+flowchart LR
+    A[Intake Air] --> B[Turbo Compressor]
+    B --> C[Intercooler]
+    C --> D[Throttle Body / Intake Manifold]
+    D --> E[Combustion]
+    E --> F[Exhaust Manifold]
+    F --> G[Turbo Turbine]
+    G --> H[Downpipe / Exhaust]
+    G -.spins.-> B
+    I[Wastegate] -.bypasses exhaust.-> H
+    J[Boost Controller] --> I

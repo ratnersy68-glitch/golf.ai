@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <rect width="800" height="500" fill="#2B2D33"/>
+  <rect x="8" y="8" width="784" height="484" fill="none" stroke="#6C4F9C" stroke-width="2" stroke-dasharray="10 6"/>
+  <g stroke="#B9A6E0" stroke-width="6" fill="none">
+    <rect x="320" y="200" width="160" height="110" rx="10"/>
+    <circle cx="400" cy="255" r="34"/>
+    <rect x="365" y="182" width="40" height="22" rx="4"/>
+  </g>
+  <text x="400" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="24" fill="#EDEAF5" letter-spacing="2">PHOTO PLACEHOLDER</text>
+  <text x="400" y="392" text-anchor="middle" font-family="monospace" font-size="14"
+        fill="#8A7BA8">replace with your own build photo — keep filename to preserve links</text>
+</svg>
