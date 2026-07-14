@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: sy-ai
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: SUNO_API_KEY
+        sync: false
+      - key: SUNO_API_BASE
+        value: https://api.sunoapi.org

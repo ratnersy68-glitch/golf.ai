@@ -1,141 +1,180 @@
-import os, json, uuid, requests
-from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, render_template
+import os
+import uuid
+import json
+from datetime import datetime
+
+import requests
 from dotenv import load_dotenv
-from openai import OpenAI
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from flask import Flask, request, jsonify, render_template
 
 load_dotenv()
 
 app = Flask(__name__)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
 
 DB_FILE = "db.json"
+
+SUNO_API_BASE = os.getenv("SUNO_API_BASE", "https://api.sunoapi.org")
+SUNO_API_KEY = os.getenv("SUNO_API_KEY")
+SUNO_MODEL = os.getenv("SUNO_MODEL", "V4_5")
+
 
 def load_db():
     with open(DB_FILE) as f:
         return json.load(f)
 
+
 def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-def get_location(zip_code):
-    res = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params={
-        "address": zip_code,
-        "key": os.getenv("GOOGLE_API_KEY")
-    }).json()
 
-    loc = res["results"][0]
+def suno_headers():
     return {
-        "lat": loc["geometry"]["location"]["lat"],
-        "lng": loc["geometry"]["location"]["lng"],
-        "city": loc["address_components"][1]["long_name"]
+        "Authorization": f"Bearer {SUNO_API_KEY}",
+        "Content-Type": "application/json",
     }
 
-def get_courses(lat, lng):
-    res = requests.get("https://maps.googleapis.com/maps/api/place/nearbysearch/json", params={
-        "location": f"{lat},{lng}",
-        "radius": 15000,
-        "keyword": "golf course",
-        "key": os.getenv("GOOGLE_API_KEY")
-    }).json()
 
-    return [c for c in res["results"] if c.get("rating", 0) >= 4][:5]
-
-def generate_email(name, city, msg, tone):
-    completion = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "system", "content": f"Write outreach emails in a {tone} tone"},
-            {"role": "user", "content": f"Write email to {name} in {city}. Idea: {msg}"}
-        ]
+def submit_generation(prompt, style, title, instrumental):
+    body = {
+        "prompt": prompt,
+        "style": style or "",
+        "title": title or "",
+        "customMode": bool(style or title),
+        "instrumental": instrumental,
+        "model": SUNO_MODEL,
+    }
+    res = requests.post(
+        f"{SUNO_API_BASE}/api/v1/generate",
+        headers=suno_headers(),
+        json=body,
+        timeout=30,
     )
-    return completion.choices[0].message.content
+    res.raise_for_status()
+    payload = res.json()
+    data = payload.get("data") or {}
+    task_id = data.get("taskId") or data.get("task_id") or data.get("id")
+    if not task_id:
+        raise RuntimeError(f"Suno API did not return a task id: {payload}")
+    return task_id
+
+
+def extract_audio_tracks(payload):
+    """Walk the response looking for track-like objects with an audio URL.
+    Provider response shapes vary, so this scans generically instead of
+    assuming one exact schema.
+    """
+    tracks = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            audio_url = None
+            for key in ("audioUrl", "audio_url", "streamAudioUrl", "stream_audio_url"):
+                val = node.get(key)
+                if isinstance(val, str) and val.startswith("http"):
+                    audio_url = val
+                    break
+            if audio_url:
+                tracks.append({
+                    "audio_url": audio_url,
+                    "title": node.get("title") or node.get("name") or "",
+                    "image_url": node.get("imageUrl") or node.get("image_url") or "",
+                    "duration": node.get("duration"),
+                })
+            for val in node.values():
+                walk(val)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(payload)
+    return tracks
+
+
+def check_status(task_id):
+    res = requests.get(
+        f"{SUNO_API_BASE}/api/v1/generate/record-info",
+        headers=suno_headers(),
+        params={"taskId": task_id},
+        timeout=30,
+    )
+    res.raise_for_status()
+    payload = res.json()
+    data = payload.get("data") or {}
+    status = str(data.get("status") or payload.get("status") or "").upper()
+
+    if status in ("SUCCESS", "COMPLETE", "COMPLETED"):
+        tracks = extract_audio_tracks(data)
+        return "complete", tracks
+    if status in ("FAILED", "ERROR"):
+        return "failed", []
+    return "pending", []
+
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-@app.route("/generate", methods=["POST"])
+
+@app.route("/api/generate", methods=["POST"])
 def generate():
-    data = request.json
-    loc = get_location(data["zip"])
-    courses = get_courses(loc["lat"], loc["lng"])
+    if not SUNO_API_KEY:
+        return jsonify({"error": "SUNO_API_KEY is not configured"}), 500
 
-    db = load_db()
-    results = []
+    data = request.json or {}
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"error": "prompt is required"}), 400
 
-    for c in courses:
-        msg = generate_email(c["name"], loc["city"], data["message"], data["tone"])
+    style = data.get("style")
+    title = data.get("title")
+    instrumental = bool(data.get("instrumental"))
 
-        lead = {
-            "id": str(uuid.uuid4()),
-            "name": c["name"],
-            "rating": c.get("rating", 0),
-            "message": msg,
-            "status": "new"
-        }
+    try:
+        task_id = submit_generation(prompt, style, title, instrumental)
+    except (requests.RequestException, RuntimeError) as e:
+        return jsonify({"error": str(e)}), 502
 
-        db["leads"].append(lead)
-        results.append(lead)
-
-    save_db(db)
-    return jsonify(results)
-
-@app.route("/send", methods=["POST"])
-def send():
-    data = request.json
-    db = load_db()
-
-    lead = next(l for l in db["leads"] if l["id"] == data["id"])
-
-    email = Mail(
-        from_email=os.getenv("FROM_EMAIL"),
-        to_emails=data["email"],
-        subject=f"Idea for {lead['name']}",
-        plain_text_content=lead["message"]
-    )
-
-    sg.send(email)
-
-    lead["status"] = "sent"
-
-    db["followUps"].append({
+    song = {
         "id": str(uuid.uuid4()),
-        "leadId": lead["id"],
-        "email": data["email"],
-        "date": (datetime.now() + timedelta(days=3)).isoformat(),
-        "sent": False
-    })
+        "task_id": task_id,
+        "prompt": prompt,
+        "style": style or "",
+        "title": title or "",
+        "instrumental": instrumental,
+        "status": "pending",
+        "tracks": [],
+        "created_at": datetime.now().isoformat(),
+    }
 
+    db = load_db()
+    db["songs"].insert(0, song)
     save_db(db)
-    return jsonify({"success": True})
 
-@app.route("/leads")
-def leads():
-    return jsonify(load_db()["leads"])
+    return jsonify(song)
+
+
+@app.route("/api/songs")
+def songs():
+    db = load_db()
+    changed = False
+
+    for song in db["songs"]:
+        if song["status"] == "pending":
+            try:
+                status, tracks = check_status(song["task_id"])
+            except requests.RequestException:
+                continue
+            if status != "pending":
+                song["status"] = status
+                song["tracks"] = tracks
+                changed = True
+
+    if changed:
+        save_db(db)
+
+    return jsonify(db["songs"])
+
 
 if __name__ == "__main__":
-    import os
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Hello

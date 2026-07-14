@@ -1,61 +1,92 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="utf-8">
+  <title>Sy AI</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; }
+    h1 { margin-bottom: 4px; }
+    p.tagline { color: #666; margin-top: 0; }
+    textarea, input { width: 100%; box-sizing: border-box; padding: 8px; margin-bottom: 10px; font-size: 14px; }
+    textarea { min-height: 80px; }
+    label.checkbox { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 14px; }
+    label.checkbox input { width: auto; margin: 0; }
+    button { padding: 10px 18px; font-size: 14px; cursor: pointer; }
+    .song { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .song h3 { margin: 0 0 4px 0; }
+    .song .prompt { color: #666; font-size: 13px; margin-bottom: 8px; }
+    .status { font-size: 12px; text-transform: uppercase; color: #888; }
+    audio { width: 100%; margin-top: 8px; }
+  </style>
+</head>
 <body>
 
-<h2>Golf AI</h2>
+<h1>Sy AI</h1>
+<p class="tagline">Type a prompt, get a song.</p>
 
-<input id="zip" placeholder="ZIP"><br><br>
+<textarea id="prompt" placeholder="Describe the song you want (mood, genre, story)..."></textarea>
+<input id="title" placeholder="Title (optional)">
+<input id="style" placeholder="Style / genre tags (optional)">
+<label class="checkbox"><input type="checkbox" id="instrumental"> Instrumental only</label>
 
-<select id="tone">
-  <option>friendly</option>
-  <option>professional</option>
-</select><br><br>
+<button onclick="generate()" id="genBtn">Generate</button>
 
-<textarea id="msg" placeholder="What do you want to say"></textarea><br><br>
-
-<button onclick="gen()">Generate</button>
-
-<div id="out"></div>
+<div id="songs"></div>
 
 <script>
-async function gen() {
-  const res = await fetch("/generate", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      zip: document.getElementById("zip").value,
-      message: document.getElementById("msg").value,
-      tone: document.getElementById("tone").value
-    })
-  });
+async function generate() {
+  const btn = document.getElementById("genBtn");
+  const prompt = document.getElementById("prompt").value.trim();
+  if (!prompt) return;
 
-  const data = await res.json();
-  const out = document.getElementById("out");
-  out.innerHTML = "";
+  btn.disabled = true;
+  btn.textContent = "Generating...";
 
-  data.forEach(d => {
-    out.innerHTML += `
-      <h3>${d.name}</h3>
-      <textarea>${d.message}</textarea><br>
-      <input placeholder="email"><br>
-      <button onclick="send('${d.id}', this)">Send</button>
-      <hr>
-    `;
-  });
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt,
+        title: document.getElementById("title").value.trim(),
+        style: document.getElementById("style").value.trim(),
+        instrumental: document.getElementById("instrumental").checked
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Generation failed");
+    await loadSongs();
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate";
+  }
 }
 
-async function send(id, btn) {
-  const parent = btn.parentElement;
-  const email = parent.querySelector("input").value;
+function renderSong(song) {
+  const tracksHtml = (song.tracks || []).map(t => `
+    <audio controls src="${t.audio_url}"></audio>
+  `).join("");
 
-  await fetch("/send", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ id, email })
-  });
-
-  alert("Sent");
+  return `
+    <div class="song">
+      <h3>${song.title || song.prompt.slice(0, 40)}</h3>
+      <div class="prompt">${song.prompt}</div>
+      <div class="status">${song.status}</div>
+      ${tracksHtml}
+    </div>
+  `;
 }
+
+async function loadSongs() {
+  const res = await fetch("/api/songs");
+  const songs = await res.json();
+  document.getElementById("songs").innerHTML = songs.map(renderSong).join("");
+}
+
+loadSongs();
+setInterval(loadSongs, 5000);
 </script>
 
 </body>
