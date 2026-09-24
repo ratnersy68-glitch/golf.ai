@@ -182,7 +182,12 @@ export class Play {
       heading = toPinHeading;
       this.puttScale = pickPuttScale(this.distPin);
     } else {
-      const longest = this.bag.filter(c => c.cat !== 'putter' && (onTee || c.id !== 'DR')).sort((a, b) => b.carry - a.carry)[0];
+      // realistic club limits from poor lies
+      const allowed = (c) => c.cat !== 'putter' && (onTee || c.id !== 'DR')
+        && !(this.surf === S.SAND && (c.cat === 'wood' || c.cat === 'hybrid'))
+        && !((this.surf === S.DEEP || this.surf === S.BRUSH) && c.cat === 'wood')
+        && !((this.surf === S.ROUGH || this.surf === S.STRAW) && (c.id === '3W'));
+      const longest = this.bag.filter(allowed).sort((a, b) => b.carry - a.carry)[0] || this.bag[0];
       const reach = fullCarry(longest, 'normal', this.surf, recovery) * 1.08;
       const [bs] = hole.nearest(this.ball.x, this.ball.y);
       if (this.distPin <= reach) {
@@ -371,7 +376,7 @@ export class Play {
     this.hud.drawMap(this);
   }
 
-  refreshHud() {
+  refreshHud(light = false) {
     const hole = this.hole;
     const lie = lieInfo(this.surf);
     const el = hole.pinH - this.ball.h;
@@ -387,8 +392,10 @@ export class Play {
       types: putt ? ['putt'] : availableTypes(this.surf, this.club, this.distPin),
       shape: this.shapeSel, traj: this.trajSel, spin: this.spin, puttScale: this.puttScale,
       bag: this.bag, clubIdx: this.bag.indexOf(this.club),
+      aimOff: Math.atan2(Math.sin(this.heading - toPinHeading), Math.cos(this.heading - toPinHeading)),
     });
     this.hud.setHoleInfo(this.holeHeader());
+    if (light) return;
     // meter target tick
     let tick = null;
     const dk = this.diffKey;
@@ -785,12 +792,12 @@ export class Play {
     }
     this.hud.toast(msg, sub, kind, 2200);
     this.lastResult = { r, toPin };
-    // gimme
-    const gimmeFt = this.diff.gimme || 0;
+    // gimme (tap-ins inside 9 inches are always given)
+    const gimmeFt = Math.max(0.75, this.diff.gimme || 0);
     if (restSurf === S.GREEN && toPin * 3 <= gimmeFt && this.cfg.mode !== 'range') {
       this.strokes++;
       this.card.putts++;
-      setTimeout(() => { this.hud.toast('GIMME', 'Picked up', 'good', 1000); this.holeOut(toPin, true, true); }, 700);
+      setTimeout(() => { this.hud.toast(toPin * 3 < 0.8 ? 'TAP-IN' : 'GIMME', '', 'good', 1000); this.holeOut(toPin, true, true); }, 700);
       this.state = 'wait';
       return;
     }
@@ -896,6 +903,7 @@ export class Play {
     if (fromGreen && lastPuttDist * 3 > 25 && !picked) { audio.crowd('roar', crowd); }
     const sub = picked ? '' : fromGreen && lastPuttDist > 0.5 ? `${Math.round(lastPuttDist * 3)} ft putt` : strokes > 1 && !fromGreen ? `Holed from ${Math.round(lastPuttDist)} yds!` : '';
     this.hud.banner(name, sub, kind);
+    this.celebrateT = diff < 0 || (fromGreen && lastPuttDist * 3 > 20) ? 0 : null;
     this.hud.setHoleInfo(this.holeHeader());
     // golfer celebration pose
     this.rig.set('green', { rate: 1.5 });
@@ -1023,6 +1031,7 @@ export class Play {
         this.heading += this.keys.has('left') ? -turn : turn;
         this.aimDirty = true;
         this.golfer.placeAtBall(P(this.ball.x, this.ball.y, this.ball.h), this.heading);
+        if (this.aimRefreshT > 0.06) this.refreshHud(true);
       } else {
         this.aimHold = 0;
         if (this.aimDirty) { this.aimDirty = false; this.updateAim(); this.refreshHud(); }
@@ -1033,6 +1042,10 @@ export class Play {
     }
     if (this.state === 'swing') this.updateSwing(dt);
     if (this.state === 'flight') this.updateFlight(dt);
+    if (this.state === 'holed' && this.celebrateT != null) {
+      this.celebrateT += dt;
+      if (this.celebrateT < 2.4) this.golfer.celebrate(this.celebrateT);
+    }
     if (this.state === 'result') {
       this.resultTimer -= dt;
       if (this.resultTimer <= 0) this.continueAfterResult();

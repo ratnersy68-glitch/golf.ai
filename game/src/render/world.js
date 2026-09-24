@@ -166,8 +166,8 @@ export class World {
     let q = 0;
     for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
       const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
-      idx[q++] = a; idx[q++] = c; idx[q++] = b;
-      idx[q++] = b; idx[q++] = c; idx[q++] = d;
+      idx[q++] = a; idx[q++] = b; idx[q++] = c;
+      idx[q++] = b; idx[q++] = d; idx[q++] = c;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -243,10 +243,13 @@ export class World {
     const T = hole.theme;
     const normal = waterNormalTexture();
     const mk = (geo, color) => {
+      const c = new THREE.Color(color);
+      const hsl = {}; c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), Math.min(0.5, hsl.l * 1.35));
       const mat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color), roughness: 0.06, metalness: 0.15,
-        normalMap: normal, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.92,
-        envMapIntensity: 1.4,
+        color: c, roughness: 0.1, metalness: 0.35,
+        normalMap: normal, normalScale: new THREE.Vector2(0.3, 0.3),
+        envMapIntensity: 1.6,
       });
       const m = new THREE.Mesh(geo, mat);
       m.receiveShadow = true;
@@ -278,7 +281,7 @@ export class World {
       for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
         if (!(inside[j * nx + i] || inside[j * nx + i + 1] || inside[(j + 1) * nx + i] || inside[(j + 1) * nx + i + 1])) continue;
         const a = vid(i, j), b = vid(i + 1, j), c = vid(i, j + 1), d = vid(i + 1, j + 1);
-        idx.push(a, c, b, b, c, d);
+        idx.push(a, b, c, b, d, c);
       }
       if (!idx.length) continue;
       const geo = new THREE.BufferGeometry();
@@ -298,7 +301,6 @@ export class World {
       for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 300, uv.getY(i) * 300);
       const m = mk(geo, T.water);
       m.position.set(hole.G[0], lvl, -hole.G[1]);
-      m.material.opacity = 1; m.material.transparent = false;
       out.push(m);
       // surf foam line
     }

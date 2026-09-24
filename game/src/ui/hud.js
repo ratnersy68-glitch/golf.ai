@@ -39,6 +39,7 @@ export class Hud {
         <div class="info-row"><span>TO PIN</span><b id="i-pin">0</b></div>
         <div class="info-row"><span>PLAYS LIKE</span><b id="i-plays">0</b></div>
         <div class="info-row"><span>ELEVATION</span><b id="i-elev">0 ft</b></div>
+        <div class="info-row"><span>AIM</span><div class="aimbar" id="i-aimbar"><i></i><em>⚑</em></div><em id="i-aim"></em></div>
         <div class="club-card">
           <div class="club-name" id="i-club">DRIVER</div>
           <div class="club-brand" id="i-brand">TaylorMade Qi10</div>
@@ -97,6 +98,8 @@ export class Hud {
 
   bind() {
     const play = () => this.app.play;
+    // never leave HUD buttons focused: Space must always mean "swing"
+    this.root.addEventListener('click', () => { const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); });
     $('#club-prev', this.root).onclick = () => play().cycleClub(-1);
     $('#club-next', this.root).onclick = () => play().cycleClub(1);
     $('#shape-seg', this.root).onclick = (e) => { const v = e.target.dataset.v; if (v != null) play().setShape(+v); };
@@ -196,6 +199,11 @@ export class Hud {
     $('#i-plays', this.root).textContent = i.putt ? '—' : `${Math.round(i.playsLike)} YDS`;
     const ef = Math.round(i.elevFt);
     $('#i-elev', this.root).textContent = `${ef > 0 ? '▲ +' : ef < 0 ? '▼ ' : ''}${ef} FT`;
+    // aim relative to the flag
+    const off = i.aimOff * 180 / Math.PI;
+    const ao = Math.abs(off);
+    $('#i-aim', this.root).textContent = ao < 0.4 ? 'AT FLAG' : `${ao.toFixed(1)}° ${off < 0 ? 'L' : 'R'}`;
+    $('#i-aimbar i', this.root).style.left = `${50 + Math.max(-48, Math.min(48, off * 3))}%`;
     $('#i-club', this.root).textContent = i.club.name.toUpperCase();
     $('#i-brand', this.root).textContent = `${i.club.brand} ${i.club.model}`;
     if (i.putt) {

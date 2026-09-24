@@ -111,8 +111,8 @@ export function computeLaunch(inp) {
   const forg = club.forgiveness;
   // face / path from timing
   const eC = clamp(e, -3, 3);
-  let startDeg = eC * 1.4 * (1.35 - forg * 0.6);
-  let sideRpm = eC * 1250 * catF * (1.35 - forg * 0.6);
+  let startDeg = eC * 1.0 * (1.35 - forg * 0.6);
+  let sideRpm = eC * (Math.abs(eC) > 1 ? 950 : 750) * catF * (1.35 - forg * 0.6);
   // intentional shape
   const shapeScale = club.cat === 'wood' ? 1.15 : club.cat === 'hybrid' ? 1.0 : club.cat === 'iron' ? 0.9 : 0.35;
   startDeg += -inp.shape * 1.6 * shapeScale;

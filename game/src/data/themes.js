@@ -14,21 +14,21 @@ export const THEMES = {
     sand: '#e9dcc0', waste: '#dccda8', water: '#1a4e6e', brush: '#7a7048', straw: '#7a6a45', tee: '#6aa040',
     sky: ['#6f9cc9', '#e1e8ee'], fog: '#d5dfe6', fogDensity: 0.0016, sun: { elev: 38, az: 230, color: '#fff2dc', intensity: 2.9 },
     undulation: 4, undFreq: 1 / 90, lateralRise: 0.02, trees: { types: ['cypress', 'cypress', 'pine'], density: 0.35, near: 26, lines: false },
-    extras: ['rocks'], birds: 'gull', crowd: 0.4, roughType: 'rough', building: 'lodge', seaLevel: -11,
+    extras: ['rocks'], birds: 'gull', crowd: 0.4, roughType: 'rough', cartPath: true, building: 'lodge', seaLevel: -11,
   },
   sawgrass: {
     fairway: '#4f9636', fairway2: '#5ca33f', rough: '#3a7a28', deep: '#2f6a22', green: '#5dab41', fringe: '#4e9c38',
     sand: '#f1eadb', waste: '#d9c9a2', water: '#1d4f53', brush: '#6d5a36', straw: '#8a5a2b', tee: '#55a03a',
     sky: ['#3d86d8', '#d7e8f5'], fog: '#d3e3ee', fogDensity: 0.001, sun: { elev: 55, az: 200, color: '#fff6e6', intensity: 3.3 },
     undulation: 2.2, undFreq: 1 / 60, lateralRise: 0.035, trees: { types: ['palm', 'oak', 'pine', 'palm'], density: 0.75, near: 18, lines: true },
-    extras: ['straw'], birds: 'songbird', crowd: 0.7, roughType: 'rough', building: 'mediterranean',
+    extras: ['straw'], birds: 'songbird', crowd: 0.7, roughType: 'rough', cartPath: true, building: 'mediterranean',
   },
   torrey: {
     fairway: '#6c9a3c', fairway2: '#79a646', rough: '#56822f', deep: '#687a36', green: '#65a444', fringe: '#5a9a3b',
     sand: '#eadfc6', waste: '#d7c7a0', water: '#285f7a', brush: '#8a7a4c', straw: '#7a6a45', tee: '#68a03e',
     sky: ['#86a9c8', '#e6e9ea'], fog: '#dfe3e3', fogDensity: 0.0019, sun: { elev: 42, az: 220, color: '#fff0da', intensity: 2.7 },
     undulation: 3.5, undFreq: 1 / 100, lateralRise: 0.02, trees: { types: ['torreypine', 'eucalyptus'], density: 0.3, near: 30, lines: false },
-    extras: [], birds: 'gull', crowd: 0.4, roughType: 'kikuyu', building: 'modern', seaLevel: -30,
+    extras: [], birds: 'gull', crowd: 0.4, roughType: 'kikuyu', cartPath: true, building: 'modern', seaLevel: -30,
   },
   bethpage: {
     fairway: '#4d8e33', fairway2: '#579a3b', rough: '#35712a', deep: '#607a38', green: '#5aa33f', fringe: '#4d9536',
@@ -45,9 +45,9 @@ export const THEMES = {
     extras: ['wiregrass', 'straw'], birds: 'songbird', crowd: 0.5, roughType: 'sandy', building: 'colonial', sandyRough: true,
   },
   standrews: {
-    fairway: '#7fa04a', fairway2: '#89aa52', rough: '#6e8a3e', deep: '#8a8a52', green: '#78a84b', fringe: '#6f9e45',
+    fairway: '#7aa447', fairway2: '#88b050', rough: '#768a3c', deep: '#9a8f55', green: '#74ab48', fringe: '#6fa244',
     sand: '#d9c9a0', waste: '#6f7a34', water: '#35505a', brush: '#6b7a30', straw: '#7a6a45', tee: '#7aa048',
-    sky: ['#8ea4b8', '#e2e6e8'], fog: '#d8dde0', fogDensity: 0.0016, sun: { elev: 30, az: 200, color: '#f4efe6', intensity: 2.5 },
+    sky: ['#7f9ab3', '#dfe5e8'], fog: '#d3dade', fogDensity: 0.0011, sun: { elev: 34, az: 200, color: '#f7f0e2', intensity: 2.8 },
     undulation: 2.4, undFreq: 1 / 28, lateralRise: 0.0, trees: { types: [], density: 0, near: 999, lines: false },
     extras: ['gorse', 'fescue', 'town'], birds: 'gull', crowd: 0.5, roughType: 'links', building: 'rna', links: true,
   },
@@ -56,7 +56,7 @@ export const THEMES = {
     sand: '#f2ebdb', waste: '#e4d6b5', water: '#2b5550', brush: '#6d5a36', straw: '#6d4d2b', tee: '#50a03a',
     sky: ['#4a88cf', '#d5e6f3'], fog: '#cfe0ec', fogDensity: 0.0011, sun: { elev: 52, az: 200, color: '#fff4e2', intensity: 3.2 },
     undulation: 5, undFreq: 1 / 110, lateralRise: 0.04, trees: { types: ['oak', 'maple', 'oak'], density: 0.75, near: 22, lines: true },
-    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'thick', building: 'modern',
+    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'thick', cartPath: true, building: 'modern',
   },
   oakmont: {
     fairway: '#5a9a3a', fairway2: '#65a542', rough: '#3c7a2c', deep: '#4f7a32', green: '#62ac48', fringe: '#55a03c',
@@ -70,7 +70,7 @@ export const THEMES = {
     sand: '#efe3c8', waste: '#8a7a4c', water: '#2a5566', brush: '#8a7a4c', straw: '#7a6a45', tee: '#63a03d',
     sky: ['#4f92d8', '#e9e6dc'], fog: '#e3e0d6', fogDensity: 0.0012, sun: { elev: 46, az: 225, color: '#fff0d6', intensity: 3.2 },
     undulation: 4.5, undFreq: 1 / 100, lateralRise: 0.05, trees: { types: ['eucalyptus', 'eucalyptus', 'sycamore', 'palm'], density: 0.65, near: 22, lines: true },
-    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'kikuyu', building: 'spanish',
+    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'kikuyu', cartPath: true, building: 'spanish',
   },
 };
 

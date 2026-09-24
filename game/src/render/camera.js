@@ -38,7 +38,7 @@ export class CameraRig {
         const sx = Math.sin(yaw), sy = Math.cos(yaw);
         const pv = this.preview; // 0..1 flies along the aim line
         const dist = (putt ? 3.8 : 6.8) * this.zoom;
-        const hgt = (putt ? 1.6 : 2.1) * this.zoom + this.orbitPitch * 4;
+        const hgt = (putt ? 1.6 : 2.6) * this.zoom + this.orbitPitch * 4;
         if (pv > 0.01 && ctx.aimDist) {
           const d = ctx.aimDist * pv;
           const px = bx + hx * d, py = by + hy * d;
@@ -52,9 +52,10 @@ export class CameraRig {
           const cx = bx - sx * dist + rx * side, cy = by - sy * dist + ry * side;
           const ch = Math.max(H(cx, cy) + 0.6, bh + hgt);
           this.dPos.copy(P(cx, cy, ch));
-          const la = putt ? Math.min(ctx.aimDist || 10, 12) : 60;
+          // frame the golfer and ball above the HUD: pitch the camera down slightly
+          const la = putt ? Math.min(ctx.aimDist || 6, 6) : 40;
           const lx = bx + sx * la, ly = by + sy * la;
-          this.dLook.copy(P(lx, ly, putt ? H(lx, ly) : bh + 1.5 + this.orbitPitch * -3));
+          this.dLook.copy(P(lx, ly, putt ? H(lx, ly) - 0.2 : bh - 4.5 + this.orbitPitch * -3));
         }
         fov = putt ? 50 : 52;
         break;

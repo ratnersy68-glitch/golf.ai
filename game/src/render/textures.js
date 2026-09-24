@@ -72,7 +72,30 @@ export function buildTerrainTexture(hole) {
       px[k * 4 + 3] = 255;
     }
   }
-  // soften edges with a light blur, keeping stripes crisp enough
+  // anti-alias surface boundaries: supersample pixels that border another surface
+  const base = (su) => col[su] || col[S.ROUGH];
+  const OFF = [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17], [0, 0]];
+  for (let j = 1; j < h - 1; j++) {
+    for (let i = 1; i < w - 1; i++) {
+      const k = j * w + i;
+      const s0 = surf[k];
+      if (s0 === surf[k - 1] && s0 === surf[k + 1] && s0 === surf[k - w] && s0 === surf[k + w]) continue;
+      if (s0 === S.STRAW || surf[k - 1] === S.STRAW || surf[k + 1] === S.STRAW) continue;
+      const x = hole.gx0 + i * 0.5, y = hole.gy0 + j * 0.5;
+      const m0 = [px[k * 4] / base(s0)[0], px[k * 4 + 1] / base(s0)[1], px[k * 4 + 2] / base(s0)[2]];
+      let r = 0, g = 0, b = 0;
+      for (const [ox, oy] of OFF) {
+        const su = ox === 0 && oy === 0 ? s0 : hole.classifyAt(x + ox, y + oy);
+        const c = base(su);
+        r += c[0]; g += c[1]; b += c[2];
+      }
+      const n = OFF.length;
+      px[k * 4] = clamp255(r / n * Math.min(1.3, m0[0] || 1));
+      px[k * 4 + 1] = clamp255(g / n * Math.min(1.3, m0[1] || 1));
+      px[k * 4 + 2] = clamp255(b / n * Math.min(1.3, m0[2] || 1));
+    }
+  }
+  // soften a touch
   blur(px, w, h);
   // dark bunker lips / green collar shading
   ctx.putImageData(img, 0, 0);

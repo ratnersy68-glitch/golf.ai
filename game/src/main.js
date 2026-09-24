@@ -12,7 +12,7 @@ import { THEMES } from './data/themes.js';
 import { loadProfile, saveProfile, awardXp, recordRound } from './core/profile.js';
 import { audio } from './audio/audio.js';
 
-const THUMB_KEY = 'golfai.thumbs.v2';
+const THUMB_KEY = 'golfai.thumbs.v3';
 
 class App {
   constructor() {

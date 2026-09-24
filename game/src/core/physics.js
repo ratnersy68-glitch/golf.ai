@@ -18,11 +18,11 @@ const def = (id, e, mu, grip, roll) => { SURF[id] = { e, mu, grip, roll }; };
 //  restitution, tangential friction at impact, spin bite, rolling resistance (fraction of g)
 def(S.DEEP, 0.07, 0.75, 0.15, 0.9);
 def(S.ROUGH, 0.14, 0.55, 0.3, 0.45);
-def(S.FIRSTCUT, 0.24, 0.4, 0.6, 0.2);
-def(S.FAIRWAY, 0.3, 0.32, 0.8, 0.13);
-def(S.FRINGE, 0.26, 0.38, 0.9, 0.11);
+def(S.FIRSTCUT, 0.24, 0.4, 0.6, 0.26);
+def(S.FAIRWAY, 0.3, 0.32, 0.8, 0.19);
+def(S.FRINGE, 0.26, 0.38, 0.9, 0.12);
 def(S.GREEN, 0.22, 0.3, 1.0, 0.05);
-def(S.TEE, 0.3, 0.35, 0.7, 0.15);
+def(S.TEE, 0.3, 0.35, 0.7, 0.19);
 def(S.SAND, 0.03, 0.9, 0.2, 1.4);
 def(S.WASTE, 0.16, 0.5, 0.3, 0.4);
 def(S.WATER, 0, 1, 0, 5);
@@ -82,6 +82,7 @@ export function simulate(hole, start, launch, env, opts = {}) {
   const maxT = opts.flightOnly ? 15 : 40;
   let lastGroundH = hole.heightAt(x, y);
   let lipped = false;
+  let pinHit = false;
 
   while (t < maxT) {
     t += dt; step++;
@@ -145,9 +146,10 @@ export function simulate(hole, start, launch, env, opts = {}) {
       inTree = nowInTree;
 
       // flagstick
-      if (pin) {
+      if (pin && !pinHit) {
         const pdx = x - pin[0], pdy = y - pin[1];
-        if (pdx * pdx + pdy * pdy < (0.035 + R_BALL) ** 2 && h - hole.pinH < 2.4 && h > hole.pinH) {
+        if (pdx * pdx + pdy * pdy < (0.035 + R_BALL) ** 2 && h - hole.pinH < 2.4 && h > hole.pinH + 0.05 && pdx * vx + pdy * vy < 0) {
+          pinHit = true;
           vx *= -0.25; vy *= -0.25; vz *= 0.3;
           events.push({ t, type: 'pin', x, y, h });
         }
@@ -201,14 +203,22 @@ export function simulate(hole, start, launch, env, opts = {}) {
         const impact = Math.abs(vn);
         let e = sp.e * (0.75 + 0.5 * firm) * clamp(1.25 - impact / 45, 0.45, 1.2);
         if (surf === S.GREEN || surf === S.FRINGE) e *= 0.9 + 0.3 * firm;
-        // friction + spin bite (backspin pulls the ball back)
-        let mu = sp.mu * (1.15 - 0.3 * firm);
+        // friction + spin "check": steep, high-spin landings on soft receptive turf stop quickly
+        const mu = sp.mu * (1.15 - 0.3 * firm);
         const tl = Math.hypot(tx, ty, tz) || 1;
-        const bite = sp.grip * (back / RPM) / 10000 * (bounces === 1 ? 5.2 : 2.0) * clamp(impact / 12, 0.2, 1.3) * (1.1 - 0.35 * firm);
-        let newT = tl * (1 - mu) - bite;
-        // steep landings keep less forward speed
-        tx = tx / tl * newT; ty = ty / tl * newT; tz = tz / tl * newT;
-        back *= 0.45; side *= 0.3;
+        const vtot = Math.hypot(vx, vy, vz) || 1;
+        const steep2 = (impact / vtot) ** 2;
+        const soft = 1.15 - 0.45 * firm;
+        let ret;
+        if (bounces === 1) {
+          const spinF = Math.min(1.1, (back / RPM) / 10000);
+          ret = 1 - mu - sp.grip * soft * (0.55 * steep2 + 0.55 * spinF);
+          ret = Math.max(spinF > 0.75 && sp.grip >= 0.9 ? -0.12 : 0.02, Math.min(0.92, ret));
+        } else {
+          ret = Math.max(0, 1 - mu * 0.8 - sp.grip * soft * 0.25 * steep2);
+        }
+        tx = tx / tl * tl * ret; ty = ty / tl * tl * ret; tz = tz / tl * tl * ret;
+        back *= 0.25; side *= 0.3;
         vx = tx + nx * impact * e; vy = ty + ny * impact * e; vz = tz + nz * impact * e;
         h = g2 + 0.001;
         if (impact * e < 1.2 || bounces > 8) {
@@ -236,12 +246,6 @@ export function simulate(hole, start, launch, env, opts = {}) {
         const slopeA = Math.hypot(ax, ay);
         if (slopeA < rollA * 1.05) { vx = 0; vy = 0; }
         else { vx += ax * dt; vy += ay * dt; }
-      }
-      // residual backspin (spin-back on greens)
-      if (back > 50 * RPM && surf === S.GREEN) {
-        const pull = (back / RPM) / 10000 * 1.2 * dt;
-        vx -= launchDirX(launch) * pull * 6; vy -= launchDirY(launch) * pull * 6;
-        back *= Math.pow(0.05, dt);
       }
       x += vx * dt; y += vy * dt;
       h = hole.heightAt(x, y);
@@ -304,8 +308,6 @@ export function simulate(hole, start, launch, env, opts = {}) {
   };
 }
 
-function launchDirX(l) { return Math.sin(l.heading); }
-function launchDirY(l) { return Math.cos(l.heading); }
 
 // Flat-ground, no-wind carry for given launch (used to solve ball speed).
 export function flatCarry(speed, angleDeg, backRpm) {

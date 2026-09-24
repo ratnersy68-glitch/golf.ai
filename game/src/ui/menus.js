@@ -18,6 +18,15 @@ const MODES = {
   range: { name: 'Driving Range', sub: 'Launch monitor · test every club' },
 };
 
+export function unlocksAt(lv) {
+  return [
+    ...COURSES.filter(x => x.unlock === lv).map(x => `⛳ ${x.short}`),
+    ...Object.values(BRAND_MODELS).flat().filter(x => x.unlock === lv).map(x => `🏌 ${x.brand} ${x.model}`),
+    ...BALLS.filter(x => x.unlock === lv).map(x => `⚪ ${x.brand} ${x.model}`),
+    ...[...HATS, ...SHIRTS, ...LEGS, ...SHOES, ...GLOVES, ...ACCESSORIES].filter(x => x.unlock === lv).map(x => `👕 ${x.name}`),
+  ];
+}
+
 export class Menus {
   constructor(root, app) {
     this.root = root;
@@ -239,12 +248,7 @@ export class Menus {
       <button class="btn small" data-skill="${k}" ${p.skillPoints && p.skills[k] < 99 ? '' : 'disabled'}>+ UPGRADE</button></div>`;
     const unlocks = [];
     for (let lv = p.level + 1; lv <= p.level + 6; lv++) {
-      const items = [
-        ...COURSES.filter(x => x.unlock === lv).map(x => `⛳ ${x.short}`),
-        ...Object.values(BRAND_MODELS).flat().filter(x => x.unlock === lv).map(x => `🏌 ${x.brand} ${x.model}`),
-        ...BALLS.filter(x => x.unlock === lv).map(x => `⚪ ${x.brand} ${x.model}`),
-        ...[...HATS, ...SHIRTS, ...LEGS, ...SHOES, ...GLOVES, ...ACCESSORIES].filter(x => x.unlock === lv).map(x => `👕 ${x.name}`),
-      ];
+      const items = unlocksAt(lv);
       if (items.length) unlocks.push(`<div class="unl"><b>LEVEL ${lv}</b>${items.map(i => `<span>${esc(i)}</span>`).join('')}</div>`);
     }
     const bests = Object.entries(c.best).map(([k, v]) => { const [cid, holes] = k.split(':'); return `<tr><td>${esc(getCourse(cid).short)}</td><td>${holes}</td><td><b>${v.score}</b></td><td>${fmtToPar(v.toPar)}</td><td>${esc(v.golfer || '')}</td></tr>`; }).join('');
@@ -435,7 +439,7 @@ export class Menus {
         <div class="result-hero glass">
           <div class="rh-score">${st.strokes}<small>SCORE</small></div>
           <div class="rh-par ${st.toPar < 0 ? 'under' : st.toPar > 0 ? 'over' : ''}">${fmtToPar(st.toPar)}<small>TO PAR</small></div>
-          ${award ? `<div class="rh-xp"><b>+${award.xp} XP</b>${award.levelUps.length ? `<div class="lvlup">LEVEL UP! → ${award.to}</div>` : ''}<div class="xpbar big"><i style="width:${this.profile.xp / LEVEL_XP(this.profile.level) * 100}%"></i></div></div>` : '<div class="rh-xp dim">Tour pro round · no XP</div>'}
+          ${award ? `<div class="rh-xp"><b>+${award.xp} XP</b>${award.levelUps.length ? `<div class="lvlup">LEVEL UP! → ${award.to} · +${award.levelUps.length * 3} skill points</div><div class="unl">${award.levelUps.flatMap(unlocksAt).map(i => `<span>${esc(i)}</span>`).join('')}</div>` : ''}<div class="xpbar big"><i style="width:${this.profile.xp / LEVEL_XP(this.profile.level) * 100}%"></i></div></div>` : '<div class="rh-xp dim">Tour pro round · no XP</div>'}
         </div>
         <div class="glass sc-wrap">${hudScorecard}</div>
         <div class="glass"><div class="section-title">STATISTICS</div><div class="stat-grid wide">

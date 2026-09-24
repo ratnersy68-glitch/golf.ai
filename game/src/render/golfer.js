@@ -379,6 +379,13 @@ export class Golfer {
   }
   address() { this.setBackswing(0); }
 
+  // fist-pump celebration: club raised overhead
+  celebrate(t) {
+    const pump = Math.max(0, Math.sin(t * 7));
+    Object.assign(this.pose, { turn: 0.9, hip: 0.6, arm: 2.2 + pump * 0.5, hinge: 0.4, head: 0.5, rise: 1, lean: 0.4 });
+    this.applyPose();
+  }
+
   idle(t) {
     // gentle breathing/waggle
     const w = Math.sin(t * 1.4) * 0.03;

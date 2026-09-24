@@ -28,6 +28,7 @@ export class Hole {
     this.rng = mulberry32(this.seed);
     this.noise = new Noise2D(this.seed);
     this.links = !!this.theme.links;
+    this.cartSide = (this.seed & 1) ? 1 : -1;
     this.L = this.def.y;
     this.buildCenterline();
     this.buildGreen();
@@ -190,11 +191,11 @@ export class Hole {
     const gs = d.gs ?? 1;
     const a = r() * Math.PI * 2;
     // default tilt: back-to-front plus random component (yards per yard)
-    const mag = (0.012 + r() * 0.016) * gs;
-    this.gTilt = [Math.cos(a) * mag * 0.6, 0];
-    this.gTilt[1] = -(0.008 + r() * 0.012) * gs; // lower at front (toward tee) => rises to the back
-    this.gTier = r() < 0.35 * gs ? { off: (r() - 0.3) * this.gry * 0.8, h: (0.25 + r() * 0.25) * gs, ang: (r() - 0.5) * 0.8 } : null;
-    this.gUnd = 0.18 * gs;
+    const mag = (0.008 + r() * 0.013) * gs;
+    this.gTilt = [Math.cos(a) * mag * 0.7, 0];
+    this.gTilt[1] = -(0.006 + r() * 0.01) * gs; // lower at front (toward tee) => rises to the back
+    this.gTier = r() < 0.3 * gs ? { off: (r() - 0.3) * this.gry * 0.7, h: (0.14 + r() * 0.14) * Math.min(1.4, gs), ang: (r() - 0.5) * 0.8 } : null;
+    this.gUnd = 0.1 * gs;
     this.dome = !!d.dome;
   }
   // green local coords (lat, dep) before rotation
@@ -421,6 +422,7 @@ export class Hole {
     const ad = Math.abs(d);
     const w = this.fwHalf(s);
     const inPlay = s > -30 && s < this.L + 40;
+    let gs = 99;
     if (!far) {
       // soften undulation on the playing corridor, rise at the edges
       const calm = inPlay ? lerp(0.45, 1, smoothstep(w, w + 40, ad)) : 1;
@@ -429,7 +431,7 @@ export class Hole {
       h = E + (base - E) * calm;
       h += (T.lateralRise || 0) * clamp(ad - (w + 10), 0, 70);
       // green complex
-      const gs = this.greenSdf(x, y);
+      gs = this.greenSdf(x, y);
       if (gs < 12) {
         const wg = 1 - smoothstep(0, 10, gs);
         h = lerp(h, this.greenHeight(x, y), wg);
@@ -446,7 +448,7 @@ export class Hole {
       if (this.valley) {
         const vx = this.G[0] - this.gT[0] * (this.gry + 5), vy = this.G[1] - this.gT[1] * (this.gry + 5);
         const r2 = (x - vx) ** 2 + (y - vy) ** 2;
-        h -= 1.3 * Math.exp(-r2 / (2 * 36));
+        h -= 1.3 * Math.exp(-r2 / (2 * 36)) * smoothstep(-6, 2, gs);
       }
     }
     // hazards
@@ -456,13 +458,15 @@ export class Hole {
         if (dx * dx + dy * dy > (sh.rad + 8) ** 2) continue;
       }
       const v = sh.sdf(x, y, s, d);
+      // keep putting surfaces smooth: hazards fade out approaching the green
+      const gk = sh.inGreen ? 1 : smoothstep(0, 2.5, gs);
       if (sh.surf === S.WATER) {
         const L = sh.level;
         if (v < 0) h = Math.min(h, L - 0.05 - sh.depth * smoothstep(0, 4, -v));
         else if (sh.kind === 'ocean') {
           if (v < 3.5) h = lerp(L - 1.2, Math.max(h, L + 3), smoothstep(0, 3.5, v));
           else h = Math.max(h, L + 3 + (v - 3.5) * 0.05);
-        } else if (v < 6) h = Math.max(h, L + 0.12 + v * 0.07);
+        } else if (v < 6) h = lerp(h, Math.max(h, L + 0.12 + v * 0.07), gk);
       } else if (far) {
         continue;
       } else if (sh.surf === S.BRUSH) {
@@ -471,13 +475,14 @@ export class Hole {
           h -= dep + 0.8 * this.noise.noise(x / 5, y / 5) * smoothstep(0, 4, -v);
         }
       } else if (sh.surf === S.SAND) {
+        if (gk <= 0) continue;
         if (v < 0) {
-          h -= sh.depth * smoothstep(0, 2.0, -v);
+          h -= sh.depth * smoothstep(0, 2.0, -v) * gk;
           if (sh.kind === 'pews') {
             const k = ((s - sh.s1) / 7) % 1;
             if (k > 0.72) h += sh.depth * 0.9;
           }
-        } else if (v < 1.6) h += 0.22 * (1 - v / 1.6) * (sh.inGreen ? 0.3 : 1);
+        } else if (v < 1.6) h += 0.22 * (1 - v / 1.6) * (sh.inGreen ? 0.3 : gk);
       } else if (sh.surf === S.WASTE) {
         if (v < 0) h -= sh.depth * smoothstep(0, 3, -v);
       } else if (sh.surf === S.DEEP && sh.depth < 0) {
@@ -491,15 +496,15 @@ export class Hole {
     if (this._gh0 === undefined) this._gh0 = this.baseHeight(this.G[0], this.G[1]) + 0.35;
     const [l, p] = this.greenLocal(x, y);
     let h = this._gh0 + this.gTilt[0] * l + this.gTilt[1] * p;
-    h += this.gUnd * this.noise.fbm(x / 13 + 91, y / 13 + 7, 2);
+    h += this.gUnd * this.noise.fbm(x / 17 + 91, y / 17 + 7, 2);
     if (this.gTier) {
       const t = this.gTier;
       const q = p * Math.cos(t.ang) + l * Math.sin(t.ang) - t.off;
-      h += t.h * smoothstep(-1.8, 1.8, q);
+      h += t.h * smoothstep(-3.2, 3.2, q);
     }
     if (this.dome) {
       const nx = l / this.grx, ny = p / this.gry;
-      h -= 0.9 * (nx * nx + ny * ny);
+      h -= 0.42 * (nx * nx + ny * ny);
     }
     return h;
   }
@@ -543,6 +548,10 @@ export class Hole {
       if (Math.abs(s - tb.s) < 6 && ad < 5) return S.TEE;
     }
     const w = this.fwHalf(s);
+    if (this.theme.cartPath && s > 12 && s < this.L - 30 && !this.def.range) {
+      const off = this.cartSide * (w + 21 + 3 * this.noise.n1(s / 60 + 3));
+      if (Math.abs(d - off) < 1.3) return S.PATH;
+    }
     const inRange = s > this.fStart && s < this.L + 4;
     if (inRange && ad < w) return S.FAIRWAY;
     if (gs < 5.5 || (inRange && ad < w + 2.2)) return S.FIRSTCUT;
@@ -609,6 +618,18 @@ export class Hole {
         this.stripe[k] = (Math.floor(s / 9) & 1);
       }
     }
+  }
+
+  // bilinear (s, d) from the 1-yard grid, then classify
+  classifyAt(x, y) {
+    const fx = clamp(x - this.gx0, 0, this.gnx - 1.001), fy = clamp(y - this.gy0, 0, this.gny - 1.001);
+    const i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
+    const nx = this.gnx, k = j * nx + i;
+    const S0 = this.gS, D0 = this.gD;
+    if (Math.sign(D0[k]) !== Math.sign(D0[k + nx + 1]) && Math.abs(D0[k]) > 5) return this.classify(x, y, S0[k], D0[k]);
+    const s = (S0[k] * (1 - u) + S0[k + 1] * u) * (1 - v) + (S0[k + nx] * (1 - u) + S0[k + nx + 1] * u) * v;
+    const d = (D0[k] * (1 - u) + D0[k + 1] * u) * (1 - v) + (D0[k + nx] * (1 - u) + D0[k + nx + 1] * u) * v;
+    return this.classify(x, y, s, d);
   }
 
   inGrid(x, y) {
