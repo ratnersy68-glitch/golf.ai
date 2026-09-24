@@ -377,7 +377,7 @@ export class Hole {
     }
     // fairway start
     const p = this.def.p;
-    this.fStart = this.def.range ? 12 : p === 3 ? this.L - 40 : (this.links ? 30 : Math.min(150, this.L * 0.38));
+    this.fStart = this.def.range ? 12 : p === 3 ? this.L - 40 : (this.links ? 30 : Math.min(T.fairwayFrom ?? 150, this.L * 0.38));
     // water levels
     for (const sh of this.shapes) {
       if (sh.surf === S.WATER) {

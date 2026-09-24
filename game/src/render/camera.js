@@ -146,7 +146,9 @@ export class CameraRig {
         const a = t * 0.3;
         const gx = this.opts.center[0], gy = this.opts.center[1], gh = this.opts.center[2];
         this.dPos.copy(P(gx + Math.sin(a) * r, gy + Math.cos(a) * r, gh + 1.35));
-        this.dLook.copy(P(gx, gy, gh + 0.95));
+        // look slightly left of the golfer so he stands right of the customization panel
+        const off = window.innerWidth > 900 ? 0.95 : 0;
+        this.dLook.copy(P(gx + Math.cos(a) * off, gy - Math.sin(a) * off, gh + 0.95));
         fov = 38;
         break;
       }

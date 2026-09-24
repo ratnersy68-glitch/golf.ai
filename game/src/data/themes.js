@@ -42,7 +42,7 @@ export const THEMES = {
     sand: '#efe3c7', waste: '#e2d0a6', water: '#2a4d48', brush: '#8a7a4c', straw: '#8a5a2b', tee: '#60a03c',
     sky: ['#5b95d0', '#dbe8f2'], fog: '#d9e3ea', fogDensity: 0.0011, sun: { elev: 50, az: 205, color: '#fff3dd', intensity: 3.1 },
     undulation: 3.2, undFreq: 1 / 90, lateralRise: 0.02, trees: { types: ['longleaf', 'longleaf', 'pine'], density: 0.6, near: 34, lines: true },
-    extras: ['wiregrass', 'straw'], birds: 'songbird', crowd: 0.5, roughType: 'sandy', building: 'colonial', sandyRough: true,
+    extras: ['wiregrass', 'straw'], birds: 'songbird', crowd: 0.5, fairwayFrom: 95, roughType: 'sandy', building: 'colonial', sandyRough: true,
   },
   standrews: {
     fairway: '#7aa447', fairway2: '#88b050', rough: '#768a3c', deep: '#9a8f55', green: '#74ab48', fringe: '#6fa244',
