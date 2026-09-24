@@ -72,8 +72,8 @@ kbd { font-family: var(--sans); font-size: 10px; background: rgba(255,255,255,0.
 .aimbar { position: relative; flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(61,220,132,0.35) 50%, rgba(255,255,255,0.08)); margin: 0 6px; align-self: center; }
 .aimbar i { position: absolute; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,.7); }
 .aimbar em { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); font-style: normal; font-size: 11px; color: var(--accent2); }
-.club-card { margin-top: 10px; background: linear-gradient(135deg, rgba(61,220,132,0.16), rgba(61,220,132,0.02)); border: 1px solid rgba(61,220,132,0.25); border-radius: 10px; padding: 10px 12px; position: relative; }
-.club-name { font-family: var(--cond); font-weight: 800; font-size: 24px; letter-spacing: .03em; max-width: 64%; line-height: 1.05; }
+.club-card { padding-right: 78px !important; margin-top: 10px; background: linear-gradient(135deg, rgba(61,220,132,0.16), rgba(61,220,132,0.02)); border: 1px solid rgba(61,220,132,0.25); border-radius: 10px; padding: 10px 12px; position: relative; }
+.club-name { font-family: var(--cond); font-weight: 800; font-size: 24px; letter-spacing: .03em; line-height: 1.05; }
 .club-brand { font-size: 11px; color: var(--dim); }
 .club-carry { position: absolute; right: 12px; top: 10px; text-align: right; font-family: var(--cond); font-weight: 800; font-size: 30px; line-height: 1; }
 .club-carry small { display: block; font-size: 10px; letter-spacing: .12em; color: var(--dim); font-weight: 600; }

@@ -102,7 +102,7 @@ export class Play {
         teeFactor: this.tee.factor, pinSeed: this.pinSeed + idx * 7,
         pinDifficulty: { easy: 0.2, medium: 0.5, sunday: 0.95 }[this.app.profile.settings.pins] ?? 0.5,
       });
-      this.world.loadHole(hole);
+      this.world.loadHole(hole, { name: this.golferName, toPar: this.roundToPar() });
       console.log(`hole ${idx + 1} built in ${(performance.now() - t0).toFixed(0)}ms`);
       this.card.yards = hole.yards;
       // wind
@@ -787,7 +787,11 @@ export class Play {
         sub = `Carry ${carry} · Total ${tot} yds · ${restSurf === S.GREEN ? Math.round(toPin * 3) + ' ft to pin' : Math.round(toPin) + ' yds to pin'}`;
         kind = restSurf === S.GREEN || restSurf === S.FAIRWAY ? 'good' : restSurf === S.SAND || restSurf === S.DEEP ? 'bad' : 'info';
         if (restSurf === S.GREEN && toPin * 3 < 10) { audio.crowd('applause', this.theme.crowd || 0.5); msg = 'STIFFED IT!'; }
-        if (this.cfg.mode === 'range' || (this.teeShot === false && log.shots.length === 1 && (sh.club.id === 'DR') && r.total > 300)) { audio.jingle('great'); }
+        const bigDrive = log.shots.length === 1 && sh.club.cat === 'wood' && r.total > Math.max(290, sh.club.carry * 1.15);
+        if (bigDrive && (restSurf === S.FAIRWAY || restSurf === S.FIRSTCUT)) {
+          msg = 'WHAT A DRIVE!'; kind = 'great';
+          audio.jingle('great'); audio.crowd('cheer', (this.theme.crowd || 0.5) * 0.8);
+        } else if (this.cfg.mode === 'range' && r.total > 280) audio.jingle('great');
       }
     }
     this.hud.toast(msg, sub, kind, 2200);

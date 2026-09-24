@@ -305,8 +305,10 @@ export class Hole {
       } else if (k === 'lat' || k === 'ocean' || k === 'canyon') {
         const side = hz[1];
         const off = k === 'lat' ? hz[4] : hz[2];
-        const s1 = k === 'lat' ? hz[2] : (hz[3] ?? -200);
-        const s2 = k === 'lat' ? hz[3] : (hz[4] ?? this.L + 300);
+        let s1 = k === 'lat' ? hz[2] : (hz[3] ?? -1e5);
+        let s2 = k === 'lat' ? hz[3] : (hz[4] ?? 1e5);
+        // the sea doesn't stop at the end of the hole
+        if (k === 'ocean') { if (s2 >= this.L) s2 = 1e5; if (s1 <= 0) s1 = -1e5; }
         const width = k === 'lat' ? 38 : 2000;
         const nz = this.noise, o = r() * 50;
         const sdf = (x, y, s, d) => {
@@ -317,7 +319,7 @@ export class Hole {
         };
         if (k === 'ocean') { this.oceanSide = side; this.oceanOff = off; }
         const sh = add({ surf: k === 'canyon' ? S.BRUSH : S.WATER, depth: k === 'canyon' ? 7 : 1.6, kind: k, sdf, band: true, side, off, s1, s2 });
-        const sm = clamp((s1 + s2) / 2, 0, this.L);
+        const sm = clamp((Math.max(s1, -50) + Math.min(s2, this.L + 50)) / 2, 0, this.L);
         sh.levelAt = this.offset(sm, side * (off + 8));
       } else if (k === 'cross' || k === 'xcanyon') {
         const s1 = hz[1], s2 = hz[2];
@@ -511,7 +513,7 @@ export class Hole {
   teeHeight(tb) {
     if (!tb.h) {
       const c = this.at(tb.s);
-      tb.h = this.baseHeight(c.x, c.y) + 0.45;
+      tb.h = this.baseHeight(c.x, c.y) + (this.par === 3 ? 1.4 : 0.6);
     }
     return tb.h;
   }
@@ -776,6 +778,12 @@ export class Hole {
         if (this.surfAt(x, y) === S.WATER) continue;
         this.decor.push({ kind: 'flowers', x, y, r: 5 + r() * 5 });
       }
+    }
+    // leaderboard near signature greens and the 18th
+    if ((this.def.sig || n === 18) && !this.def.range) {
+      const dir = this.greenDir(r() < 0.5 ? 125 : -125);
+      const dist = this.greenEdgeDist(dir[0], dir[1]) + 38;
+      this.decor.push({ kind: 'board', x: this.G[0] + dir[0] * dist, y: this.G[1] + dir[1] * dist, face: [-this.gT[0], -this.gT[1]] });
     }
     // gallery ropes / crowd along signature holes near the green
     if (this.def.sig) {

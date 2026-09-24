@@ -99,7 +99,7 @@ export class World {
     if (this.sky) { this.scene.remove(this.sky); this.sky.geometry.dispose(); this.sky.material.dispose(); }
     this.sky = createSky(theme);
     this.scene.add(this.sky);
-    this.scene.fog = new THREE.FogExp2(new THREE.Color(theme.fog), theme.fogDensity);
+    this.scene.fog = new THREE.FogExp2(new THREE.Color(theme.fog), theme.fogDensity * 0.7);
     const sd = sunDirection(theme);
     this.sunDir = sd;
     this.sun.color.set(theme.sun.color);
@@ -130,7 +130,7 @@ export class World {
     this.water = [];
   }
 
-  loadHole(hole) {
+  loadHole(hole, info = {}) {
     this.clearHole();
     this.hideGrass();
     this.hole = hole;
@@ -141,7 +141,7 @@ export class World {
     g.add(buildTrees(hole, P));
     const far = buildFarTrees(hole, P, (x, y) => hole.heightFeatures(x, y, ...hole.nearest(x, y), true));
     if (far) g.add(far);
-    const decor = buildDecor(hole, P);
+    const decor = buildDecor(hole, P, info);
     g.add(decor);
     this.crowds = [];
     decor.traverse(o => { if (o.userData.crowd) this.crowds.push(o); });

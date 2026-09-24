@@ -28,7 +28,7 @@ function windowsTexture(wall, trim) {
   });
 }
 
-export function buildDecor(hole, P) {
+export function buildDecor(hole, P, info = {}) {
   const group = new THREE.Group();
   const rnd = mulberry32(hole.seed ^ 999);
   const H = (x, y) => hole.heightAt(x, y);
@@ -47,6 +47,7 @@ export function buildDecor(hole, P) {
       case 'hotel': group.add(hotel(d, P, H)); break;
       case 'crowd': group.add(crowdLine(d, P, H, rnd)); break;
       case 'target': group.add(target(d, P, H)); break;
+      case 'board': group.add(leaderboard(d, P, H, hole, info, rnd)); break;
     }
   }
   // tee markers
@@ -55,8 +56,8 @@ export function buildDecor(hole, P) {
     const c = hole.at(tb.s + 1.5);
     for (const side of [-1, 1]) {
       const x = c.x + c.ty * side * 3.2, y = c.y - c.tx * side * 3.2;
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), std(teeCols[i], 0.4));
-      m.position.copy(P(x, y, H(x, y) + 0.12));
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), std(teeCols[i], 0.4));
+      m.position.copy(P(x, y, H(x, y) + 0.08));
       m.castShadow = true;
       group.add(m);
     }
@@ -221,6 +222,50 @@ function crowdLine(d, P, H, rnd) {
   return g;
 }
 
+const LEADER_NAMES = ['S. SCHEFFLER', 'R. MCILROY', 'J. RAHM', 'X. SCHAUFFELE', 'C. MORIKAWA', 'L. ABERG', 'B. DECHAMBEAU', 'J. SPIETH', 'V. HOVLAND', 'J. THOMAS'];
+function leaderboard(d, P, H, hole, info, rnd) {
+  const g = new THREE.Group();
+  const augusta = hole.course.id === 'augusta';
+  const bg = augusta ? '#1d5b33' : '#15243d';
+  // field of pros around the player's score
+  const me = (info.name || 'YOU').toUpperCase().slice(0, 14);
+  const myTp = info.toPar ?? 0;
+  const rows = LEADER_NAMES.filter(n => !me.includes(n.split(' ')[1])).slice(0, 7).map(n => ({ n, tp: Math.round(myTp - 3 + rnd() * 7) }));
+  rows.push({ n: me, tp: myTp, me: true });
+  rows.sort((a, b) => a.tp - b.tp);
+  const tex = canvasTexture(512, 400, (ctx, w, h) => {
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#e8e2c8'; ctx.lineWidth = 6; ctx.strokeRect(6, 6, w - 12, h - 12);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 40px Georgia, serif'; ctx.textAlign = 'center';
+    ctx.fillText('LEADERS', w / 2, 52);
+    ctx.font = 'bold 30px Arial, sans-serif'; ctx.textAlign = 'left';
+    rows.slice(0, 8).forEach((r, i) => {
+      const y = 98 + i * 38;
+      ctx.fillStyle = r.me ? '#ffd54a' : '#ffffff';
+      ctx.fillText(`${i + 1}`, 30, y);
+      ctx.fillText(r.n, 80, y);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = r.tp < 0 ? (augusta ? '#ff4d4d' : '#ff6b6b') : '#ffffff';
+      ctx.fillText(r.tp === 0 ? 'E' : r.tp > 0 ? `+${r.tp}` : `${r.tp}`, w - 30, y);
+      ctx.textAlign = 'left';
+    });
+  });
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(10, 7.8), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }));
+  panel.position.y = 6.5;
+  g.add(panel);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(10.6, 8.4, 0.4), std(bg, 0.9));
+  back.position.set(0, 6.5, -0.25); back.castShadow = true;
+  g.add(back);
+  for (const x of [-4.2, 4.2]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3, 0.4), std('#3a3a3a'));
+    post.position.set(x, 1.5, -0.3); g.add(post);
+  }
+  g.position.copy(P(d.x, d.y, H(d.x, d.y)));
+  // face toward the tee
+  g.rotation.y = Math.atan2(d.face[0], -d.face[1]);
+  return g;
+}
+
 function target(d, P, H) {
   const g = new THREE.Group();
   const cols = { 50: '#e53935', 100: '#fdd835', 150: '#1e88e5', 200: '#ffffff', 250: '#8e24aa', 300: '#fb8c00' };
@@ -372,8 +417,17 @@ function hotel(d, P, H) {
 
 function tufts(hole, P, H, rnd, wire) {
   const n = 2500;
-  const geo = new THREE.ConeGeometry(0.35, 1, 5, 1, true);
-  geo.translate(0, 0.5, 0);
+  // grass clump: a few thin crossed blades
+  const pos = [];
+  for (let b = 0; b < 7; b++) {
+    const a = b / 7 * Math.PI * 2, lean = 0.25 + (b % 3) * 0.12;
+    const cx = Math.cos(a), cz = Math.sin(a);
+    const w = 0.05;
+    pos.push(-cz * w, 0, cx * w, cz * w, 0, -cx * w, cx * lean, 1 - (b % 2) * 0.25, cz * lean);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
   const mesh = new THREE.InstancedMesh(geo, std(wire ? '#a39a5a' : '#b3a563', 1, { side: THREE.DoubleSide }), n);
   const m = new THREE.Matrix4(), c = new THREE.Color();
   let k = 0;
