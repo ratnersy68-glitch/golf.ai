@@ -361,3 +361,14 @@ input[type=range] { accent-color: var(--accent); width: 220px; }
   .logo-title { font-size: 48px; }
   .stat-grid.wide { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-height: 860px) {
+  .main-layout { padding: 3vh 5vw; gap: 12px; }
+  .menu-item { padding: 8px 16px; }
+  .menu-item b { font-size: 20px; }
+  .menu-item.hero { padding: 12px 18px; }
+  .menu-item.hero b { font-size: 28px; }
+  .menu-item.small b { font-size: 16px; }
+  .logo-title { font-size: 50px; }
+  .logo-mark { width: 56px; height: 56px; font-size: 34px; }
+  .badge { padding: 8px 14px; }
+}

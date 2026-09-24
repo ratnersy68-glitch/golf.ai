@@ -28,7 +28,7 @@
 
 export const COURSES = [
   {
-    id: 'augusta',
+    id: 'augusta', cardHole: 11,
     name: 'Augusta National Golf Club',
     short: 'AUGUSTA NATIONAL',
     location: 'Augusta, Georgia',
@@ -59,7 +59,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'pebble',
+    id: 'pebble', cardHole: 6,
     name: 'Pebble Beach Golf Links',
     short: 'PEBBLE BEACH',
     location: 'Pebble Beach, California',
@@ -90,7 +90,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'sawgrass',
+    id: 'sawgrass', cardHole: 16,
     name: 'TPC Sawgrass — Stadium Course',
     short: 'TPC SAWGRASS',
     location: 'Ponte Vedra Beach, Florida',
@@ -121,7 +121,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'torrey',
+    id: 'torrey', cardHole: 2,
     name: 'Torrey Pines — South Course',
     short: 'TORREY PINES SOUTH',
     location: 'La Jolla, California',
@@ -152,7 +152,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'bethpage',
+    id: 'bethpage', cardHole: 3,
     name: 'Bethpage State Park — Black Course',
     short: 'BETHPAGE BLACK',
     location: 'Farmingdale, New York',
@@ -183,7 +183,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'pinehurst',
+    id: 'pinehurst', cardHole: 17,
     name: 'Pinehurst Resort — No. 2',
     short: 'PINEHURST NO. 2',
     location: 'Pinehurst, North Carolina',
@@ -214,7 +214,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'standrews',
+    id: 'standrews', cardHole: 17,
     name: 'St Andrews Links — Old Course',
     short: 'ST ANDREWS OLD COURSE',
     location: 'St Andrews, Fife, Scotland',
@@ -245,7 +245,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'valhalla',
+    id: 'valhalla', cardHole: 12,
     name: 'Valhalla Golf Club',
     short: 'VALHALLA',
     location: 'Louisville, Kentucky',
@@ -276,7 +276,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'oakmont',
+    id: 'oakmont', cardHole: 2,
     name: 'Oakmont Country Club',
     short: 'OAKMONT',
     location: 'Oakmont, Pennsylvania',
@@ -307,7 +307,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'riviera',
+    id: 'riviera', cardHole: 5,
     name: 'Riviera Country Club',
     short: 'RIVIERA',
     location: 'Pacific Palisades, California',

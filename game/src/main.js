@@ -12,7 +12,7 @@ import { THEMES } from './data/themes.js';
 import { loadProfile, saveProfile, awardXp, recordRound } from './core/profile.js';
 import { audio } from './audio/audio.js';
 
-const THUMB_KEY = 'golfai.thumbs.v3';
+const THUMB_KEY = 'golfai.thumbs.v4';
 
 class App {
   constructor() {
@@ -84,7 +84,8 @@ class App {
     g.address();
     g.placeAtBall(P(tx, ty, th), Math.atan2(hole.teeDir[0], hole.teeDir[1]));
     const gp = g.root.position;
-    this.rig.set('orbitGolfer', { t: this.menuT, center: [gp.x, -gp.z, th], rate: 3 });
+    const wasOrbit = this.rig.mode === 'orbitGolfer';
+    this.rig.set('orbitGolfer', { t: this.menuT, center: [gp.x, -gp.z, th], rate: 3, snap: !wasOrbit });
   }
 
   // ---------------- thumbnails ----------------
@@ -110,7 +111,7 @@ class App {
       }
       try {
         const sigs = c.holes.map((h, i) => (h.sig ? i : -1)).filter(i => i >= 0);
-        const idx = sigs[0] ?? 0;
+        const idx = c.cardHole ?? sigs[0] ?? 0;
         const hole = new Hole(c, idx, { pinSeed: 5 });
         tw.setCourseEnv(c, THEMES[c.theme]);
         tw.loadHole(hole);

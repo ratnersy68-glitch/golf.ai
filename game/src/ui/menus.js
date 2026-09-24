@@ -44,6 +44,7 @@ export class Menus {
   }
 
   go(where) {
+    if (where !== 'golfer') this.app.menuScene();
     switch (where) {
       case 'main': return this.main();
       case 'career': return this.career();
