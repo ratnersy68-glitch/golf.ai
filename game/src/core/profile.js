@@ -24,7 +24,7 @@ export function newProfile() {
     equipment: { ...DEFAULT_EQUIPMENT },
     settings: {
       difficulty: 'normal', puttGuide: true, landingMarker: true, tracer: true, flyover: true,
-      autoCamera: true, quality: 'high', master: 0.8, sfx: 0.9, amb: 0.6, windSetting: 'normal', pins: 'medium', lastCourse: 'augusta', lastTee: 'tour',
+      autoCamera: true, quality: 'auto', master: 0.8, sfx: 0.9, amb: 0.6, windSetting: 'normal', pins: 'medium', lastCourse: 'augusta', lastTee: 'tour',
     },
     career: {
       rounds: 0, rounds18: 0, holes: 0, strokes: 0, parSum: 0, score18Sum: 0,

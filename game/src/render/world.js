@@ -30,13 +30,14 @@ export class World {
     this.setupBall();
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    window.addEventListener('game-resize', () => this.resize());
   }
 
   setQuality(q) {
     this.quality = q;
     const dpr = window.devicePixelRatio || 1;
     const r = this.renderer;
-    r.setPixelRatio(q === 'high' ? Math.min(dpr, 2) : q === 'medium' ? Math.min(dpr, 1.25) : 1);
+    r.setPixelRatio(q === 'high' ? Math.min(dpr, 2) : q === 'medium' ? Math.min(dpr, 1.5) : 1);
     r.shadowMap.enabled = q !== 'low';
     const size = q === 'high' ? 2048 : 1024;
     if (this.sun.shadow.mapSize.x !== size) {

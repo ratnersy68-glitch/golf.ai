@@ -397,7 +397,7 @@ export class Menus {
           ${tog('tracer', 'Shot tracer', 'TV-style ball flight trail')}
           ${tog('flyover', 'Hole flyover', 'Preview each hole from the air')}
           ${tog('autoCamera', 'Broadcast camera', 'Automatic follow & landing cameras')}
-          <div class="set-row"><div><b>Graphics quality</b><span>Lower it if the game stutters</span></div><div class="chips">${[['high', 'High'], ['medium', 'Medium'], ['low', 'Low']].map(([k, n]) => `<button class="chip ${(s.quality || 'high') === k ? 'on' : ''}" data-q="${k}">${n}</button>`).join('')}</div></div>
+          <div class="set-row"><div><b>Graphics quality</b><span>Lower it if the game stutters</span></div><div class="chips">${[['auto', 'Auto'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']].map(([k, n]) => `<button class="chip ${(s.quality || 'auto') === k ? 'on' : ''}" data-q="${k}">${n}</button>`).join('')}</div></div>
           <div class="section-title">AUDIO</div>
           ${slider('master', 'Master volume')}${slider('sfx', 'Effects')}${slider('amb', 'Ambience')}
           <div class="section-title">DATA</div>
@@ -422,7 +422,7 @@ export class Menus {
         </div>
       </div>`, 'page-screen');
     this.root.querySelectorAll('[data-tog]').forEach(b => b.onclick = () => { s[b.dataset.tog] = !s[b.dataset.tog]; this.app.save(); audio.click(); this.settings(); });
-    this.root.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { s.quality = b.dataset.q; this.app.world.setQuality(s.quality); this.app.save(); audio.click(); this.settings(); });
+    this.root.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { s.quality = b.dataset.q; this.app.world.setQuality(this.app.qualityFor(s.quality)); this.app.save(); audio.click(); this.settings(); });
     this.root.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { s.difficulty = b.dataset.diff; this.app.save(); audio.click(); this.settings(); });
     this.root.querySelectorAll('[data-vol]').forEach(r => r.oninput = () => { s[r.dataset.vol] = +r.value; audio.setVolumes({ [r.dataset.vol]: +r.value }); this.app.save(); });
     $('#reset', this.root).onclick = () => {

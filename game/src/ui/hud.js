@@ -76,10 +76,28 @@ export class Hud {
           <button class="swing-btn" id="swing-btn">HOLD <b>SPACE</b> TO SWING</button>
         </div>
       </div>
-      <div class="aim-pad">
-        <button class="icon-btn big" id="aim-left">⟲</button>
-        <button class="icon-btn big" id="aim-right">⟳</button>
+      <div class="top-btns">
+        <button class="tbtn" id="btn-fs" title="Fullscreen">⛶</button>
+        <button class="tbtn" id="btn-card" title="Scorecard">▦</button>
+        <button class="tbtn" id="btn-pause" title="Menu">☰</button>
       </div>
+      <div class="mbar" id="mbar">
+        <div class="mgroup">
+          <button class="mbtn sm" id="m-club-prev">‹</button>
+          <div class="mclub"><b id="m-club">DR</b><span id="m-carry">247 YDS</span></div>
+          <button class="mbtn sm" id="m-club-next">›</button>
+        </div>
+        <div class="mgroup">
+          <button class="mbtn" id="aim-left">⟲<small>AIM</small></button>
+          <button class="mbtn" id="aim-right">⟳<small>AIM</small></button>
+        </div>
+        <div class="mgroup">
+          <button class="mbtn" id="m-shot">⚙<small id="m-shot-label">SHOT</small></button>
+          <button class="mbtn" id="m-cam">◉<small>VIEW</small></button>
+          <button class="mbtn" id="m-map">⌖<small>MAP</small></button>
+        </div>
+      </div>
+      <button class="m-swing" id="m-swing"><span>SWING</span><small id="m-swing-hint">HOLD</small></button>
       <div class="help glass" id="help">
         <div><kbd>←</kbd><kbd>→</kbd> Aim <kbd>↑</kbd><kbd>↓</kbd> Club <kbd>X</kbd> Shot</div>
         <div><kbd>Q</kbd>/<kbd>E</kbd> Draw/Fade <kbd>T</kbd> Height <kbd>R</kbd> Aim at pin</div>
@@ -126,6 +144,31 @@ export class Hud {
       b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off);
     };
     aimHold('#aim-left', 'left'); aimHold('#aim-right', 'right');
+    // touch controls
+    const tap = (id, fn) => { const b = $(id, this.root); b.addEventListener('click', (e) => { e.preventDefault(); audio.init(); fn(); }); };
+    tap('#m-club-prev', () => play().state === 'aim' && play().cycleClub(-1));
+    tap('#m-club-next', () => play().state === 'aim' && play().cycleClub(1));
+    tap('#m-shot', () => $('#shotbar', this.root).classList.toggle('open'));
+    tap('#m-cam', () => play().state === 'aim' && play().cycleCamera());
+    tap('#m-map', () => play().state === 'aim' && play().setCamera(play().camMode === 'overhead' ? 'address' : 'overhead'));
+    tap('#btn-fs', () => this.app.toggleFullscreen());
+    tap('#btn-card', () => { if (play().state !== 'holed') (this.modalOpen() ? this.closeModal() : this.showScorecard(play())); });
+    tap('#btn-pause', () => { if (play().state !== 'holed' && play().state !== 'flyover') this.app.pauseMenu(); });
+    const ms = $('#m-swing', this.root);
+    const mdown = (e) => {
+      e.preventDefault(); audio.init();
+      const p = play();
+      if (p.state === 'flyover') { p.endFlyover(); return; }
+      if (p.state === 'result') { p.continueAfterResult(); return; }
+      if (p.state === 'flight') { p.speedMul = 3; return; }
+      $('#shotbar', this.root).classList.remove('open');
+      p.swingPress();
+    };
+    const mup = (e) => { e.preventDefault(); const p = play(); if (p.state === 'swing') p.swingRelease(); if (p.state === 'flight') p.speedMul = 1; };
+    ms.addEventListener('pointerdown', mdown);
+    ms.addEventListener('pointerup', mup);
+    ms.addEventListener('pointercancel', mup);
+    ms.addEventListener('contextmenu', (e) => e.preventDefault());
     const mm = $('#minimap', this.root);
     mm.addEventListener('click', (e) => {
       if (!this.map) return;
@@ -158,7 +201,8 @@ export class Hud {
         <div class="load-meta">PAR ${info.par} · ${info.yards} YARDS${info.name ? ' · ' + info.name.toUpperCase() : ''}</div>
         ${info.sig ? '<div class="sig-badge">SIGNATURE HOLE</div>' : ''}
         <div class="load-tip">${info.tip || ''}</div>
-        <div class="spinner"></div>
+        <div class="putt-anim"><i class="ball"></i><i class="cup"></i><i class="flag"></i></div>
+        <div class="load-msg">Loading…</div>
       </div>`;
     l.classList.add('show');
   }
@@ -206,6 +250,9 @@ export class Hud {
     $('#i-aim', this.root).textContent = ao < 0.4 ? 'AT FLAG' : `${ao.toFixed(1)}° ${off < 0 ? 'L' : 'R'}`;
     $('#i-aimbar i', this.root).style.left = `${50 + Math.max(-48, Math.min(48, off * 3))}%`;
     $('#i-club', this.root).textContent = i.club.name.toUpperCase();
+    $('#m-club', this.root).textContent = i.club.short;
+    $('#m-carry', this.root).textContent = i.putt ? `${i.puttScale} FT` : `${Math.round(i.carry)} YDS`;
+    $('#m-shot-label', this.root).textContent = SHOT_TYPES[i.typeId].name.toUpperCase();
     $('#i-brand', this.root).textContent = `${i.club.brand} ${i.club.model}`;
     if (i.putt) {
       $('#i-carry', this.root).textContent = i.puttScale;
@@ -253,6 +300,7 @@ export class Hud {
     if (v) this.meterReset();
   }
   meterReset() {
+    this.swingHint('HOLD');
     $('#meter-fill', this.root).style.width = '0%';
     $('#meter-fill', this.root).style.left = this.mpos(0) + '%';
     $('#meter-marker', this.root).style.left = this.mpos(0) + '%';
@@ -271,7 +319,9 @@ export class Hud {
     t.style.display = '';
     t.style.left = this.mpos(Math.max(0, v)) + '%';
   }
+  swingHint(t) { const h = $('#m-swing-hint', this.root); if (h && h.textContent !== t) h.textContent = t; }
   meterUpdate(power, marker, phase, rating) {
+    this.swingHint(phase === 'back' ? (this.app.play.isPutt() ? 'RELEASE' : 'RELEASE') : phase === 'down' ? 'TAP NOW' : 'HOLD');
     const f = $('#meter-fill', this.root);
     f.style.left = this.mpos(0) + '%';
     f.style.width = (this.mpos(Math.min(power, 1.15)) - this.mpos(0)) + '%';

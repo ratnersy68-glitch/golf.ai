@@ -13,6 +13,9 @@ A single-player 3D golf game that runs in the browser. Pick a golfer, grab your 
 
 ## Play it
 
+**Put it online for your iPhone:** see [DEPLOY.md](DEPLOY.md). Connect the repo to Netlify once and every push updates the live game.
+
+
 The game ships prebuilt in `dist/game.js`, so there's nothing to install.
 
 - **Easiest:** open `game/index.html` in Chrome, Edge, Firefox or Safari.

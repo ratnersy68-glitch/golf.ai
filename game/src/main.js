@@ -14,13 +14,16 @@ import { audio } from './audio/audio.js';
 
 const THUMB_KEY = 'golfai.thumbs.v4';
 
+export const IS_TOUCH = (typeof window !== 'undefined') && (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches);
+
 class App {
   constructor() {
+    if (IS_TOUCH) document.body.classList.add('touch');
     this.profile = loadProfile();
     audio.setVolumes({ master: this.profile.settings.master, sfx: this.profile.settings.sfx, amb: this.profile.settings.amb });
     this.canvas = document.getElementById('scene');
     this.world = new World(this.canvas);
-    this.world.setQuality(this.profile.settings.quality || 'high');
+    this.world.setQuality(this.qualityFor(this.profile.settings.quality));
     this.rig = new CameraRig(this.world.camera);
     this.hud = new Hud(document.getElementById('hud'), this);
     this.menus = new Menus(document.getElementById('menu'), this);
@@ -39,6 +42,28 @@ class App {
   }
 
   save() { saveProfile(this.profile); }
+
+  // 'auto' = medium on phones/tablets (battery + heat), high on desktop
+  qualityFor(q) { return !q || q === 'auto' ? (IS_TOUCH ? 'medium' : 'high') : q; }
+
+  // Fullscreen where the browser allows it (iPhone Safari does not: fall back gracefully)
+  toggleFullscreen() {
+    const d = document, el = d.documentElement;
+    const fsEl = d.fullscreenElement || d.webkitFullscreenElement;
+    try {
+      if (fsEl) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) {
+        const r = req.call(el, { navigationUI: 'hide' });
+        if (r && r.catch) r.catch(() => this.fullscreenHelp());
+        try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch (e) { /* noop */ }
+      } else this.fullscreenHelp();
+    } catch (e) { this.fullscreenHelp(); }
+  }
+  fullscreenHelp() {
+    const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches;
+    if (!standalone) this.hud.toast('FULL SCREEN', 'Safari: tap Share → Add to Home Screen for a full-screen app', 'info', 3500);
+  }
 
   // Real course photos can be dropped in assets/courses/<id>.jpg to replace the rendered cards.
   // List the files in assets/courses/photos.json, e.g. ["augusta.jpg", "pebble.jpg"].
@@ -228,6 +253,7 @@ class App {
     this.last = now;
     this.menuT += dt;
     this.frames = (this.frames || 0) + 1;
+    if (this.frames === 3) { const b = document.getElementById('boot'); if (b) { b.classList.add('done'); setTimeout(() => b.remove(), 700); } }
     let focus = null;
     if (this.mode === 'play' && this.play.hole) {
       this.play.update(dt);
@@ -247,10 +273,40 @@ class App {
   }
 }
 
+// ---------- mobile browser hygiene ----------
+function installMobileGuards() {
+  // no pinch-zoom / double-tap zoom / long-press menus while playing
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+  document.addEventListener('contextmenu', e => { if (!(e.target.closest && e.target.closest('input'))) e.preventDefault(); });
+  // block page scroll/rubber-banding except inside scrollable menus/modals
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1) { e.preventDefault(); return; }
+    if (!(e.target.closest && e.target.closest('#menu, .modal, .cust-panel, .shot-controls'))) e.preventDefault();
+  }, { passive: false });
+  // Safari address bar / rotation: keep a CSS var with the real visible height
+  const setVh = () => document.documentElement.style.setProperty('--app-h', `${(window.visualViewport?.height || window.innerHeight)}px`);
+  setVh();
+  window.addEventListener('resize', setVh);
+  window.visualViewport?.addEventListener('resize', () => { setVh(); window.dispatchEvent(new Event('game-resize')); });
+  window.addEventListener('orientationchange', () => setTimeout(() => { setVh(); window.dispatchEvent(new Event('resize')); window.scrollTo(0, 0); }, 250));
+  // iOS: audio can only start inside a user gesture
+  const unlock = () => audio.init();
+  ['touchend', 'click', 'keydown'].forEach(t => document.addEventListener(t, unlock, { passive: true }));
+  // connection status
+  const banner = document.getElementById('offline');
+  const upd = () => banner && banner.classList.toggle('show', !navigator.onLine);
+  window.addEventListener('offline', upd); window.addEventListener('online', upd); upd();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-  try { new App(); }
-  catch (e) {
-    console.error(e);
-    document.body.insertAdjacentHTML('beforeend', `<div style="position:fixed;inset:0;display:grid;place-items:center;color:#fff;font:16px sans-serif;background:#111">Failed to start: ${e.message}. A WebGL-capable browser is required.</div>`);
-  }
+  installMobileGuards();
+  // let the boot screen paint before the (blocking) first course build
+  requestAnimationFrame(() => setTimeout(() => {
+    try { new App(); }
+    catch (e) {
+      console.error(e);
+      document.body.insertAdjacentHTML('beforeend', `<div style="position:fixed;inset:0;display:grid;place-items:center;color:#fff;font:16px sans-serif;background:#111;z-index:99;padding:20px;text-align:center">Failed to start: ${e.message}. A WebGL-capable browser is required.</div>`);
+    }
+  }, 30));
 });
