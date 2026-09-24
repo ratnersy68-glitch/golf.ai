@@ -1,0 +1,21 @@
+{
+  "name": "golf-ai-championship",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Single-player 3D golf game with real championship courses",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --format=iife --minify --target=es2020 --outfile=dist/game.js",
+    "dev": "esbuild src/main.js --bundle --format=iife --sourcemap --target=es2020 --outfile=dist/game.js --watch --servedir=. --serve=8080",
+    "serve": "python3 -m http.server 8080",
+    "test:holes": "node tools/test-holes.js",
+    "test:physics": "node tools/test-physics.js"
+  },
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "playwright-core": "1.56.0"
+  }
+}
