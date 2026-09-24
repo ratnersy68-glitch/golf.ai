@@ -327,8 +327,8 @@ export class Play {
         l.heading = this.heading; l.speed = Math.sqrt(2 * greenRollDecel(hole.stimp) * Math.min(D, this.puttScale / YD2FT));
         const sim = simulate(hole, this.ball, l, this.env(true), { putt: true });
         const n = Math.max(2, Math.floor(sim.frames.length * (frac > 0 ? frac : 0.12)));
-        const ground = sim.frames.slice(0, n).map(f => [f.x, f.y, f.h]);
-        w.showAim({ ground });
+        const ground = sim.frames.slice(0, n).filter((f, i) => i % 2 === 0).map(f => [f.x, f.y, f.h]);
+        w.showAim({ ground, groundWidth: 0.07 });
         w.showSlopeGrid(hole, (this.ball.x + hole.pin[0]) / 2, (this.ball.y + hole.pin[1]) / 2, Math.min(18, this.distPin / 2 + 4));
       } else {
         const ground = [];
@@ -364,14 +364,14 @@ export class Play {
         const x = this.ball.x + Math.sin(this.heading) * d, y = this.ball.y + Math.cos(this.heading) * d;
         ground.push([x, y, hole.heightAt(x, y) + 0.1]);
       }
-      w.showAim({ ground });
+      w.showAim({ ground, groundWidth: 0.5 });
     } else {
       const ground = [];
       for (let d = 2; d <= 25; d += 1) {
         const x = this.ball.x + Math.sin(this.heading) * d, y = this.ball.y + Math.cos(this.heading) * d;
         ground.push([x, y, hole.heightAt(x, y) + 0.1]);
       }
-      w.showAim({ ground });
+      w.showAim({ ground, groundWidth: 0.4 });
     }
     this.hud.drawMap(this);
   }
@@ -1067,6 +1067,14 @@ export class Play {
     const camHeading = Math.atan2(fwd.x, -fwd.z);
     this.hud.setWind(this.windDirPlan - camHeading, this.windBaseMph * (this.gust || 1));
     this.world.windDir = -(this.windDirPlan) + Math.PI / 2;
+    // floating flag marker with distance
+    if ((this.state === 'aim' || this.state === 'swing') && this.distPin > 12) {
+      const v = P(hole.pin[0], hole.pin[1], hole.pinH + 2.6).project(cam);
+      if (v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1) {
+        const W = window.innerWidth, Hh = window.innerHeight;
+        this.hud.pinMarker([(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * Hh], this.distPin < 30 ? `${Math.round(this.distPin * 3)} ft` : `${Math.round(this.distPin)} y`);
+      } else this.hud.pinMarker(null);
+    } else this.hud.pinMarker(null);
     // flag ~ faces wind
     if (this.state === 'flight' || this.state === 'aim' || this.state === 'swing') this.hud.drawMapBall(this, ball);
   }

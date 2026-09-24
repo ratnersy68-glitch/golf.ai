@@ -2,6 +2,13 @@
 
 A single-player 3D golf game that runs in the browser. Pick a golfer, grab your clubs, choose a famous course and play a full round.
 
+![Augusta National, 12th hole](docs/augusta-12.jpg)
+
+| | |
+| --- | --- |
+| ![Island green at TPC Sawgrass](docs/sawgrass-17.jpg) | ![Drive in flight](docs/drive.jpg) |
+| ![Putting with the break guide](docs/putting.jpg) | ![Main menu](docs/menu.jpg) |
+
 > Personal-use project. Course layouts are recreations of the real courses: real hole order, pars, yardages, doglegs, elevation and signature hazards. They are not survey-accurate.
 
 ## Play it

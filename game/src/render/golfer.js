@@ -349,7 +349,7 @@ export class Golfer {
     const putt = this.clubCat === 'putter';
     if (putt) { this.setBackswing(u * f); return; }
     const top = { turn: -1.45 * u, hip: -0.62 * u, arm: -2.05 * u, hinge: -1.55 * smooth(0.12, 0.8, u), head: 1.0 * u, rise: 0.05 * u, lean: -0.3 * u };
-    const imp = { turn: 0.3, hip: 0.55, arm: 0.05, hinge: 0, head: -0.2, rise: 0, lean: 0.6 };
+    const imp = { turn: 0.25, hip: 0.5, arm: -0.1, hinge: 0, head: -0.2, rise: 0, lean: 0.5 };
     const g = 1 - f; // progress to impact
     const hipT = smooth(0, 0.6, g);
     const armT = g * g;
@@ -370,9 +370,9 @@ export class Golfer {
     } else {
       const e = smooth(0, 1, v);
       Object.assign(this.pose, {
-        turn: lerp(0.3, 1.65, e), hip: lerp(0.55, 1.35, e), arm: lerp(0.05, 2.35 * amp + 0.2, e),
+        turn: lerp(0.25, 1.65, e), hip: lerp(0.5, 1.35, e), arm: lerp(-0.1, 2.35 * amp + 0.2, e),
         hinge: lerp(0, 1.45, smooth(0.15, 0.85, v)), head: lerp(-0.2, 1.3, smooth(0.25, 0.9, v)),
-        rise: lerp(0, 1, e), lean: lerp(0.6, 1.1, e),
+        rise: lerp(0, 1, e), lean: lerp(0.5, 1.1, e),
       });
     }
     this.applyPose();

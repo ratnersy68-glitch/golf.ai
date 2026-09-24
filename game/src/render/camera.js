@@ -37,8 +37,8 @@ export class CameraRig {
         const yaw = ctx.heading + this.orbitYaw;
         const sx = Math.sin(yaw), sy = Math.cos(yaw);
         const pv = this.preview; // 0..1 flies along the aim line
-        const dist = (putt ? 3.8 : 6.8) * this.zoom;
-        const hgt = (putt ? 1.6 : 2.6) * this.zoom + this.orbitPitch * 4;
+        const dist = (putt ? 5.2 : 6.8) * this.zoom;
+        const hgt = (putt ? 1.9 : 2.6) * this.zoom + this.orbitPitch * 4;
         if (pv > 0.01 && ctx.aimDist) {
           const d = ctx.aimDist * pv;
           const px = bx + hx * d, py = by + hy * d;
@@ -48,7 +48,7 @@ export class CameraRig {
           this.dLook.copy(P(lx, ly, H(lx, ly)));
         } else {
           const rx = Math.cos(yaw), ry = -Math.sin(yaw);
-          const side = putt ? 0.3 : 0.55;
+          const side = putt ? 0.75 : 0.55;
           const cx = bx - sx * dist + rx * side, cy = by - sy * dist + ry * side;
           const ch = Math.max(H(cx, cy) + 0.6, bh + hgt);
           this.dPos.copy(P(cx, cy, ch));

@@ -43,6 +43,7 @@ class App {
   // Real course photos can be dropped in assets/courses/<id>.jpg to replace the rendered cards.
   // List the files in assets/courses/photos.json, e.g. ["augusta.jpg", "pebble.jpg"].
   loadPhotoOverrides() {
+    if (location.protocol === 'file:') return;
     fetch('assets/courses/photos.json').then(r => (r.ok ? r.json() : [])).then(list => {
       for (const file of list || []) {
         const id = file.replace(/\.[a-z]+$/i, '');

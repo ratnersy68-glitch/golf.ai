@@ -419,7 +419,29 @@ export class World {
     g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
     while (g.children.length) g.remove(g.children[0]);
   }
-  showAim({ path, landing, radius, color = '#ffffff', ground = [] }) {
+  // flat ribbon following the ground (visible at any distance, unlike 1px lines)
+  ribbon(pts, width, color, opacity) {
+    const pos = [], idx = [], alpha = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = b[0] - a[0], dy = b[1] - a[1];
+      const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+      const nx = dy * width / 2, ny = -dx * width / 2;
+      const p = pts[i];
+      pos.push(p[0] + nx, p[2] + 0.025, -(p[1] + ny), p[0] - nx, p[2] + 0.025, -(p[1] - ny));
+      const f = 1 - i / pts.length * 0.6;
+      alpha.push(f, f);
+      if (i > 0) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    m.renderOrder = 10;
+    return m;
+  }
+
+  showAim({ path, landing, radius, color = '#ffffff', ground = [], groundWidth }) {
     this.clearAim();
     const g = this.aimGroup;
     if (path && path.length > 1) {
@@ -431,13 +453,7 @@ export class World {
       line.renderOrder = 10;
       g.add(line);
     }
-    if (ground.length > 1) {
-      const pts = ground.map(p => P(p[0], p[1], p[2] + 0.03));
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthTest: false }));
-      line.renderOrder = 10;
-      g.add(line);
-    }
+    if (ground.length > 1) g.add(this.ribbon(ground, groundWidth ?? 0.06, '#ffffff', 0.8));
     if (landing) {
       const [x, y, h] = landing;
       const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 0.9, radius, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthTest: false }));
@@ -459,31 +475,33 @@ export class World {
     }
   }
 
-  // Putting green slope grid: arrows showing fall line
+  // Putting green slope grid: chevrons pointing down the fall line, colored by steepness
   showSlopeGrid(hole, cx, cy, radius, strength = 1) {
     const g = this.aimGroup;
-    const pts = [], cols = [];
-    const step = radius > 12 ? 1.5 : 1;
+    const pos = [], cols = [];
+    const step = radius > 12 ? 1.5 : 1.1;
     for (let y = cy - radius; y <= cy + radius; y += step) for (let x = cx - radius; x <= cx + radius; x += step) {
       if ((x - cx) ** 2 + (y - cy) ** 2 > radius * radius) continue;
       const su = hole.surfAt(x, y);
       if (su !== S.GREEN && su !== S.FRINGE) continue;
       const [gx, gy] = hole.gradAt(x, y);
       const m = Math.hypot(gx, gy);
-      if (m < 0.002) continue;
-      const len = Math.min(0.9, m * 22) * step * strength;
-      const dx = -gx / m * len, dy = -gy / m * len;
+      if (m < 0.003) continue;
+      const len = (0.18 + Math.min(0.35, m * 9)) * strength;
+      const dx = -gx / m, dy = -gy / m;
+      const px = -dy, py = dx;
       const h = hole.heightAt(x, y) + 0.03;
-      const t = Math.min(1, m / 0.04);
-      const c = new THREE.Color().setHSL(0.6 - t * 0.6, 0.9, 0.6);
-      pts.push(x - dx / 2, h, -(y - dy / 2), x + dx / 2, hole.heightAt(x + dx / 2, y + dy / 2) + 0.03, -(y + dy / 2));
-      cols.push(c.r * 0.5, c.g * 0.5, c.b * 0.5, c.r, c.g, c.b);
+      const t = Math.min(1, m / 0.035);
+      const c = new THREE.Color().setHSL(0.55 - t * 0.55, 1, 0.55);
+      const tip = [x + dx * len, y + dy * len], bl = [x - dx * len * 0.4 + px * len * 0.45, y - dy * len * 0.4 + py * len * 0.45], br = [x - dx * len * 0.4 - px * len * 0.45, y - dy * len * 0.4 - py * len * 0.45];
+      for (const v of [tip, bl, br]) { pos.push(v[0], h, -v[1]); cols.push(c.r, c.g, c.b); }
     }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthTest: true }));
-    g.add(lines);
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    mesh.renderOrder = 9;
+    g.add(mesh);
   }
 
   // ---------- effects ----------

@@ -86,6 +86,7 @@ export class Hud {
         <div><kbd>C</kbd> Camera <kbd>M</kbd> Map <kbd>G</kbd> Putt guide <kbd>Tab</kbd> Card</div>
         <div>Drag to look · Wheel to scout ahead</div>
       </div>
+      <div class="pin-marker" id="pin-marker"><span>⚑</span><b id="pin-dist"></b></div>
       <div class="toast" id="toast"><div class="toast-main"></div><div class="toast-sub"></div></div>
       <div class="banner" id="banner"><div class="banner-main"></div><div class="banner-sub"></div></div>
       <div class="hole-intro" id="hole-intro"></div>
@@ -298,6 +299,15 @@ export class Hud {
     b.className = `banner show ${kind}`;
     clearTimeout(this.bannerT);
     this.bannerT = setTimeout(() => b.classList.remove('show'), 2500);
+  }
+
+  // screen-space flag marker (x, y in px) or null to hide
+  pinMarker(pos, text) {
+    const m = $('#pin-marker', this.root);
+    if (!pos) { m.style.display = 'none'; return; }
+    m.style.display = '';
+    m.style.transform = `translate(${pos[0]}px, ${pos[1]}px)`;
+    $('#pin-dist', this.root).textContent = text;
   }
 
   // ---------------- minimap ----------------
