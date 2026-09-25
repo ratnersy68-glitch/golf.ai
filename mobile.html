@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Golf.ai Championship</title>
+  <meta name="description" content="Single-player 3D golf with famous real-world championship courses.">
+  <meta name="theme-color" content="#0b0f0d">
+  <meta name="color-scheme" content="dark">
+  <meta name="format-detection" content="telephone=no">
+  <!-- iOS home-screen app -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Golf.ai">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-startup-image" href="icons/splash-landscape.png" media="(orientation: landscape)">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260925162827">
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="hud"></div>
+  <div id="menu"></div>
+
+  <!-- Boot loading screen (visible before the game script runs) -->
+  <div id="boot">
+    <div class="boot-logo">GOLF<span>.AI</span></div>
+    <div class="boot-sub">CHAMPIONSHIP GOLF</div>
+    <div class="putt-anim"><i class="ball"></i><i class="cup"></i><i class="flag"></i></div>
+    <div class="boot-msg" id="boot-msg">Loading course…</div>
+  </div>
+
+  <!-- Portrait-phone prompt -->
+  <div id="rotate">
+    <div class="phone"><i></i></div>
+    <div class="rotate-title">ROTATE YOUR PHONE</div>
+    <div class="rotate-sub">Turn your phone sideways to play.</div>
+  </div>
+
+  <!-- Connection banner -->
+  <div id="offline"><b>CONNECTION LOST</b><span>Some online assets may be unavailable.</span></div>
+
+  <script>
+    // Service worker for offline play + installable PWA (skipped on file://)
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/localhost|127\.0\.0\.1/.test(location.hostname)) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    }
+  </script>
+  <script src="dist/game.js?v=20260925162827"></script>
+</body>
+</html>
