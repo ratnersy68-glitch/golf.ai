@@ -15,11 +15,15 @@ import { audio } from './audio/audio.js';
 
 const THUMB_KEY = 'golfai.thumbs.v4';
 
-export const IS_TOUCH = (typeof window !== 'undefined') && (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches);
+// Desktop (computer) layout can be forced with window.GOLF_DESKTOP = true or ?desktop in the URL,
+// e.g. when the game is embedded in another site.
+export const FORCE_DESKTOP = (typeof window !== 'undefined') && (window.GOLF_DESKTOP === true || /[?&](desktop|pc)(=|&|$)/i.test(location.search));
+export const IS_TOUCH = !FORCE_DESKTOP && (typeof window !== 'undefined') && (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches);
 
 class App {
   constructor() {
     if (IS_TOUCH) document.body.classList.add('touch');
+    if (FORCE_DESKTOP) document.body.classList.add('desktop');
     this.profile = loadProfile();
     audio.setVolumes({ master: this.profile.settings.master, sfx: this.profile.settings.sfx, amb: this.profile.settings.amb });
     this.canvas = document.getElementById('scene');

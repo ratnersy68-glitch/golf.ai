@@ -782,3 +782,6 @@ body.touch .bagview.card-open .bv-top { opacity: 0; pointer-events: none; }
   .bvc-big b { font-size: 24px; }
   .bvc-row { grid-template-columns: 16px 70px 1fr 66px 44px; padding: 3px 0; font-size: 11px; }
 }
+
+/* forced desktop layout (embeds): never show the phone rotate prompt */
+body.desktop #rotate { display: none !important; }
