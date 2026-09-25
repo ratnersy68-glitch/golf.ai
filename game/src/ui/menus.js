@@ -1,13 +1,17 @@
 // Front-end menus: main menu, round setup (golfer/course/tees), career,
 // golfer customization, bag, settings, practice and results.
 import { COURSES, TEE_SETS, coursePar, courseYards, getCourse } from '../data/courses.js';
-import { PROS, SKIN_TONES, HAIR_STYLES, HAIR_COLORS, PALETTE, HATS, SHIRTS, LEGS, SHOES, GLOVES, ACCESSORIES, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
+import { PROS, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
+import { normalizeLook } from '../data/look.js';
+import { TOPS, BOTTOMS, SHOES, HATS, GLOVES, RARITY, itemUnlock } from '../data/apparel.js';
+import { Locker } from './locker.js';
 import { CLUB_TYPES, BRAND_MODELS, BALLS, buildBag } from '../data/clubs.js';
 import { DIFFICULTIES, LEVEL_XP, customAttrs, resetProfile } from '../core/profile.js';
 import { audio } from '../audio/audio.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const fmtToPar = (v) => v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
+const lookColors = (look) => { const o = normalizeLook(look).outfit; return [o.top.color, o.bottom.color]; };
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const MODES = {
@@ -23,7 +27,7 @@ export function unlocksAt(lv) {
     ...COURSES.filter(x => x.unlock === lv).map(x => `⛳ ${x.short}`),
     ...Object.values(BRAND_MODELS).flat().filter(x => x.unlock === lv).map(x => `🏌 ${x.brand} ${x.model}`),
     ...BALLS.filter(x => x.unlock === lv).map(x => `⚪ ${x.brand} ${x.model}`),
-    ...[...HATS, ...SHIRTS, ...LEGS, ...SHOES, ...GLOVES, ...ACCESSORIES].filter(x => x.unlock === lv).map(x => `👕 ${x.name}`),
+    ...Object.entries(RARITY).filter(([, r]) => r.unlock === lv && lv > 1).map(([k, r]) => `👕 ${[...TOPS, ...BOTTOMS, ...SHOES, ...HATS, ...GLOVES].filter(i => (i.rarity || 'common') === k).length} ${r.name.toLowerCase()} apparel items`),
   ];
 }
 
@@ -38,6 +42,7 @@ export class Menus {
   show(v) { this.root.classList.toggle('visible', v); }
 
   render(html, cls = '') {
+    this.root.classList.remove('locker-mode');
     this.root.innerHTML = `<div class="screen ${cls}">${html}</div>`;
     this.root.scrollTop = 0;
     this.root.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { audio.init(); audio.click(); this.go(b.dataset.go); }));
@@ -61,7 +66,7 @@ export class Menus {
     const p = this.profile;
     const need = LEVEL_XP(p.level);
     return `<div class="badge glass">
-      <div class="avatar" style="background:${p.look.shirt}">${esc((p.look.name || 'Y')[0])}</div>
+      <div class="avatar" style="background:${lookColors(p.look)[0]}">${esc((p.look.name || 'Y')[0])}</div>
       <div><div class="b-name">${esc(p.look.name)}</div><div class="b-lvl">LEVEL ${p.level}${p.skillPoints ? ` · <span class="pts">${p.skillPoints} skill pts</span>` : ''}</div>
       <div class="xpbar"><i style="width:${Math.min(100, p.xp / need * 100)}%"></i></div></div></div>`;
   }
@@ -85,7 +90,7 @@ export class Menus {
           <button class="menu-item" data-go="range"><b>DRIVING RANGE</b><span>${MODES.range.sub}</span></button>
           <div class="menu-split">
             <button class="menu-item small" data-go="career"><b>CAREER</b><span>Skills · stats · unlocks</span></button>
-            <button class="menu-item small" data-go="golfer"><b>MY GOLFER</b><span>Customize</span></button>
+            <button class="menu-item small" data-go="golfer"><b>MY GOLFER</b><span>Locker room · outfits</span></button>
             <button class="menu-item small" data-go="bag"><b>MY BAG</b><span>Clubs & ball</span></button>
             <button class="menu-item small" data-go="settings"><b>SETTINGS</b><span>Difficulty · audio</span></button>
           </div>
@@ -136,7 +141,7 @@ export class Menus {
     const p = this.profile;
     const card = (id, name, sub, attrs, look, extra = '') => `
       <div class="golfer-card ${st.golfer === id ? 'sel' : ''}" data-golfer="${id}">
-        <div class="gc-avatar" style="background:linear-gradient(160deg, ${look.shirt}, ${look.pants})"><span>${esc(name.split(' ').map(w => w[0]).join('').slice(0, 2))}</span></div>
+        <div class="gc-avatar" style="background:linear-gradient(160deg, ${lookColors(look)[0]}, ${lookColors(look)[1]})"><span>${esc(name.split(' ').map(w => w[0]).join('').slice(0, 2))}</span></div>
         <div class="gc-name">${esc(name)}</div><div class="gc-sub">${sub}</div>
         <div class="attr-bars">${[['PWR', attrs.power], ['ACC', attrs.accuracy ?? attrs.approach], ['SHT', attrs.shortGame], ['PUT', attrs.putting], ['REC', attrs.recovery]].map(([k, v]) => `<div><span>${k}</span><i><b style="width:${v}%"></b></i><em>${Math.round(v)}</em></div>`).join('')}</div>${extra}
       </div>`;
@@ -295,49 +300,8 @@ export class Menus {
 
   // ---------------- golfer customization ----------------
   golfer() {
-    const p = this.profile;
-    const L = p.look;
-    this.app.golferPreview(L);
-    const lvl = p.level;
-    const choice = (key, list, label) => `<div class="cust-row"><label>${label}</label><div class="chips">${list.map(it => `<button class="chip ${L[key] === it.id ? 'on' : ''} ${it.unlock > lvl ? 'locked' : ''}" data-set="${key}" data-val="${it.id}" ${it.unlock > lvl ? `title="Unlocks at level ${it.unlock}"` : ''}>${esc(it.name)}${it.unlock > lvl ? ` 🔒${it.unlock}` : ''}</button>`).join('')}</div></div>`;
-    const colors = (key, list, label) => `<div class="cust-row"><label>${label}</label><div class="swatches">${list.map(c => `<button class="sw ${L[key] === c ? 'on' : ''}" style="background:${c}" data-set="${key}" data-val="${c}"></button>`).join('')}</div></div>`;
-    this.render(`
-      <div class="page cust">
-        <div class="page-head"><button class="btn ghost" data-go="main">‹ MENU</button><div class="page-title">MY GOLFER</div></div>
-        <div class="cust-panel glass">
-          <div class="cust-row"><label>Name</label><input id="g-name" maxlength="20" value="${esc(L.name)}"></div>
-          <div class="cust-row"><label>Gender</label><div class="chips">${[['M', 'Male'], ['F', 'Female']].map(([v, n]) => `<button class="chip ${L.gender === v ? 'on' : ''}" data-set="gender" data-val="${v}">${n}</button>`).join('')}</div></div>
-          <div class="cust-row"><label>Skin tone</label><div class="swatches">${SKIN_TONES.map((c, i) => `<button class="sw ${L.skin === i ? 'on' : ''}" style="background:${c}" data-set="skin" data-val="${i}" data-num="1"></button>`).join('')}</div></div>
-          ${choice('hair', HAIR_STYLES.map(h => ({ ...h, unlock: 1 })), 'Hair')}
-          ${colors('hairColor', HAIR_COLORS, 'Hair color')}
-          <div class="cust-row"><label>Beard</label><div class="chips"><button class="chip ${L.beard ? '' : 'on'}" data-set="beard" data-val="0" data-bool="1">None</button><button class="chip ${L.beard ? 'on' : ''}" data-set="beard" data-val="1" data-bool="1">Beard</button></div></div>
-          ${choice('hat', HATS, 'Hat')}
-          ${colors('hatColor', PALETTE, 'Hat color')}
-          ${choice('shirtStyle', SHIRTS, 'Top')}
-          ${colors('shirt', PALETTE, 'Shirt color')}
-          ${colors('shirtAlt', PALETTE, 'Accent / vest')}
-          ${choice('legs', LEGS, 'Bottoms')}
-          ${colors('pants', PALETTE, 'Pants color')}
-          ${choice('shoeModel', SHOES, 'Shoes')}
-          ${colors('shoes', PALETTE, 'Shoe color')}
-          ${choice('gloveModel', GLOVES, 'Glove')}
-          ${colors('glove', ['#ffffff', '#111111', '#1c2a44', '#c1121f', '#f2c94c'], 'Glove color')}
-          ${choice('accessory', ACCESSORIES, 'Accessories')}
-          <div class="cust-row"><label>Build</label><input type="range" id="g-build" min="0.85" max="1.2" step="0.05" value="${L.build || 1}"></div>
-        </div>
-      </div>`, 'page-screen transparent');
-    $('#g-name', this.root).oninput = (e) => { L.name = e.target.value || 'You'; this.app.save(); };
-    $('#g-build', this.root).oninput = (e) => { L.build = +e.target.value; this.app.save(); this.app.golferPreview(L); };
-    this.root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
-      if (b.classList.contains('locked')) { audio.tick(false); return; }
-      let v = b.dataset.val;
-      if (b.dataset.num) v = +v;
-      if (b.dataset.bool) v = v === '1';
-      L[b.dataset.set] = v;
-      this.app.save();
-      audio.click();
-      this.golfer();
-    });
+    this.locker = this.locker || new Locker(this);
+    this.locker.open();
   }
 
   // ---------------- bag ----------------

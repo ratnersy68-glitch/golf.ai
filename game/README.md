@@ -47,6 +47,7 @@ npm run test:physics
 | **Tap Space** | Strike. A tap in the green zone is a pure hit. Early pulls or hooks; late pushes or slices. Missing badly costs distance. |
 | ← / → | Aim. Hold to accelerate. You can also click the minimap to aim. |
 | ↑ / ↓ | Change club. On the green, this changes the putt length scale instead. |
+| B, or click / tap the club card | Open your bag. The camera rises to a bird's-eye view of the hole, with distance arcs and each club's carry. ← / → browse, Enter opens the club card and Enter again selects the club, Esc closes. |
 | X | Shot type: Normal, Punch, Chip, Pitch, Lob, Flop or Bunker. Which ones are available depends on your lie. |
 | Q / E | Draw / fade |
 | T | Trajectory: low, mid or high |
@@ -66,7 +67,29 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
 - **Tees:** Championship, Tournament, Member and Forward.
 - **Ball physics:** drag and Magnus lift from real ball speed, launch and spin, plus wind that strengthens with height. Balls bounce off sloped terrain and bite or roll out based on spin and surface. Rolling responds to green speed, slope, lie, firmness, water, sand, trees (leaves and trunks), the flagstick and lip-outs.
 - **Golf bag:** 19 club types from real brands, including TaylorMade, Callaway, Titleist, Ping, Cobra, Mizuno, Srixon, Cleveland, Bettinardi, Scotty Cameron and Odyssey. Each club has its own carry, launch, spin, accuracy and forgiveness. You build your own 14-club bag and choose your ball.
-- **Golfers:** customize your own golfer's name, gender, skin tone, hair, beard, hat, shirt style, pants, shoes, glove, accessories and build. You can also play as tour pros with their own ratings.
+- **Club selection:** tap the club in hand to open the bag. The camera rises smoothly into a bird's-eye tactical view that shows:
+  - the hole's fairway, rough, bunkers, water and trees
+  - your position, the flag and your aim line
+  - 50-yard distance arcs, plus the carry arc and dispersion of the club you're looking at
+
+  The bag is a swipeable carousel. Tapping a club opens an animated card with:
+  - a rotating 3D model of the club head that you can drag to inspect
+  - carry and estimated total from your current lie
+  - accuracy, forgiveness, launch, spin, ball speed, dispersion, roll and shot shape
+  - loft, bounce and grind for wedges; face balance, toe hang and alignment for putters
+  - a comparison with the club in your hands, with ▲▼ differences
+
+  SELECT CLUB closes the card and lowers the camera behind the golfer. The new club cross-fades into the golfer's hands and the HUD and aim update.
+- **Locker room (golfer customization):**
+  - **Body:** height, build, shoulders and leg/torso proportions, and 12 skin tones.
+  - **Face:** face shape, jaw, eye shape and color, brows, nose, mouth and facial hair.
+  - **Hair:** 18 styles and 15 colors.
+  - **Apparel:** a pro-shop style catalogue of 98 items from Peter Millar, Nike, adidas, Under Armour, FootJoy, TravisMathew, Ralph Lauren, J.Lindeberg, lululemon, Titleist, PUMA, New Balance, ECCO and more. It covers polos, performance tops, quarter-zips, sweaters and vests; pants, trousers, joggers and shorts; shoes; hats; and gloves. Items come in colors, patterns (stripes, gingham, plaid, houndstooth, prints), fits, shoe colorways, spiked or spikeless soles, laces or BOA, and hat logos and fits.
+  - **Previewing:** tap an item to preview it on the 3D golfer, then EQUIP or ADD TO CLOSET. BACK reverts. Changes cross-fade on the model rather than popping. Rotate the preview by dragging, zoom it, or jump to front, side or back views. The camera frames the part you're editing.
+  - **Outfits:** save up to 12 outfits, then rename, update, equip or delete them.
+  - **Rarity:** Common to Legendary. It is cosmetic only and unlocks with your level.
+
+  You can also play as tour pros with their own ratings.
 - **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots) and a Driving Range with launch-monitor data.
 - **Career:** earn XP, level up, spend skill points on Driving, Approach, Short Game, Putting and Recovery (skills also improve a little each round), and unlock courses, equipment, balls and clothing.
 - **Scoring and stats:** a full scorecard with out/in/total and birdie/bogey markers. Per-round and career stats include fairways, greens in regulation, putts, driving distance, longest drive and putt, sand saves, up-and-downs and scoring average.
@@ -91,8 +114,12 @@ src/
   data/       courses.js (hole layouts), clubs.js, golfers.js, themes.js (per-course look & lies)
   core/       holeGen.js (layout -> terrain/surfaces/hazards/trees), physics.js, noise.js, profile.js (save + progression)
   game/       play.js (round flow, swing meter, rules, scoring, stats), shots.js (shot types, launch model)
-  render/     world.js (three.js scene), trees.js, decor.js, golfer.js (rig + swing), camera.js, sky.js, textures.js
-  ui/         hud.js (in-round HUD & scorecard), menus.js (front-end screens)
+  data/       apparel.js (brands, clothing catalogue, rarity), look.js (body/face/hair options, v1 -> v2 look migration)
+  render/     world.js (three.js scene + tactical overlay), trees.js, decor.js, golfer.js (appearance slots + rig + swing),
+              clubModel.js (procedural club heads), clubViewer.js (3D club card), apparelTex.js (fabric & logo textures),
+              camera.js, sky.js, textures.js
+  ui/         hud.js (in-round HUD & scorecard), bagView.js (club selection), menus.js (front-end screens),
+              locker.js (customization), icons.js (SVG product icons)
   audio/      audio.js (WebAudio synthesis)
 ```
 

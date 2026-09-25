@@ -81,6 +81,8 @@ export class Play {
   }
 
   stop() {
+    if (this.state === 'bag') { this.hud.bagView.close(); this.world.hideTactical(); }
+    clearTimeout(this.swapT);
     this.state = 'off';
     audio.rollStop();
     audio.stopAmbience();
@@ -284,9 +286,9 @@ export class Play {
     if (!avail.includes(this.typeId)) this.typeId = avail[0];
   }
 
-  placeGolfer() {
+  placeGolfer(animate = false) {
     const g = this.golfer;
-    g.setClub(this.club.cat, clubLength(this.club.cat, this.club.id));
+    g.setClub(this.club.cat, clubLength(this.club.cat, this.club.id), this.club, animate);
     g.address();
     g.placeAtBall(P(this.ball.x, this.ball.y, this.ball.h), this.heading);
   }
@@ -423,6 +425,7 @@ export class Play {
     }
     if (this.state === 'result' && (k === 'Enter' || k === ' ')) { this.continueAfterResult(); return true; }
     if (this.state === 'flight' && (k === ' ' || k === 'Enter')) { this.speedMul = this.speedMul > 1 ? 8 : 3; return true; }
+    if (this.state === 'bag') return this.hud.bagView.onKey(k);
     if (this.state !== 'aim' && this.state !== 'swing') return false;
     if (k === ' ') { if (!e.repeat) this.swingPress(); return true; }
     if (this.state !== 'aim') return false;
@@ -436,6 +439,7 @@ export class Play {
       case 'e': this.setShape(this.shapeSel === 1 ? 0 : 1); return true;
       case 't': this.setTraj(this.trajSel === 1 ? -1 : this.trajSel + 1); return true;
       case 'x': this.cycleType(); return true;
+      case 'b': this.openBag(); return true;
       case 'c': this.cycleCamera(); return true;
       case 'v': case 'm': this.setCamera(this.camMode === 'overhead' ? 'address' : 'overhead'); return true;
       case 'g': this.app.profile.settings.puttGuide = !this.app.profile.settings.puttGuide; this.app.save(); this.updateAim(); this.hud.toast(this.app.profile.settings.puttGuide ? 'Putting guide ON' : 'Putting guide OFF', '', 'info', 900); return true;
@@ -490,18 +494,70 @@ export class Play {
     }
     this.selectClub(this.bag[i]);
   }
-  selectClub(c) {
+  selectClub(c, opts = {}) {
     this.club = c;
     if (c.cat === 'putter') { this.typeId = 'putt'; this.puttScale = pickPuttScale(this.distPin); }
     else {
       if (this.typeId === 'putt') this.typeId = this.defaultType(c, this.distPin);
       this.ensureType();
     }
-    this.placeGolfer();
+    this.placeGolfer(!!opts.animate);
     this.hud.meterShow(true, this.isPutt());
     this.updateAim(); this.refreshHud();
     audio.click();
   }
+  // ---------------- club selection (bag view) ----------------
+  openBag() {
+    if (this.state !== 'aim') return;
+    this.state = 'bag';
+    this.keys.clear();
+    const hole = this.hole;
+    const toPinHeading = Math.atan2(hole.pin[0] - this.ball.x, hole.pin[1] - this.ball.y);
+    this.lieName = this.teeShot && this.strokes === 0 ? 'FROM THE TEE' : `FROM THE ${lieInfo(this.surf).name.toUpperCase()}`;
+    this.playsLikeNow = playsLike(this.distPin, hole.pinH - this.ball.h, this.windAlong(toPinHeading));
+    this.bagSpan = clamp(Math.max(this.aimDist || 60, Math.min(this.distPin, 300)), 40, 330);
+    this.world.clearAim();
+    this.world.showTactical({ hole, ball: [this.ball.x, this.ball.y, this.ball.h], heading: this.heading, pin: hole.pin, distPin: this.distPin, span: this.bagSpan });
+    this.bagPrevCam = this.camMode;
+    this.rig.set('tactical', { rate: 4.5 });
+    this.hud.pinMarker(null);
+    this.hud.bagView.open(this.bag, this.club);
+    audio.whoosh?.(0.25);
+  }
+
+  bagFocus(c, st) {
+    if (this.state !== 'bag') return;
+    if (st && !st.putter) {
+      this.world.setTacticalFocus(st.carry, st.disp, st.total, c.short.toUpperCase());
+      this.bagSpan = clamp(Math.max(st.total * 1.05, Math.min(this.distPin, 300)), 40, 330);
+    } else {
+      this.world.setTacticalFocus(Math.max(1, Math.min(this.distPin, 30)), 0.6, Math.min(this.distPin, 30), 'PT');
+      this.bagSpan = clamp(this.distPin * 1.4, 30, 330);
+    }
+  }
+
+  // club: the club to switch to (or null to keep the current one)
+  closeBag(club) {
+    if (this.state !== 'bag') return;
+    this.hud.bagView.close();
+    this.world.hideTactical();
+    this.state = 'aim';
+    this.camMode = 'address';
+    this.rig.set('address', { rate: 4.5 });
+    if (club && club !== this.club) {
+      // let the card close and the camera start its descent before the club swaps in the golfer's hands
+      clearTimeout(this.swapT);
+      this.swapT = setTimeout(() => {
+        if (this.state !== 'aim') return;
+        this.selectClub(club, { animate: true });
+        this.hud.pulseClub();
+      }, 220);
+    } else {
+      this.updateAim();
+      this.refreshHud();
+    }
+  }
+
   cycleType() {
     if (this.isPutt()) return;
     const avail = availableTypes(this.surf, this.club, this.distPin);
@@ -1044,6 +1100,8 @@ export class Play {
       if (this.aimDirty && this.aimRefreshT > 0.08) { this.aimRefreshT = 0; this.updateAim(); }
       this.golfer.idle(this.world.time);
     }
+    if (this.state === 'bag') this.golfer.idle(this.world.time);
+    this.golfer.tick(dt);
     if (this.state === 'swing') this.updateSwing(dt);
     if (this.state === 'flight') this.updateFlight(dt);
     if (this.state === 'holed' && this.celebrateT != null) {
@@ -1058,7 +1116,7 @@ export class Play {
     const ball = this.state === 'flight' ? this.ballNow : [this.ball.x, this.ball.y, this.ball.h];
     this.rig.update(dt, {
       hole, ball, heading: this.heading, vel: this.ballVel, putt: this.club && this.isPutt(),
-      aimDist: this.isPutt() ? this.distPin : (this.aimDist || 150),
+      aimDist: this.state === 'bag' ? this.bagSpan : this.isPutt() ? this.distPin : (this.aimDist || 150),
       target: this.previewLanding || hole.pin,
     });
     // wind arrow relative to camera

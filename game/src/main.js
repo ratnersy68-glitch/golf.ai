@@ -8,8 +8,9 @@ import { Menus } from './ui/menus.js';
 import { Play } from './game/play.js';
 import { Hole } from './core/holeGen.js';
 import { COURSES } from './data/courses.js';
+import { buildBag } from './data/clubs.js';
 import { THEMES } from './data/themes.js';
-import { loadProfile, saveProfile, awardXp, recordRound } from './core/profile.js';
+import { loadProfile, saveProfile, awardXp, recordRound, customAttrs } from './core/profile.js';
 import { audio } from './audio/audio.js';
 
 const THUMB_KEY = 'golfai.thumbs.v4';
@@ -83,6 +84,7 @@ class App {
   // ---------------- menu background ----------------
   menuScene() {
     this.mode = 'menu';
+    this.world.ball.visible = true;
     if (this.previewGolfer) this.previewGolfer.root.visible = false;
     if (this.menuHole && this.world.hole === this.menuHole) { this.rig.set('menu', { t: this.menuT }); return; }
     const unlocked = COURSES.filter(c => c.unlock <= this.profile.level);
@@ -96,22 +98,41 @@ class App {
     this.rig.set('menu', { t: 0, snap: true });
   }
 
-  golferPreview(look) {
+  // Locker-room preview: upright golfer on the tee with a user-controlled showcase camera.
+  // opts: { focus: full|head|top|legs|feet|hands, yaw, zoom }
+  golferPreview(look, opts = {}) {
     if (this.world.hole !== this.menuHole || !this.menuHole) this.menuScene();
+    const first = this.mode !== 'golfer';
     this.mode = 'golfer';
     const hole = this.menuHole;
-    if (!this.previewGolfer) { this.previewGolfer = new Golfer(look); this.world.scene.add(this.previewGolfer.root); }
-    else this.previewGolfer.build(look);
-    const g = this.previewGolfer;
+    let g = this.previewGolfer;
+    if (!g) {
+      g = this.previewGolfer = new Golfer(look);
+      this.world.scene.add(g.root);
+    } else if (first) g.build(look);
+    else g.update(look);
     g.root.visible = true;
-    g.setClub('wood', 1.15);
-    const [tx, ty] = hole.tee;
-    const th = hole.heightAt(tx, ty);
-    g.address();
-    g.placeAtBall(P(tx, ty, th), Math.atan2(hole.teeDir[0], hole.teeDir[1]));
-    const gp = g.root.position;
-    const wasOrbit = this.rig.mode === 'orbitGolfer';
-    this.rig.set('orbitGolfer', { t: this.menuT, center: [gp.x, -gp.z, th], rate: 3, snap: !wasOrbit });
+    this.world.ball.visible = false;
+    if (first || !g.placed) {
+      const dr = buildBag(this.profile.bag, this.profile.equipment, customAttrs(this.profile)).find(c => c.id === 'DR');
+      g.setClub('wood', 1.15, dr || null);
+      const [tx, ty] = hole.tee;
+      const th = hole.heightAt(tx, ty);
+      const h = Math.atan2(hole.teeDir[0], hole.teeDir[1]);
+      g.address();
+      g.placeAtBall(P(tx, ty, th), h);
+      g.standIdle(this.menuT);
+      g.placed = true;
+      this.locker = { yaw: 0.35, zoom: 1, focus: 'full', faceYaw: Math.atan2(Math.cos(h), -Math.sin(h)), center: [g.root.position.x, -g.root.position.z, th] };
+    }
+    Object.assign(this.locker, opts);
+    this.rig.set('locker', { ...this.locker, snap: first });
+  }
+  lockerView(patch) {
+    if (this.mode !== 'golfer' || !this.locker) return;
+    Object.assign(this.locker, patch);
+    this.locker.zoom = Math.max(0.55, Math.min(1.7, this.locker.zoom));
+    this.rig.opts = { ...this.rig.opts, ...this.locker };
   }
 
   // ---------------- thumbnails ----------------
@@ -163,6 +184,7 @@ class App {
     this.menus.show(false);
     if (this.previewGolfer) this.previewGolfer.root.visible = false;
     this.menuHole = null;
+    this.world.ball.visible = true;
     this.mode = 'play';
     this.play.start(cfg);
   }
@@ -225,6 +247,7 @@ class App {
         if (e.key === 'Enter' && play.state === 'holed' && this.hud.pendingNext) { const f = this.hud.pendingNext; this.hud.pendingNext = null; f(); }
         return;
       }
+      if (play.state === 'bag') { if (play.onKeyDown(e)) e.preventDefault(); return; }
       if (e.key === 'Escape' && play.state !== 'flyover') { e.preventDefault(); this.pauseMenu(); return; }
       if ((e.key === 'n' || e.key === 'N') && play.cfg?.mode === 'practice' && (play.state === 'result' || play.state === 'aim')) { play.newPracticeSpot(); return; }
       if (play.onKeyDown(e)) e.preventDefault();
@@ -243,13 +266,17 @@ class App {
       drag.x = e.clientX; drag.y = e.clientY;
       if (Math.abs(dx) + Math.abs(dy) > 0) drag.moved = true;
       if (this.mode === 'play') this.play.onDrag(dx, dy);
+      else if (this.mode === 'golfer' && this.locker) this.lockerView({ yaw: this.locker.yaw - dx * 0.012 });
     });
     window.addEventListener('pointerup', () => { drag = null; });
-    this.canvas.addEventListener('wheel', (e) => { if (this.mode === 'play') { e.preventDefault(); this.play.onWheel(e.deltaY); } }, { passive: false });
+    this.canvas.addEventListener('wheel', (e) => {
+      if (this.mode === 'play') { e.preventDefault(); this.play.onWheel(e.deltaY); }
+      else if (this.mode === 'golfer' && this.locker) { e.preventDefault(); this.lockerView({ zoom: this.locker.zoom * (1 + Math.sign(e.deltaY) * 0.08) }); }
+    }, { passive: false });
   }
 
   loop(now) {
-    const dt = Math.min(0.05, (now - this.last) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - this.last) / 1000));
     this.last = now;
     this.menuT += dt;
     this.frames = (this.frames || 0) + 1;
@@ -262,7 +289,7 @@ class App {
     } else if (this.world.hole) {
       if (this.rig.opts) this.rig.opts.t = this.menuT;
       this.rig.update(dt, { hole: this.world.hole, ball: [this.world.hole.tee[0], this.world.hole.tee[1], 0], heading: 0 });
-      if (this.mode === 'golfer' && this.previewGolfer) { this.previewGolfer.idle(this.menuT); focus = this.previewGolfer.root.position.clone(); }
+      if (this.mode === 'golfer' && this.previewGolfer) { this.previewGolfer.standIdle(this.menuT); this.previewGolfer.tick(dt); focus = this.previewGolfer.root.position.clone(); }
       else focus = this.rig.look.clone();
     }
     if (this.world.hole) {

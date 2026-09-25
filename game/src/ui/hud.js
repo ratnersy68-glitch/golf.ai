@@ -4,6 +4,7 @@ import { S } from '../core/holeGen.js';
 import { SHOT_TYPES } from '../game/shots.js';
 import { MPH } from '../core/physics.js';
 import { audio } from '../audio/audio.js';
+import { BagView } from './bagView.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -44,6 +45,7 @@ export class Hud {
           <div class="club-name" id="i-club">DRIVER</div>
           <div class="club-brand" id="i-brand">TaylorMade Qi10</div>
           <div class="club-carry"><span id="i-carry">255</span><small id="i-carry-unit">YDS</small></div>
+          <div class="club-open">OPEN BAG <kbd>B</kbd></div>
         </div>
       </div>
       <div class="hud-bottom-center" id="shotbar">
@@ -84,7 +86,7 @@ export class Hud {
       <div class="mbar" id="mbar">
         <div class="mgroup">
           <button class="mbtn sm" id="m-club-prev">‹</button>
-          <div class="mclub"><b id="m-club">DR</b><span id="m-carry">247 YDS</span></div>
+          <div class="mclub" role="button" aria-label="Open bag"><b id="m-club">DR</b><span id="m-carry">247 YDS</span><i class="mclub-open">BAG ▴</i></div>
           <button class="mbtn sm" id="m-club-next">›</button>
         </div>
         <div class="mgroup">
@@ -99,7 +101,7 @@ export class Hud {
       </div>
       <button class="m-swing" id="m-swing"><span>SWING</span><small id="m-swing-hint">HOLD</small></button>
       <div class="help glass" id="help">
-        <div><kbd>←</kbd><kbd>→</kbd> Aim <kbd>↑</kbd><kbd>↓</kbd> Club <kbd>X</kbd> Shot</div>
+        <div><kbd>←</kbd><kbd>→</kbd> Aim <kbd>↑</kbd><kbd>↓</kbd> Club <kbd>B</kbd> Bag <kbd>X</kbd> Shot</div>
         <div><kbd>Q</kbd>/<kbd>E</kbd> Draw/Fade <kbd>T</kbd> Height <kbd>R</kbd> Aim at pin</div>
         <div><kbd>C</kbd> Camera <kbd>M</kbd> Map <kbd>G</kbd> Putt guide <kbd>Tab</kbd> Card</div>
         <div>Drag to look · Wheel to scout ahead</div>
@@ -113,6 +115,16 @@ export class Hud {
       <div class="loading" id="loading"></div>
     `;
     this.bind();
+    this.bagView = new BagView(this, this.app);
+  }
+
+  // flash the club readouts after a club change
+  pulseClub() {
+    for (const sel of ['.club-card', '.mclub']) {
+      const e = this.root.querySelector(sel);
+      if (!e) continue;
+      e.classList.remove('pulse'); void e.offsetWidth; e.classList.add('pulse');
+    }
   }
 
   bind() {
@@ -147,6 +159,8 @@ export class Hud {
     // touch controls
     const tap = (id, fn) => { const b = $(id, this.root); b.addEventListener('click', (e) => { e.preventDefault(); audio.init(); fn(); }); };
     tap('#m-club-prev', () => play().state === 'aim' && play().cycleClub(-1));
+    this.root.querySelector('.mclub').addEventListener('click', (e) => { e.preventDefault(); audio.init(); play().openBag(); });
+    this.root.querySelector('.club-card').addEventListener('click', () => { audio.init(); play().openBag(); });
     tap('#m-club-next', () => play().state === 'aim' && play().cycleClub(1));
     tap('#m-shot', () => $('#shotbar', this.root).classList.toggle('open'));
     tap('#m-cam', () => play().state === 'aim' && play().cycleCamera());
@@ -270,7 +284,8 @@ export class Hud {
       if (idx < 0 || idx >= n) { strip.appendChild(el('div', 'club-chip empty')); continue; }
       const c = i.bag[idx];
       const chip = el('div', 'club-chip' + (k === 0 ? ' active' : ''), `<b>${c.short}</b>`);
-      chip.onclick = () => this.app.play.selectClub(c);
+      chip.onclick = () => (k === 0 ? this.app.play.openBag() : this.app.play.selectClub(c));
+      if (k === 0) chip.title = 'Open your bag (B)';
       strip.appendChild(chip);
     }
     // shot types

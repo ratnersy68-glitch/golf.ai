@@ -3,6 +3,16 @@ import { P } from './world.js';
 
 const v3 = () => new THREE.Vector3();
 
+// camera presets for the customization screen (yards: distance, camera height, look height)
+export const LOCKER_FOCUS = {
+  full: { dist: 4.2, cam: 1.25, look: 1.0, tilt: 0.1, fov: 38 },
+  head: { dist: 1.25, cam: 1.9, look: 1.84, tilt: 0, fov: 34 },
+  top: { dist: 2.1, cam: 1.55, look: 1.42, tilt: 0, fov: 36 },
+  legs: { dist: 2.5, cam: 0.95, look: 0.7, tilt: 0, fov: 38 },
+  feet: { dist: 1.45, cam: 0.55, look: 0.14, tilt: 0, fov: 36 },
+  hands: { dist: 1.5, cam: 1.3, look: 1.0, tilt: 0, fov: 36 },
+};
+
 // Smoothed camera rig with several broadcast-style modes.
 export class CameraRig {
   constructor(camera) {
@@ -150,6 +160,38 @@ export class CameraRig {
         const off = window.innerWidth > 900 ? 0.95 : 0;
         this.dLook.copy(P(gx + Math.cos(a) * off, gy - Math.sin(a) * off, gh + 0.95));
         fov = 38;
+        break;
+      }
+      case 'locker': {
+        // customization showcase: user-controlled yaw/zoom around the golfer with focus presets
+        const o = this.opts;
+        const F = LOCKER_FOCUS[o.focus] || LOCKER_FOCUS.full;
+        const [gx, gy, gh] = o.center;
+        const yaw = o.faceYaw + (o.yaw || 0);
+        const dist = F.dist * (o.zoom || 1);
+        const vx = Math.sin(yaw), vy = Math.cos(yaw); // from golfer toward camera
+        this.dPos.copy(P(gx + vx * dist, gy + vy * dist, gh + F.cam + (F.dist - dist) * F.tilt));
+        // shift the look point so the golfer sits beside the side panel
+        const wide = window.innerWidth > 900 || window.innerWidth > window.innerHeight * 1.5;
+        const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+        const off = wide ? dist * Math.tan(F.fov * Math.PI / 360) * aspect * (o.side ?? 0.32) : 0;
+        const rx = -vy, ry = vx; // camera right (looking toward the golfer)
+        this.dLook.copy(P(gx - rx * off, gy - ry * off, gh + F.look));
+        this.rate = o.rate ?? 6;
+        fov = F.fov;
+        break;
+      }
+      case 'tactical': {
+        // bird's-eye view over the shot: ball low in frame (above the bag rail), target area toward the top
+        const d = Math.max(30, ctx.aimDist || 150);
+        const railFrac = Math.min(0.4, 160 / Math.max(300, window.innerHeight)); // bag rail covers the bottom of the screen
+        const cf = 0.44 - railFrac * 0.75;
+        const mx = bx + hx * d * cf, my = by + hy * d * cf;
+        const alt = d * 1.6 + 25;
+        this.dPos.copy(P(mx - hx * d * 0.26, my - hy * d * 0.26, Math.max(H(mx, my), bh) + alt));
+        this.dLook.copy(P(mx, my, H(mx, my)));
+        this.rate = this.opts?.rate ?? 5;
+        fov = 50;
         break;
       }
       case 'menu': {

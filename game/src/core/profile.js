@@ -1,5 +1,5 @@
 // Save/load + progression (XP, levels, skills, unlocks, career stats).
-import { DEFAULT_LOOK } from '../data/golfers.js';
+import { DEFAULT_LOOK, normalizeLook } from '../data/look.js';
 import { DEFAULT_BAG, DEFAULT_EQUIPMENT } from '../data/clubs.js';
 
 const KEY = 'golfai.profile.v1';
@@ -17,7 +17,9 @@ export const MAX_LEVEL = 30;
 export function newProfile() {
   return {
     version: 1,
-    look: { ...DEFAULT_LOOK },
+    look: normalizeLook(DEFAULT_LOOK),
+    outfits: [], // saved outfits: { id, name, outfit }
+    closet: [], // favourited items: { cat, cfg }
     level: 1, xp: 0, skillPoints: 0,
     skills: { driving: 50, approach: 50, shortGame: 50, putting: 50, recovery: 50 },
     bag: DEFAULT_BAG.slice(),
@@ -47,7 +49,9 @@ export function loadProfile() {
     // shallow merge for forward compatibility
     return {
       ...base, ...p,
-      look: { ...base.look, ...p.look },
+      look: normalizeLook(p.look || base.look),
+      outfits: Array.isArray(p.outfits) ? p.outfits : [],
+      closet: Array.isArray(p.closet) ? p.closet : [],
       skills: { ...base.skills, ...p.skills },
       equipment: { ...base.equipment, ...p.equipment },
       settings: { ...base.settings, ...p.settings },

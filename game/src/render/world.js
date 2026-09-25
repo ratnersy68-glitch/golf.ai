@@ -149,6 +149,11 @@ export class World {
     g.add(this.buildFlag(hole));
     this.aimGroup = new THREE.Group();
     g.add(this.aimGroup);
+    this.tacGroup = new THREE.Group();
+    this.tacGroup.visible = false;
+    g.add(this.tacGroup);
+    this.tacMats = [];
+    this.tacFade = 0; this.tacTarget = 0;
     this.clearTrail();
   }
 
@@ -476,6 +481,147 @@ export class World {
     }
   }
 
+  // ---------- tactical (club selection) overlay ----------
+  labelSprite(text, { color = '#ffffff', bg = 'rgba(8,12,10,0.78)', size = 1, sub = '' } = {}) {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = bg;
+    const w = sub ? 220 : 150, x0 = (256 - w) / 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0, 14, w, 64, 32) : ctx.rect(x0, 14, w, 64); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '800 40px "Barlow Condensed", "Arial Narrow", Arial, sans-serif';
+    ctx.fillText(text, 128 - (sub ? 34 : 0), 48);
+    if (sub) { ctx.font = '700 26px Arial, sans-serif'; ctx.fillStyle = '#dfe'; ctx.fillText(sub, 128 + 62, 49); }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, opacity: 0 });
+    const sp = new THREE.Sprite(m);
+    sp.scale.set(24 * size, 9 * size, 1);
+    sp.renderOrder = 20;
+    sp.userData.base = 1;
+    this.tacMats.push(m);
+    return sp;
+  }
+
+  // ground-hugging arc around the ball at distance d (yards), spanning +-spread radians of heading
+  tacArc(hole, bx, by, heading, d, spread, width, color, opacity) {
+    const pts = [];
+    const n = Math.max(8, Math.round(d * spread / 3));
+    for (let i = 0; i <= n; i++) {
+      const a = heading - spread + (2 * spread * i) / n;
+      const x = bx + Math.sin(a) * d, y = by + Math.cos(a) * d;
+      pts.push([x, y, hole.heightAt(x, y) + 0.2]);
+    }
+    const m = this.ribbon(pts, width, color, opacity);
+    m.material.depthTest = false;
+    m.userData.base = opacity;
+    this.tacMats.push(m.material);
+    return m;
+  }
+
+  clearTactical() {
+    const g = this.tacGroup;
+    if (!g) return;
+    g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { o.material.map?.dispose(); o.material.dispose(); } });
+    while (g.children.length) g.remove(g.children[0]);
+    this.tacMats = [];
+    this.tacFocus = null;
+  }
+
+  // ctx: { hole, ball:[x,y,h], heading, pin:[x,y], distPin, span }
+  showTactical(ctx) {
+    this.clearTactical();
+    const { hole, heading } = ctx;
+    const [bx, by, bh] = ctx.ball;
+    const g = this.tacGroup;
+    const scale = Math.max(0.7, ctx.span / 160);
+    // distance arcs every 50 yds
+    const maxD = Math.min(360, Math.max(ctx.span * 1.25, 100));
+    for (let d = 50; d <= maxD; d += 50) {
+      g.add(this.tacArc(hole, bx, by, heading, d, 0.34, 0.9 * scale, '#ffffff', 0.4));
+      const a = heading + 0.36;
+      const x = bx + Math.sin(a) * d, y = by + Math.cos(a) * d;
+      const lab = this.labelSprite(`${d}`, { size: scale * 0.8 });
+      lab.position.copy(P(x, y, hole.heightAt(x, y) + 2));
+      g.add(lab);
+    }
+    // aim line
+    const aim = [];
+    const L = Math.min(maxD, Math.max(ctx.span, 60));
+    for (let d = 3; d <= L; d += 3) {
+      const x = bx + Math.sin(heading) * d, y = by + Math.cos(heading) * d;
+      aim.push([x, y, hole.heightAt(x, y) + 0.25]);
+    }
+    const line = this.ribbon(aim, 0.7 * scale, '#f2c94c', 0.85);
+    line.material.depthTest = false; line.userData.base = 0.85; this.tacMats.push(line.material);
+    g.add(line);
+    // player marker (pulsing ring) at the ball
+    const pr = new THREE.Mesh(new THREE.RingGeometry(2.2 * scale, 3 * scale, 40), new THREE.MeshBasicMaterial({ color: '#3ddc84', transparent: true, opacity: 0, depthTest: false, side: THREE.DoubleSide }));
+    pr.rotation.x = -Math.PI / 2; pr.position.copy(P(bx, by, bh + 0.3)); pr.renderOrder = 15; pr.userData.base = 0.95; pr.userData.pulse = true;
+    this.tacMats.push(pr.material); g.add(pr);
+    const you = this.labelSprite('YOU', { color: '#3ddc84', size: scale * 0.75 });
+    you.position.copy(P(bx - Math.sin(heading) * 8 * scale, by - Math.cos(heading) * 8 * scale, bh + 2)); g.add(you);
+    // pin marker
+    if (ctx.pin) {
+      const [px, py] = ctx.pin;
+      const pl = this.labelSprite(`${Math.round(ctx.distPin)}`, { color: '#ff5a4f', size: scale * 0.85, sub: 'PIN' });
+      pl.position.copy(P(px, py, hole.heightAt(px, py) + 6 * scale)); g.add(pl);
+      const pinRing = new THREE.Mesh(new THREE.RingGeometry(1.3 * scale, 1.9 * scale, 32), new THREE.MeshBasicMaterial({ color: '#ff5a4f', transparent: true, opacity: 0, depthTest: false, side: THREE.DoubleSide }));
+      pinRing.rotation.x = -Math.PI / 2; pinRing.position.copy(P(px, py, hole.heightAt(px, py) + 0.3)); pinRing.renderOrder = 15; pinRing.userData.base = 0.9;
+      this.tacMats.push(pinRing.material); g.add(pinRing);
+    }
+    this.tacCtx = ctx;
+    g.visible = true;
+    this.tacTarget = 1;
+  }
+
+  // highlight a club's carry (arc + dispersion ellipse at the aim point)
+  setTacticalFocus(carry, disp, total, label) {
+    const ctx = this.tacCtx;
+    if (!ctx) return;
+    if (this.tacFocus) {
+      const old = this.tacFocus;
+      this.tacGroup.remove(old);
+      old.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { o.material.map?.dispose(); o.material.dispose(); this.tacMats = this.tacMats.filter(m => m !== o.material); } });
+    }
+    const { hole, heading } = ctx;
+    const [bx, by] = ctx.ball;
+    const scale = Math.max(0.7, ctx.span / 160);
+    const f = new THREE.Group();
+    f.add(this.tacArc(hole, bx, by, heading, carry, 0.2, 1.5 * scale, '#3ddc84', 0.95));
+    if (total > carry + 2) f.add(this.tacArc(hole, bx, by, heading, total, 0.12, 0.8 * scale, '#9dfcc6', 0.6));
+    const x = bx + Math.sin(heading) * carry, y = by + Math.cos(heading) * carry;
+    const e = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({ color: '#3ddc84', transparent: true, opacity: 0, depthTest: false, side: THREE.DoubleSide }));
+    e.rotation.x = -Math.PI / 2; e.rotation.z = heading; e.scale.set(disp, disp * 0.55 + 1, 1);
+    e.position.copy(P(x, y, hole.heightAt(x, y) + 0.35)); e.renderOrder = 14; e.userData.base = 0.28;
+    this.tacMats.push(e.material); f.add(e);
+    const lab = this.labelSprite(label, { color: '#3ddc84', size: scale, sub: `${Math.round(carry)}` });
+    const a = heading - 0.24;
+    lab.position.copy(P(bx + Math.sin(a) * carry, by + Math.cos(a) * carry, hole.heightAt(x, y) + 3 * scale)); f.add(lab);
+    f.userData.born = this.time;
+    this.tacFocus = f;
+    this.tacGroup.add(f);
+  }
+
+  hideTactical() { this.tacTarget = 0; }
+
+  updateTactical(dt) {
+    if (!this.tacGroup || (!this.tacGroup.visible && this.tacTarget === 0)) return;
+    const k = 1 - Math.exp(-dt * 10);
+    this.tacFade += (this.tacTarget - this.tacFade) * k;
+    if (this.tacTarget === 0 && this.tacFade < 0.01) { this.tacFade = 0; this.tacGroup.visible = false; this.clearTactical(); return; }
+    const pulse = 0.75 + 0.25 * Math.sin(this.time * 4);
+    const fb = this.tacFocus ? Math.min(1, (this.time - this.tacFocus.userData.born) / 0.25) : 1;
+    this.tacGroup.traverse(o => {
+      const m = o.material;
+      if (!m || o.userData.base == null) return;
+      const inFocus = this.tacFocus && (o.parent === this.tacFocus);
+      m.opacity = o.userData.base * this.tacFade * (o.userData.pulse ? pulse : 1) * (inFocus ? fb : 1);
+      if (inFocus && o.isSprite) o.position.y += 0; // sprites stay put
+    });
+  }
+
   // Putting green slope grid: chevrons pointing down the fall line, colored by steepness
   showSlopeGrid(hole, cx, cy, radius, strength = 1) {
     const g = this.aimGroup;
@@ -564,6 +710,7 @@ export class World {
 
   update(dt, focus) {
     this.time += dt;
+    this.updateTactical(dt);
     if (this.sky) this.sky.material.uniforms.time.value = this.time;
     if (this.grassUniforms) this.grassUniforms.uTime.value = this.time;
     // water animation

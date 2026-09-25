@@ -31,7 +31,7 @@ for (let rn = 0; rn < rounds; rn++) {
   const rig = stub(); rig.opts = {};
   const app = { world, rig, hud, profile, save: noop, onRoundComplete: (round, st) => { finished = st; } };
   const play = new Play(app);
-  play.golfer = { root: { visible: true }, build: noop, setClub: noop, address: noop, placeAtBall: noop, idle: noop, setBackswing: noop, setDownswing: noop, setFollow: noop, celebrate: noop };
+  play.golfer = { root: { visible: true }, build: noop, setClub: noop, address: noop, placeAtBall: noop, idle: noop, setBackswing: noop, setDownswing: noop, setFollow: noop, celebrate: noop, tick: noop, update: noop };
   const pro = proId ? PROS.find(p => p.id === proId) : null;
   play.start({
     mode: 'round18', courseId, teeId: 'tour', holes: [...Array(18).keys()], difficulty,
