@@ -167,7 +167,7 @@ export class Hud {
     tap('#m-map', () => play().state === 'aim' && play().setCamera(play().camMode === 'overhead' ? 'address' : 'overhead'));
     tap('#btn-fs', () => this.app.toggleFullscreen());
     tap('#btn-card', () => { if (play().state !== 'holed') (this.modalOpen() ? this.closeModal() : this.showScorecard(play())); });
-    tap('#btn-pause', () => { if (play().state !== 'holed' && play().state !== 'flyover') this.app.pauseMenu(); });
+    tap('#btn-pause', () => this.app.pauseMenu(true));
     const ms = $('#m-swing', this.root);
     const mdown = (e) => {
       e.preventDefault(); audio.init();
@@ -546,9 +546,11 @@ export class Hud {
     return m;
   }
   closeModal() { $('#hud-modal', this.root).classList.remove('show'); }
+  pauseOpen() { return this.modalOpen() && !!$('#hud-modal .paused', this.root); }
   modalOpen() { return $('#hud-modal', this.root).classList.contains('show'); }
 
   holeComplete(play, { last, practice }) {
+    this.holeArgs = [play, { last, practice }];
     const btns = practice
       ? `<button class="btn" id="hc-replay">REPLAY HOLE</button><button class="btn primary" id="hc-next">NEXT HOLE ▸</button><button class="btn" id="hc-menu">MAIN MENU</button>`
       : `<button class="btn primary" id="hc-next">${last ? 'FINISH ROUND ▸' : 'NEXT HOLE ▸'} <kbd>Enter</kbd></button>`;

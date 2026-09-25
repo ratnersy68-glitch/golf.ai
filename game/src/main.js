@@ -217,20 +217,39 @@ class App {
     this.menus.main();
   }
 
-  pauseMenu() {
+  // toggle: true when opened from the ☰ button (a second tap closes it)
+  pauseMenu(toggle = false) {
     const play = this.play;
-    const m = this.hud.showScorecard(play, `
+    if (this.mode !== 'play' || !play.hole) return;
+    const hud = this.hud;
+    // back to where the player was: the hole summary after holing out, otherwise the game
+    const resume = () => {
+      if (play.state === 'holed' && hud.holeArgs) hud.holeComplete(...hud.holeArgs);
+      else hud.closeModal();
+    };
+    if (toggle && hud.pauseOpen()) { resume(); return; }
+    if (play.state === 'flyover') play.endFlyover();
+    if (play.state === 'bag') play.closeBag(null);
+    if (play.state === 'swing') { play.keys?.clear?.(); }
+    const m = hud.showScorecard(play, `
       <button class="btn primary" id="pm-resume">RESUME</button>
       ${play.cfg.mode === 'coursePractice' || play.cfg.mode === 'practice' ? '<button class="btn" id="pm-restart">RESTART HOLE</button>' : ''}
       <button class="btn" id="pm-guide">PUTT GUIDE: ${this.profile.settings.puttGuide ? 'ON' : 'OFF'}</button>
       <button class="btn" id="pm-cam">BROADCAST CAM: ${this.profile.settings.autoCamera ? 'ON' : 'OFF'}</button>
       <button class="btn danger" id="pm-quit">QUIT TO MENU</button>`);
     m.querySelector('.modal-title').insertAdjacentHTML('afterbegin', '<div class="paused">PAUSED</div>');
-    m.querySelector('#pm-resume').onclick = () => this.hud.closeModal();
-    const r = m.querySelector('#pm-restart'); if (r) r.onclick = () => { this.hud.closeModal(); play.replayHole(); };
+    m.querySelector('#pm-resume').onclick = resume;
+    const r = m.querySelector('#pm-restart'); if (r) r.onclick = () => { hud.closeModal(); play.replayHole(); };
     m.querySelector('#pm-guide').onclick = () => { this.profile.settings.puttGuide = !this.profile.settings.puttGuide; this.save(); if (play.state === 'aim') play.updateAim(); this.pauseMenu(); };
     m.querySelector('#pm-cam').onclick = () => { this.profile.settings.autoCamera = !this.profile.settings.autoCamera; this.save(); this.pauseMenu(); };
-    m.querySelector('#pm-quit').onclick = () => { if (confirm('Quit this round? Progress on this round will be lost.')) this.quitToMenu(); };
+    // confirm in the menu itself (browser confirm() dialogs are blocked inside embeds like Google Sites)
+    const q = m.querySelector('#pm-quit');
+    q.onclick = () => {
+      if (q.dataset.armed) { this.quitToMenu(); return; }
+      q.dataset.armed = '1';
+      q.textContent = 'TAP AGAIN TO QUIT';
+      setTimeout(() => { if (q.isConnected) { delete q.dataset.armed; q.textContent = 'QUIT TO MENU'; } }, 3000);
+    };
   }
 
   // ---------------- input ----------------
@@ -247,12 +266,12 @@ class App {
         return;
       }
       if (this.hud.modalOpen()) {
-        if (e.key === 'Escape') { if (play.state !== 'holed') this.hud.closeModal(); }
+        if (e.key === 'Escape') { if (this.hud.pauseOpen()) this.pauseMenu(true); else if (play.state !== 'holed') this.hud.closeModal(); }
         if (e.key === 'Enter' && play.state === 'holed' && this.hud.pendingNext) { const f = this.hud.pendingNext; this.hud.pendingNext = null; f(); }
         return;
       }
       if (play.state === 'bag') { if (play.onKeyDown(e)) e.preventDefault(); return; }
-      if (e.key === 'Escape' && play.state !== 'flyover') { e.preventDefault(); this.pauseMenu(); return; }
+      if (e.key === 'Escape' && play.state !== 'flyover') { e.preventDefault(); this.pauseMenu(true); return; }
       if ((e.key === 'n' || e.key === 'N') && play.cfg?.mode === 'practice' && (play.state === 'result' || play.state === 'aim')) { play.newPracticeSpot(); return; }
       if (play.onKeyDown(e)) e.preventDefault();
     });

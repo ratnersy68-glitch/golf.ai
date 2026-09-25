@@ -785,3 +785,5 @@ body.touch .bagview.card-open .bv-top { opacity: 0; pointer-events: none; }
 
 /* forced desktop layout (embeds): never show the phone rotate prompt */
 body.desktop #rotate { display: none !important; }
+/* menu/scorecard/fullscreen buttons stay tappable above dialogs and the bag view */
+.top-btns { z-index: 6; }

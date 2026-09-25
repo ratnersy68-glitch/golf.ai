@@ -389,8 +389,10 @@ export class Menus {
     this.root.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { s.quality = b.dataset.q; this.app.world.setQuality(this.app.qualityFor(s.quality)); this.app.save(); audio.click(); this.settings(); });
     this.root.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { s.difficulty = b.dataset.diff; this.app.save(); audio.click(); this.settings(); });
     this.root.querySelectorAll('[data-vol]').forEach(r => r.oninput = () => { s[r.dataset.vol] = +r.value; audio.setVolumes({ [r.dataset.vol]: +r.value }); this.app.save(); });
-    $('#reset', this.root).onclick = () => {
-      if (confirm('Reset all progress? This cannot be undone.')) { this.app.profile = resetProfile(); this.app.save(); this.main(); }
+    const rb = $('#reset', this.root);
+    rb.onclick = () => {
+      if (!rb.dataset.armed) { rb.dataset.armed = '1'; rb.textContent = 'TAP AGAIN TO RESET'; setTimeout(() => { if (rb.isConnected) { delete rb.dataset.armed; rb.textContent = 'RESET'; } }, 3000); return; }
+      this.app.profile = resetProfile(); this.app.save(); this.main();
     };
   }
 
