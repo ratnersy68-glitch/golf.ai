@@ -223,17 +223,18 @@ export class UIManager {
       <h1 class="display">${c.shortName}</h1>
       <div class="muted">${c.location}, ${c.country}</div>
       <div class="stars" style="font-size:20px">${stars(c.difficulty)}</div>
+      <div class="btn-row" style="justify-content:flex-start">
+        <button class="btn primary" data-a="holes">Holes</button>
+        ${built.length > 1 && unlocked ? `<button class="btn green" data-a="round">Play round</button>` : ''}
+        ${!unlocked ? `<button class="btn" data-a="unlock"><span class="coin"></span>${COURSE_UNLOCK_COINS[c.tier]} unlock</button>` : ''}
+      </div>
       <div style="font-size:14px;line-height:1.5">${c.blurb}</div>
       <div class="kv"><span>Architect</span><b>${c.designers}</b></div>
       <div class="kv"><span>Holes · Par</span><b>${c.holes.length} · ${c.par}</b></div>
       <div class="kv"><span>Recreated so far</span><b>${built.length ? built.map((h) => '#' + h.number).join(', ') : 'none yet'}</b></div>
       <div class="kv"><span>Best score</span><b>${this.bestForCourse(c)}</b></div>
       ${sig ? `<div class="muted" style="font-size:12px">Diorama: Hole ${sig.number} “${sig.name}”, 1:${sig.scale} scale. Drag to rotate.</div>` : `<div class="muted" style="font-size:12px">This course is being surveyed. Hole data and yardages are listed; the miniatures are on the way.</div>`}
-      <div class="btn-row" style="justify-content:flex-start">
-        <button class="btn primary" data-a="holes">Holes</button>
-        ${built.length > 1 && unlocked ? `<button class="btn green" data-a="round">Play round</button>` : ''}
-        ${!unlocked ? `<button class="btn" data-a="unlock"><span class="coin"></span>${COURSE_UNLOCK_COINS[c.tier]} unlock</button>` : ''}
-      </div>
+
       ${!unlocked ? `<div class="fine">Unlocks free at ${TIER_LABEL[c.tier]} tier (${TIER_XP[c.tier]} XP). The signature hole is always open.</div>` : ''}
       <div class="fine">${c.yardageNote}</div>`;
     p.querySelector<HTMLButtonElement>('[data-a="holes"]')!.onclick = () => this.holes(c);

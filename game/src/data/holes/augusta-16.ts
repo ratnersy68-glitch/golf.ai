@@ -131,7 +131,7 @@ export const augusta16: HoleLayout = {
   landmarks: [
     { kind: 'crowd', name: 'gallery on the right hillside', points: [[14, 2], [19, 2], [19.5, 48], [13.5, 48]], count: 110, seed: 16 },
     { kind: 'crowd', name: 'behind the tee', points: [[-7, -5], [7, -5], [8, -9], [-8, -9]], count: 40, seed: 17 },
-    { kind: 'crowd', name: 'across the pond', points: [[-24, 10], [-15, 10], [-15, 40], [-24, 40]], count: 60, seed: 18 },
+    { kind: 'crowd', name: 'across the pond', points: [[-32, 10], [-25, 10], [-25, 44], [-32, 44]], count: 60, seed: 18 },
     { kind: 'ropeLine', points: [[13.2, 0], [13.6, 20], [13.4, 40], [12, 50]] },
     { kind: 'teeMarkers', at: [0, 0.9], color: '#1b5e3b' },
     { kind: 'sign', at: [4.4, -1.8], color: '#1b5e3b' },

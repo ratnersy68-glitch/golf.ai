@@ -19,7 +19,7 @@ export class PreviewStage implements Stage {
   private dist = 90;
   private cache = new Map<string, HoleScene>();
   private placeholder: THREE.Group | null = null;
-  offset = 0.3;
+  offset = 0.42;
 
   constructor(canvas: HTMLCanvasElement, private quality: Quality) {
     this.scene.background = new THREE.Color('#0d1f16');

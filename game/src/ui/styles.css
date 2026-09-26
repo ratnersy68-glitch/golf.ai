@@ -617,6 +617,7 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
   align-content: start;
+  grid-auto-rows: min-content;
   touch-action: pan-y;
   padding-bottom: 20px;
 }
@@ -643,7 +644,8 @@ body {
 }
 
 .hole-tile .thumb {
-  height: 116px;
+  flex: 0 0 auto;
+  height: 104px;
   background: #16351f;
   position: relative;
   display: flex;
@@ -685,6 +687,7 @@ body {
 }
 
 .hole-tile .info {
+  flex: 0 0 auto;
   padding: 8px 10px 10px;
   font-size: 12px;
   line-height: 1.45;
@@ -1229,6 +1232,15 @@ input[type='range'] {
   animation: slideUp 0.45s ease both;
 }
 
+.t-card {
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+
+.t-card::-webkit-scrollbar {
+  display: none;
+}
+
 .t-card h2 {
   margin: 0;
   font-size: 36px;
@@ -1357,6 +1369,20 @@ input[type='range'] {
   }
   .hole-grid {
     top: calc(72px + var(--safe-t));
+  }
+  .t-card {
+    padding: 14px 16px;
+    gap: 6px;
+  }
+  .t-card h2 {
+    font-size: 28px;
+  }
+  .course-card h2 {
+    font-size: 24px;
+  }
+  .course-card .body {
+    gap: 3px;
+    padding: 10px 14px 12px;
   }
   .side-panel {
     top: calc(70px + var(--safe-t));

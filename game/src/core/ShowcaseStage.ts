@@ -104,7 +104,8 @@ export class ShowcaseStage implements Stage {
     this.golfer?.update(dt);
     const aspect = this.camera.aspect;
     // frame the character; shift to the right for the UI panel on the left
-    this.camera.position.set(-this.offset * 3.2 * Math.min(1.6, aspect / 1.4), 3.6, 15);
-    this.camera.lookAt(-this.offset * 3.2 * Math.min(1.6, aspect / 1.4), 2.35, 0);
+    const sx = -this.offset * 2.6 * Math.min(1.6, aspect / 1.4);
+    this.camera.position.set(sx, 3.2, 11.5);
+    this.camera.lookAt(sx, 1.9, 0);
   }
 }

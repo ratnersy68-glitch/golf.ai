@@ -101,37 +101,7 @@ export function paintHole(
   }
   ctx.globalAlpha = 1;
 
-  const byType = (t: SurfaceType) => model.surfaces.filter((s) => s.type === t);
-
-  // pine straw / scenery beds with needle speckle
-  for (const s of byType('pinestraw')) {
-    const p = pathOf(s.poly);
-    ctx.save();
-    ctx.clip(p);
-    ctx.fillStyle = surfaceColor(layout, 'pinestraw');
-    ctx.fillRect(0, 0, W, H);
-    for (let i = 0; i < (W * H) / 260; i++) {
-      const x = r() * W;
-      const y = r() * H;
-      ctx.strokeStyle = r() < 0.5 ? '#9a6f43' : '#5e4028';
-      ctx.globalAlpha = 0.5;
-      ctx.lineWidth = Math.max(1, ppf * 0.03);
-      const a = r() * Math.PI;
-      const l = ppf * 0.25;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-  for (const s of byType('path')) {
-    ctx.fillStyle = surfaceColor(layout, 'path');
-    ctx.fill(pathOf(s.poly));
-  }
-
-  // landmark painted areas (neighbouring greens / tees)
+  // landmark painted areas (neighbouring greens / tees) sit under everything else
   for (const lm of layout.landmarks) {
     if (lm.kind !== 'distantGreen' || !lm.points) continue;
     const poly = smoothClosed(lm.points, 6);
@@ -141,92 +111,124 @@ export function paintHole(
     ctx.fill(pathOf(poly));
   }
 
-  // fairways with mowing stripes along the line of play
   const stripe = 1.3;
-  for (const s of [...byType('fairway'), ...byType('tee')]) {
-    const p = pathOf(s.poly);
+  type Surf = (typeof model.surfaces)[number];
+  const clipped = (s: Surf, fn: () => void) => {
     ctx.save();
-    ctx.clip(p);
-    const base = s.type === 'tee' ? shade(layout.grass.fairway, 0.03) : layout.grass.fairway;
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = shade(base, 0.045);
-    const sb = s.bounds;
-    for (let x = Math.floor(sb.minX / stripe) * stripe; x < sb.maxX; x += stripe * 2) {
-      ctx.fillRect(X(x), 0, stripe * ppf, H);
-    }
-    // cross stripes, very soft
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = shade(base, -0.03);
-    for (let y = Math.floor(sb.minY / stripe) * stripe; y < sb.maxY; y += stripe * 2) ctx.fillRect(0, Y(y), W, stripe * ppf);
+    ctx.clip(pathOf(s.poly));
+    fn();
+    ctx.restore();
     ctx.globalAlpha = 1;
-    ctx.restore();
-  }
-
-  // fringe collar then green with a subtle checkerboard cut
-  for (const s of byType('green')) {
-    ctx.strokeStyle = layout.grass.fringe;
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 0.9 * ppf;
-    ctx.stroke(pathOf(s.poly));
-    const p = pathOf(s.poly);
-    ctx.save();
-    ctx.clip(p);
-    ctx.fillStyle = layout.grass.green;
-    ctx.fillRect(0, 0, W, H);
-    const cs = 0.7;
-    ctx.fillStyle = shade(layout.grass.green, 0.03);
-    for (let x = Math.floor(s.bounds.minX / cs) * cs; x < s.bounds.maxX; x += cs) {
-      for (let y = Math.floor(s.bounds.minY / cs) * cs; y < s.bounds.maxY; y += cs) {
-        if ((Math.round(x / cs) + Math.round(y / cs)) % 2 === 0) ctx.fillRect(X(x), Y(y + cs), cs * ppf, cs * ppf);
-      }
-    }
-    ctx.restore();
-  }
-
-  // bunkers: dark lip, sand, rake marks
-  for (const s of byType('bunker')) {
-    ctx.strokeStyle = shade(layout.grass.rough, -0.1);
-    ctx.lineWidth = 0.22 * ppf;
-    ctx.stroke(pathOf(s.poly));
-    const p = pathOf(s.poly);
-    ctx.save();
-    ctx.clip(p);
-    ctx.fillStyle = layout.grass.sand;
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = shade(layout.grass.sand, -0.06);
-    ctx.lineWidth = Math.max(1, ppf * 0.025);
-    ctx.globalAlpha = 0.6;
-    for (let y = s.bounds.minY; y < s.bounds.maxY; y += 0.12) {
-      ctx.beginPath();
-      for (let x = s.bounds.minX; x <= s.bounds.maxX; x += 0.2) {
-        const yy = y + Math.sin(x * 1.3 + y) * 0.05;
-        if (x === s.bounds.minX) ctx.moveTo(X(x), Y(yy));
-        else ctx.lineTo(X(x), Y(yy));
-      }
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    // inner shadow toward the face
-    ctx.strokeStyle = 'rgba(120,100,70,0.25)';
-    ctx.lineWidth = 0.35 * ppf;
-    ctx.stroke(p);
-    ctx.restore();
-  }
-
-  // water beds: muddy banks, then dark bed
-  for (const s of byType('water')) {
-    ctx.strokeStyle = '#6c5a3c';
-    ctx.lineWidth = 0.55 * ppf;
-    ctx.lineJoin = 'round';
-    ctx.stroke(pathOf(s.poly));
-    ctx.fillStyle = layout.grass.deepWater;
+  };
+  const painters: Partial<Record<SurfaceType, (s: Surf) => void>> = {
+    pinestraw: (s) =>
+      clipped(s, () => {
+        // needle speckle
+        ctx.fillStyle = surfaceColor(layout, 'pinestraw');
+        ctx.fillRect(0, 0, W, H);
+        const sb = s.bounds;
+        const area = (sb.maxX - sb.minX) * (sb.maxY - sb.minY) * ppf * ppf;
+        for (let i = 0; i < Math.min(area, W * H) / 260; i++) {
+          const x = X(sb.minX) + r() * (sb.maxX - sb.minX) * ppf;
+          const y = Y(sb.maxY) + r() * (sb.maxY - sb.minY) * ppf;
+          ctx.strokeStyle = r() < 0.5 ? '#9a6f43' : '#5e4028';
+          ctx.globalAlpha = 0.5;
+          ctx.lineWidth = Math.max(1, ppf * 0.03);
+          const a = r() * Math.PI;
+          const l = ppf * 0.25;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
+          ctx.stroke();
+        }
+      }),
+    path: (s) => {
+      ctx.fillStyle = surfaceColor(layout, 'path');
+      ctx.fill(pathOf(s.poly));
+    },
+    fairway: (s) =>
+      clipped(s, () => {
+        // mowing stripes along the line of play
+        const base = s.type === 'tee' ? shade(layout.grass.fairway, 0.03) : layout.grass.fairway;
+        ctx.fillStyle = base;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = shade(base, 0.045);
+        const sb = s.bounds;
+        for (let x = Math.floor(sb.minX / stripe) * stripe; x < sb.maxX; x += stripe * 2) ctx.fillRect(X(x), 0, stripe * ppf, H);
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = shade(base, -0.03);
+        for (let y = Math.floor(sb.minY / stripe) * stripe; y < sb.maxY; y += stripe * 2) ctx.fillRect(0, Y(y), W, stripe * ppf);
+      }),
+    fringe: (s) => {
+      ctx.fillStyle = layout.grass.fringe;
+      ctx.fill(pathOf(s.poly));
+    },
+    green: (s) => {
+      // collar, then the green with a subtle checkerboard cut
+      ctx.strokeStyle = layout.grass.fringe;
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 0.9 * ppf;
+      ctx.stroke(pathOf(s.poly));
+      clipped(s, () => {
+        ctx.fillStyle = layout.grass.green;
+        ctx.fillRect(0, 0, W, H);
+        const cs = 0.7;
+        ctx.fillStyle = shade(layout.grass.green, 0.03);
+        for (let x = Math.floor(s.bounds.minX / cs) * cs; x < s.bounds.maxX; x += cs) {
+          for (let y = Math.floor(s.bounds.minY / cs) * cs; y < s.bounds.maxY; y += cs) {
+            if ((Math.round(x / cs) + Math.round(y / cs)) % 2 === 0) ctx.fillRect(X(x), Y(y + cs), cs * ppf, cs * ppf);
+          }
+        }
+      });
+    },
+    bunker: (s) => {
+      // dark lip, sand, rake marks
+      ctx.strokeStyle = shade(layout.grass.rough, -0.1);
+      ctx.lineWidth = 0.22 * ppf;
+      ctx.stroke(pathOf(s.poly));
+      clipped(s, () => {
+        ctx.fillStyle = layout.grass.sand;
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = shade(layout.grass.sand, -0.06);
+        ctx.lineWidth = Math.max(1, ppf * 0.025);
+        ctx.globalAlpha = 0.6;
+        for (let y = s.bounds.minY; y < s.bounds.maxY; y += 0.12) {
+          ctx.beginPath();
+          for (let x = s.bounds.minX; x <= s.bounds.maxX; x += 0.2) {
+            const yy = y + Math.sin(x * 1.3 + y) * 0.05;
+            if (x === s.bounds.minX) ctx.moveTo(X(x), Y(yy));
+            else ctx.lineTo(X(x), Y(yy));
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(120,100,70,0.25)';
+        ctx.lineWidth = 0.35 * ppf;
+        ctx.stroke(pathOf(s.poly));
+      });
+    },
+    water: (s) => {
+      // muddy banks, then the dark bed
+      ctx.strokeStyle = '#6c5a3c';
+      ctx.lineWidth = 0.55 * ppf;
+      ctx.lineJoin = 'round';
+      ctx.stroke(pathOf(s.poly));
+      ctx.fillStyle = layout.grass.deepWater;
+      ctx.fill(pathOf(s.poly));
+    },
+    rock: (s) => {
+      ctx.fillStyle = surfaceColor(layout, 'rock');
+      ctx.fill(pathOf(s.poly));
+    },
+  };
+  painters.tee = painters.fairway;
+  painters.rough = painters.deepRough = (s) => {
+    ctx.fillStyle = surfaceColor(layout, s.type);
     ctx.fill(pathOf(s.poly));
-  }
-  for (const s of byType('rock')) {
-    ctx.fillStyle = surfaceColor(layout, 'rock');
-    ctx.fill(pathOf(s.poly));
-  }
+  };
+
+  // paint in data order so later layers win, exactly like HoleModel.surfaceAt
+  for (const s of model.surfaces) painters[s.type]?.(s);
 
   // soft ambient occlusion under trees
   if (opts.blobs) {

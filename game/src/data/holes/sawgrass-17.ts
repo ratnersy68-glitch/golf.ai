@@ -87,7 +87,7 @@ export const sawgrass17: HoleLayout = {
     { type: 'tee', name: 'tee', points: roundedRect(0, 0, 4.2, 3.0, 0.5), smooth: false },
     { type: 'fringe', name: 'island', points: island },
     { type: 'green', name: 'green', points: green },
-    { type: 'path', name: 'walkway', path: [[4.4, 43.4], [7.0, 45.4], [10.4, 47.2]], width: 1.5 },
+    { type: 'path', name: 'walkway', path: [[4.4, 43.4], [7.0, 45.4], [10.4, 47.2]], width: 2.0 },
     { type: 'bunker', name: 'pot bunker', points: [[2.8, 36.3], [4.0, 36.9], [4.2, 37.9], [3.4, 38.1], [2.6, 37.3]] },
   ],
 

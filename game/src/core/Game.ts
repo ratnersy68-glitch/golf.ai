@@ -165,6 +165,7 @@ export class Game {
 
   restartHole(): void {
     if (!this.session) return;
+    this.world.frameShift = 0;
     this.playCurrent(false);
   }
 

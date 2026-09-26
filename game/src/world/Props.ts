@@ -508,6 +508,7 @@ function crowd(model: HoleModel, lm: LandmarkData): CrowdRig | null {
     const x = b.minX + r() * (b.maxX - b.minX);
     const y = b.minY + r() * (b.maxY - b.minY);
     if (!pointInPolygon(x, y, poly)) continue;
+    if (model.surfaceAt(x, y) === 'water') continue;
     const h = model.terrainHeightRaw(x, y);
     const s = 0.85 + r() * 0.3;
     const face = Math.atan2(target[0] - x, target[1] - y);

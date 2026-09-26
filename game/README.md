@@ -94,7 +94,7 @@ and `y` is down-range from the tee. World space is `(x, height, -y)`. Everything
    * `signatureFeatures` and **`playabilityAdjustments`**: write down every deviation from the real hole
 3. Register it in `src/data/holes/index.ts` and set `layoutId` on the course's scorecard row in
    `courses/courses.ts`.
-4. Run `npm test`. The validator searches shots to prove the hole can be finished within par + 1 and prints
+4. Run `npm test`. The validator searches shots to prove the hole can be finished within par + 2 (a greedy search, so real players do better) and prints
    tee-to-water and tee-to-green rates as a difficulty readout. A data-integrity test checks that the
    par and yardage match the scorecard.
 

@@ -534,6 +534,8 @@ export class HoleManager {
     else g.celebrate(tone === 'ace' || tone === 'eagle');
     const facing = new THREE.Vector3(0, 0, 1).applyQuaternion(g.root.quaternion);
     w.cam.golfer(g.root.position, facing);
+    // keep the golfer clear of the result card on the right
+    w.frameShift = -0.2;
   }
 
   private finish(pickedUp: boolean): void {
