@@ -1,0 +1,9 @@
+{
+  "name": "Mini Majors",
+  "short_name": "Mini Majors",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d2e1d",
+  "theme_color": "#0d2e1d",
+  "start_url": "./"
+}
