@@ -832,11 +832,20 @@ export class UIManager {
     });
     const reset = el('div', 'setting', '<span>Progress</span>');
     const rb = el('button', 'btn', 'Reset');
+    let armed = false;
     rb.onclick = () => {
-      if (confirm('Reset all progress, coins and unlocks?')) {
-        g.save.reset();
-        location.reload();
+      // two taps instead of confirm(), which embedded browsers may block
+      if (!armed) {
+        armed = true;
+        rb.textContent = 'Tap again to reset';
+        setTimeout(() => {
+          armed = false;
+          rb.textContent = 'Reset';
+        }, 3000);
+        return;
       }
+      g.save.reset();
+      location.reload();
     };
     reset.appendChild(rb);
     box.appendChild(reset);
