@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Golf.ai Championship</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://ratnersy68-glitch.github.io/golf.ai/styles.css">
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="hud"></div>
+  <div id="menu"></div>
+
+  <!-- Boot loading screen (visible before the game script runs) -->
+  <div id="boot">
+    <div class="boot-logo">GOLF<span>.AI</span></div>
+    <div class="boot-sub">CHAMPIONSHIP GOLF</div>
+    <div class="putt-anim"><i class="ball"></i><i class="cup"></i><i class="flag"></i></div>
+    <div class="boot-msg" id="boot-msg">Loading course…</div>
+  </div>
+
+  <!-- Portrait-phone prompt -->
+  <div id="rotate">
+    <div class="phone"><i></i></div>
+    <div class="rotate-title">ROTATE YOUR PHONE</div>
+    <div class="rotate-sub">Turn your phone sideways to play.</div>
+  </div>
+
+  <!-- Connection banner -->
+  <div id="offline"><b>CONNECTION LOST</b><span>Some online assets may be unavailable.</span></div>
+  <script src="https://ratnersy68-glitch.github.io/golf.ai/dist/game.js"></script>
+</body>
+</html>
