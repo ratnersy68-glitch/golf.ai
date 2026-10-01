@@ -5,6 +5,8 @@ import { PROS, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
 import { normalizeLook } from '../data/look.js';
 import { TOPS, BOTTOMS, SHOES, HATS, GLOVES, RARITY, itemUnlock } from '../data/apparel.js';
 import { Locker } from './locker.js';
+import { newTournament, leaderboard, boardHtml, projectedCut, fmtPar, ROUND_DAYS } from '../game/masters.js';
+import { GREEN_JACKET } from '../data/apparel.js';
 import { CLUB_TYPES, BRAND_MODELS, BALLS, buildBag } from '../data/clubs.js';
 import { DIFFICULTIES, LEVEL_XP, customAttrs, resetProfile } from '../core/profile.js';
 import { audio } from '../audio/audio.js';
@@ -56,6 +58,7 @@ export class Menus {
       case 'golfer': return this.golfer();
       case 'bag': return this.bag();
       case 'settings': return this.settings();
+      case 'masters': return this.masters();
       case 'stats': return this.career();
       default:
         if (MODES[where]) return this.startSetup(where);
@@ -84,6 +87,7 @@ export class Menus {
         ${this.profileBadge()}
         <div class="main-menu">
           <button class="menu-item hero" data-go="round18"><b>QUICK ROUND</b><span>18 holes at a famous course</span></button>
+          <button class="menu-item masters-item" data-go="masters"><b>THE MASTERS</b><span>${p.masters && !p.masters.finished ? `Round ${p.masters.round} · ${ROUND_DAYS[p.masters.round - 1].toLowerCase()} — continue your tournament` : '72 holes at Augusta National against the world\'s best'}</span></button>
           <button class="menu-item" data-go="round9"><b>9 HOLES</b><span>${MODES.round9.sub}</span></button>
           <button class="menu-item" data-go="coursePractice"><b>COURSE PRACTICE</b><span>${MODES.coursePractice.sub}</span></button>
           <button class="menu-item" data-go="practice"><b>PRACTICE</b><span>${MODES.practice.sub}</span></button>
@@ -241,6 +245,135 @@ export class Menus {
       difficulty: st.difficulty, attrs, look, golferName: name, custom: st.golfer === 'custom', practiceKind: st.practiceKind,
     };
     this.app.startRound(cfg);
+  }
+
+  // ---------------- the Masters ----------------
+  mastersBoardFor(m) {
+    if (!m) return '';
+    const last = m.finished ? (m.result?.pos === 'MC' ? 2 : 4) : m.round - 1;
+    if (last < 1) return '';
+    const rows = leaderboard(m, last, 18, m.player.rounds[last - 1] || []);
+    return boardHtml(rows, { limit: 14, title: m.finished ? 'FINAL LEADERBOARD' : `AFTER ROUND ${last}`, cutLine: !m.finished && last === 1 ? projectedCut(rows) : null });
+  }
+
+  masters() {
+    const p = this.profile;
+    const m = p.masters;
+    const active = m && !m.finished;
+    const days = ROUND_DAYS.map((d, i) => {
+      const n = i + 1;
+      const st = !m ? '' : (m.player.rounds[i] ? 'done' : active && m.round === n ? 'now' : '');
+      const sc = m?.player.rounds[i] ? fmtPar(m.player.rounds[i].reduce((a, s, k) => a + s - m.pars[k], 0)) : '';
+      return `<div class="md ${st}"><b>${d}</b><span>${sc || `ROUND ${n}`}</span></div>`;
+    }).join('');
+    const diffChips = Object.entries(DIFFICULTIES).map(([k, d]) => `<button class="chip ${(this.mDiff || p.settings.difficulty) === k ? 'on' : ''}" data-mdiff="${k}">${d.name}</button>`).join('');
+    const hist = (p.mastersHistory || []).slice(0, 5).map(h => `<tr><td>${new Date(h.date).toLocaleDateString()}</td><td><b>${h.pos === '1' ? '🏆 WON' : h.pos}</b></td><td>${fmtPar(h.toPar)}</td><td class="dim">${h.won ? '' : esc(h.champion || '')}</td></tr>`).join('');
+    let side;
+    if (active) {
+      const tot = m.player.rounds.reduce((a, r) => a + r.reduce((x, s, k) => x + s - m.pars[k], 0), 0);
+      side = `<div class="section-title">${ROUND_DAYS[m.round - 1]} · ROUND ${m.round}</div>
+        <div class="m-status"><div><span>YOUR TOTAL</span><b>${fmtPar(tot)}</b></div><div><span>DIFFICULTY</span><b>${DIFFICULTIES[m.difficulty]?.name || ''}</b></div><div><span>PINS</span><b>${m.round === 4 ? 'Sunday' : 'Tournament'}</b></div></div>
+        <button class="btn primary big m-tee" id="m-tee">TEE OFF · ROUND ${m.round} ▸</button>
+        <div class="m-note">Championship tees. Each round is 18 holes; the leaderboard moves as you play. Quitting a round restarts that round.</div>
+        <button class="btn danger small" id="m-abandon">WITHDRAW FROM TOURNAMENT</button>`;
+    } else {
+      side = `${m?.finished ? `<div class="m-final ${m.result.won ? 'won' : ''}">${m.result.won ? 'MASTERS CHAMPION' : m.result.pos === 'MC' ? 'MISSED THE CUT' : `FINISHED ${m.result.pos}`}<small>${fmtPar(m.result.toPar)}${m.result.won ? '' : m.result.champion ? ` · Champion ${esc(m.result.champion)} ${fmtPar(m.result.winningScore)}` : ''}</small></div>` : ''}
+        <div class="section-title">NEW TOURNAMENT</div>
+        <div class="m-note">Four rounds at Augusta National from the championship tees against a field of ${51} of the world's best. Low 30 and ties make the cut after Friday. Sunday brings the toughest pins. Win and the Green Jacket is yours.</div>
+        <div class="set-row"><div><b>Difficulty</b></div><div class="chips">${diffChips}</div></div>
+        <button class="btn primary big m-tee" id="m-start">START THE MASTERS ▸</button>`;
+    }
+    this.render(`
+      <div class="page masters-page">
+        <div class="page-head"><button class="btn ghost" data-go="main">‹ MENU</button></div>
+        <div class="m-hero">
+          <div class="m-logo">The Masters</div>
+          <div class="m-sub">AUGUSTA NATIONAL GOLF CLUB · AUGUSTA, GEORGIA</div>
+          <div class="m-days">${days}</div>
+          ${p.mastersWins ? `<div class="m-wins">🏆 ${p.mastersWins} Green Jacket${p.mastersWins > 1 ? 's' : ''}</div>` : ''}
+        </div>
+        <div class="cols two">
+          <div class="col">${this.mastersBoardFor(m) || `<div class="mboard intro"><div class="mb-head"><span>THE FIELD</span></div><div class="m-field">${['Scottie Scheffler', 'Rory McIlroy', 'Jon Rahm', 'Bryson DeChambeau', 'Xander Schauffele', 'Ludvig Åberg', 'Collin Morikawa', 'Hideki Matsuyama', 'Jordan Spieth', 'Tiger Woods', 'Brooks Koepka', 'Tommy Fleetwood'].map(n => `<span>${n}</span>`).join('')}<span class="dim">…and 39 more</span></div></div>`}</div>
+          <div class="col glass m-side">${side}${hist ? `<div class="section-title">PAST MASTERS</div><table class="list">${hist}</table>` : ''}</div>
+        </div>
+      </div>`, 'page-screen masters-screen');
+    this.root.querySelectorAll('[data-mdiff]').forEach(b => b.onclick = () => { this.mDiff = b.dataset.mdiff; audio.click(); this.masters(); });
+    const start = $('#m-start', this.root);
+    if (start) start.onclick = () => {
+      audio.init(); audio.click();
+      const course = getCourse('augusta');
+      p.masters = newTournament(course, this.mDiff || p.settings.difficulty, p.look.name);
+      this.app.save();
+      this.startMastersRound();
+    };
+    const tee = $('#m-tee', this.root);
+    if (tee) tee.onclick = () => { audio.init(); audio.click(); this.startMastersRound(); };
+    const ab = $('#m-abandon', this.root);
+    if (ab) ab.onclick = () => {
+      if (!ab.dataset.armed) { ab.dataset.armed = '1'; ab.textContent = 'TAP AGAIN TO WITHDRAW'; setTimeout(() => { if (ab.isConnected) { delete ab.dataset.armed; ab.textContent = 'WITHDRAW FROM TOURNAMENT'; } }, 3000); return; }
+      p.masters = null; this.app.save(); this.masters();
+    };
+  }
+
+  startMastersRound() {
+    const p = this.profile;
+    const m = p.masters;
+    if (!m || m.finished) return;
+    this.app.startRound({
+      mode: 'round18', courseId: 'augusta', teeId: 'champ', holes: [...Array(18).keys()],
+      difficulty: m.difficulty, attrs: customAttrs(p), look: p.look, golferName: p.look.name, custom: true,
+      masters: { round: m.round }, pins: m.round === 4 ? 'sunday' : 'medium', wind: 'normal',
+    });
+  }
+
+  mastersAfterRound(played, st, award, result, scorecard) {
+    const p = this.profile;
+    const m = p.masters;
+    const rows = leaderboard(m, played, 18, m.player.rounds[played - 1]);
+    const me = rows.find(r => r.isPlayer);
+    if (result?.won) return this.mastersCeremony(result, rows);
+    let headline, sub;
+    if (result?.pos === 'MC') { headline = 'MISSED THE CUT'; sub = `The cut fell at ${fmtPar(m.cutLine)}. You finished at ${fmtPar(result.toPar)}.`; }
+    else if (result) { headline = `FINISHED ${result.pos}`; sub = `${esc(result.champion)} wins the Masters at ${fmtPar(result.winningScore)}.`; }
+    else if (played === 2) { headline = 'MADE THE CUT'; sub = `${me.posN === 1 ? (me.pos.startsWith('T') ? 'You share the lead' : 'You lead') : `You're ${me.pos}`} at ${fmtPar(me.toPar)}. The cut fell at ${fmtPar(m.cutLine)}. On to the weekend.`; }
+    else { headline = me.posN === 1 ? `${me.pos.startsWith('T') ? 'TIED FOR THE LEAD' : 'LEADING'} AFTER ${played === 1 ? 'THURSDAY' : 'SATURDAY'}` : `${me.pos} AFTER ${played === 1 ? 'THURSDAY' : 'SATURDAY'}`; sub = `${fmtPar(me.toPar)} for the tournament. ${played === 3 ? 'Sunday at Augusta awaits.' : ''}`; }
+    this.render(`
+      <div class="page masters-page">
+        <div class="m-hero small"><div class="m-logo">The Masters</div><div class="m-sub">${ROUND_DAYS[played - 1]} · ROUND ${played} · YOU SHOT ${st.strokes} (${fmtPar(st.toPar)})</div></div>
+        <div class="m-final ${result?.pos === 'MC' ? 'mc' : ''}">${headline}<small>${sub}</small></div>
+        ${award ? `<div class="center dim">+${award.xp} XP${award.levelUps.length ? ` · LEVEL UP → ${award.to}` : ''}</div>` : ''}
+        <div class="cols two">
+          <div class="col">${boardHtml(rows, { limit: 14, title: result ? 'FINAL LEADERBOARD' : `LEADERBOARD · AFTER ROUND ${played}` })}</div>
+          <div class="col glass sc-wrap">${scorecard}</div>
+        </div>
+        <div class="center">${!m.finished ? `<button class="btn primary big" id="m-next">TEE OFF · ${ROUND_DAYS[m.round - 1]} ▸</button> ` : ''}<button class="btn big" id="m-hub">MASTERS HOME</button> <button class="btn big" data-go="main">MAIN MENU</button></div>
+      </div>`, 'page-screen masters-screen');
+    const n = $('#m-next', this.root); if (n) n.onclick = () => { audio.click(); this.startMastersRound(); };
+    $('#m-hub', this.root).onclick = () => { audio.click(); this.masters(); };
+    audio.jingle(result?.pos === 'MC' ? 'bogey' : 'great');
+  }
+
+  mastersCeremony(result, rows) {
+    const p = this.profile;
+    // put the champion in the Green Jacket for the ceremony (and unlock it in the locker)
+    const look = JSON.parse(JSON.stringify(p.look));
+    look.outfit.top = { id: GREEN_JACKET.id, color: GREEN_JACKET.fixedColor, pattern: 'solid' };
+    this.render(`
+      <div class="m-ceremony">
+        <div class="mc-card">
+          <div class="m-logo">The Masters</div>
+          <div class="mc-title">MASTERS CHAMPION</div>
+          <div class="mc-name">${esc(p.look.name)}</div>
+          <div class="mc-score">${fmtPar(result.toPar)}${result.playoff ? ` · won a playoff against ${esc(result.playoff.against.join(', '))}` : ''}</div>
+          <div class="mc-jacket">The Green Jacket is yours. Find it in your locker under Tops.</div>
+          ${boardHtml(rows, { limit: 5, title: 'FINAL LEADERBOARD', highlight: false })}
+          <div class="mc-btns"><button class="btn primary" id="mc-wear">WEAR THE JACKET</button><button class="btn" id="m-hub">MASTERS HOME</button></div>
+        </div>
+      </div>`, 'page-screen transparent masters-ceremony');
+    this.app.golferPreview(look, { focus: 'full', yaw: 0.25 });
+    audio.jingle('ace'); audio.crowd?.('roar', 1.2);
+    $('#mc-wear', this.root).onclick = () => { p.look.outfit.top = look.outfit.top; this.app.save(); audio.click(); $('#mc-wear', this.root).textContent = '✓ WEARING IT'; };
+    $('#m-hub', this.root).onclick = () => { audio.click(); this.app.menuScene(); this.masters(); };
   }
 
   // ---------------- career ----------------

@@ -106,6 +106,7 @@ export class Hud {
         <div><kbd>C</kbd> Camera <kbd>M</kbd> Map <kbd>G</kbd> Putt guide <kbd>Tab</kbd> Card</div>
         <div>Drag to look · Wheel to scout ahead</div>
       </div>
+      <div class="mticker" id="mticker"></div>
       <div class="pin-marker" id="pin-marker"><span>⚑</span><b id="pin-dist"></b></div>
       <div class="toast" id="toast"><div class="toast-main"></div><div class="toast-sub"></div></div>
       <div class="banner" id="banner"><div class="banner-main"></div><div class="banner-sub"></div></div>
@@ -116,6 +117,20 @@ export class Hud {
     `;
     this.bind();
     this.bagView = new BagView(this, this.app);
+  }
+
+  // live Masters position under the hole card
+  mastersTicker(rows, m) {
+    const t = $('#mticker', this.root);
+    if (!rows) { t.classList.remove('show'); return; }
+    const me = rows.find(r => r.isPlayer);
+    const lead = rows.find(r => !r.isPlayer && !r.missed);
+    const fp = (v) => (v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`);
+    const cls = (v) => (v < 0 ? 'under' : v > 0 ? 'over' : 'even');
+    t.innerHTML = `<div class="mt-head">MASTERS · ${['THU', 'FRI', 'SAT', 'SUN'][m.round - 1]}</div>
+      <div class="mt-me"><span class="mt-pos">${me.pos}</span><b class="${cls(me.toPar)}">${fp(me.toPar)}</b><small>${me.thru === 0 ? 'TEE TIME' : me.thru === 18 ? 'F' : `THRU ${me.thru}`}</small></div>
+      ${lead ? `<div class="mt-lead">${me.posN === 1 ? 'Next' : 'Leader'}: ${lead.name.split(' ').slice(-1)[0]} <b class="${cls(lead.toPar)}">${fp(lead.toPar)}</b></div>` : ''}`;
+    t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
   }
 
   // flash the club readouts after a club change
@@ -540,6 +555,7 @@ export class Hud {
     m.innerHTML = `<div class="modal-card wide">
       <div class="modal-title">${play.course.name.toUpperCase()} <small>${play.tee.name} tees · ${play.diff.name}</small></div>
       ${this.scorecardHtml(play)}
+      ${play.cfg?.masters ? `<div class="sc-masters">${this.app.mastersBoard(play, 8)}</div>` : ''}
       <div class="modal-btns">${extraButtons || '<button class="btn primary" id="sc-close">CLOSE <kbd>Tab</kbd></button>'}</div></div>`;
     m.classList.add('show');
     const c = $('#sc-close', m); if (c) c.onclick = () => this.closeModal();

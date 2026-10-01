@@ -28,6 +28,7 @@ export const BRANDS = {
   ecco: { name: 'ECCO', logo: 'ECCO', font: 'sans' },
   malbon: { name: 'Malbon Golf', logo: 'MALBON', font: 'serif' },
   imperial: { name: 'Imperial', logo: 'IMPERIAL', font: 'serif' },
+  augusta: { name: 'Augusta National', logo: 'ANGC', font: 'serif' },
 };
 
 export const TOP_COLORS = [
@@ -91,6 +92,7 @@ export const TOPS = [
   L('top', 'lulu', 'Evolution Polo', { sub: 'Polo', style: 'polo', collar: 'classic', sleeves: 'short', fit: 'Classic', patterns: ['solid', 'pinstripe'] }),
   L('top', 'lulu', 'Engineered Warmth Half-Zip', { sub: 'Quarter-Zip', style: 'quarterzip', collar: 'zip', sleeves: 'long', fit: 'Classic', patterns: ['solid', 'heather', 'block'], rarity: 'rare' }),
   L('top', 'malbon', 'Buckets Mock Neck', { sub: 'Performance', style: 'mock', collar: 'mock', sleeves: 'long', fit: 'Relaxed', patterns: ['solid', 'dots', 'stripe'], rarity: 'epic' }),
+  L('top', 'augusta', 'The Green Jacket', { sub: 'Jacket', style: 'jacket', collar: 'classic', sleeves: 'long', fit: 'Classic', patterns: ['solid'], rarity: 'legendary', special: 'masters', fixedColor: '#1f6b3a', logoColor: '#f2c94c' }),
 ];
 
 // ---------- BOTTOMS ----------
@@ -191,6 +193,12 @@ export const NO_HAT = { id: 'hat-none', cat: 'hat', brand: null, name: 'No Hat',
 ALL_ITEMS['hat-none'] = NO_HAT;
 
 export function itemUnlock(it) { return RARITY[it.rarity || 'common'].unlock; }
+// special items aren't bought with levels: the Green Jacket is earned by winning the Masters
+export function itemLocked(it, profile) {
+  if (it.special === 'masters') return !(profile.mastersWins > 0);
+  return itemUnlock(it) > profile.level;
+}
+export const GREEN_JACKET = TOPS.find(t => t.special === 'masters');
 
 export const DEFAULT_OUTFIT = {
   top: { id: TOPS[5].id, color: '#f4f4f2', pattern: 'solid' },

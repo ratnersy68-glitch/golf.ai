@@ -12,6 +12,7 @@ import { buildBag } from './data/clubs.js';
 import { THEMES } from './data/themes.js';
 import { loadProfile, saveProfile, awardXp, recordRound, customAttrs } from './core/profile.js';
 import { audio } from './audio/audio.js';
+import { leaderboard, completeRound, boardHtml, projectedCut } from './game/masters.js';
 
 const THUMB_KEY = 'golfai.thumbs.v4';
 
@@ -191,9 +192,30 @@ class App {
     this.world.ball.visible = true;
     this.mode = 'play';
     this.play.start(cfg);
+    this.hud.mastersTicker(cfg.masters ? this.mastersRows(this.play) : null, this.profile.masters);
+  }
+
+  // ---------------- the Masters ----------------
+  mastersRows(play) {
+    const m = this.profile.masters;
+    if (!m || !play?.cfg?.masters) return null;
+    const live = play.round.cards.filter(c => c.strokes != null).map(c => c.strokes);
+    return leaderboard(m, m.round, live.length, live);
+  }
+  mastersBoard(play, limit = 10) {
+    const rows = this.mastersRows(play);
+    if (!rows) return '';
+    const m = this.profile.masters;
+    return boardHtml(rows, { limit, title: `MASTERS · ${['THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'][m.round - 1]}`, cutLine: m.round <= 2 ? projectedCut(rows) : null });
+  }
+  onHoleComplete(play) {
+    const rows = this.mastersRows(play);
+    if (!rows) return;
+    this.hud.mastersTicker(rows, this.profile.masters);
   }
 
   onRoundComplete(round, st, cfg) {
+    if (cfg.masters) return this.onMastersRound(round, st, cfg);
     let award = null;
     if (cfg.custom && (cfg.mode === 'round18' || cfg.mode === 'round9')) {
       award = awardXp(this.profile, st, cfg.difficulty, st.holes);
@@ -210,7 +232,29 @@ class App {
     this.menuScene();
   }
 
+  onMastersRound(round, st, cfg) {
+    const m = this.profile.masters;
+    const award = awardXp(this.profile, st, cfg.difficulty, st.holes);
+    recordRound(this.profile, round);
+    const strokes = round.cards.map(c => c.strokes);
+    const playedRound = m.round;
+    const result = completeRound(m, strokes);
+    if (result) {
+      this.profile.mastersHistory = [{ date: Date.now(), pos: result.pos, toPar: result.toPar, won: !!result.won, champion: result.champion || null }, ...(this.profile.mastersHistory || [])].slice(0, 20);
+      if (result.won) this.profile.mastersWins = (this.profile.mastersWins || 0) + 1;
+    }
+    this.save();
+    const sc = this.hud.scorecardHtml(this.play);
+    this.play.stop();
+    this.hud.mastersTicker(null);
+    this.mode = 'menu';
+    this.menus.show(true);
+    this.menus.mastersAfterRound(playedRound, st, award, result, sc);
+    if (!result?.won) this.menuScene();
+  }
+
   quitToMenu() {
+    this.hud.mastersTicker(null);
     this.pendingQuit = false;
     this.play.stop();
     this.hud.closeModal();

@@ -251,7 +251,7 @@ export class Golfer {
     }
     if (it.style === 'block' || t.pattern === 'block') { /* texture handles the color block */ }
     // chest logo (golfer's left = +X)
-    const lt = logoTexture(it.brand, contrast(t.color));
+    const lt = logoTexture(it.brand, it.logoColor || contrast(t.color));
     if (lt) {
       const lg = mesh(new THREE.PlaneGeometry(0.052, 0.026), new THREE.MeshStandardMaterial({ map: lt, transparent: true, roughness: 0.7, depthWrite: false }), 0.075, 0.46, frontZ(0.46) + 0.004);
       g.add(lg);

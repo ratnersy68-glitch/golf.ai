@@ -3,7 +3,7 @@
 // (tap to preview, EQUIP to keep, BACK to revert) and can be saved as outfits.
 import {
   TOPS, BOTTOMS, SHOES, HATS, GLOVES, NO_HAT, ALL_ITEMS, BRANDS, RARITY, TOP_COLORS, BOTTOM_COLORS, TOP_PATTERNS,
-  BOTTOM_PATTERNS, HAT_PATTERNS, FITS, HAT_FITS, itemUnlock, catalogueStats,
+  BOTTOM_PATTERNS, HAT_PATTERNS, FITS, HAT_FITS, itemUnlock, itemLocked, catalogueStats,
 } from '../data/apparel.js';
 import {
   SKIN_TONES, HAIR_COLORS, EYE_COLORS, HAIR_STYLES, FACE_SHAPES, EYE_SHAPES, BROWS, NOSES, MOUTHS, JAWS, FACIAL_HAIR,
@@ -35,7 +35,8 @@ export function iconFor(cat, it, cfg) {
 // sensible starting config when an item is first tried on (keeps the current color where it fits)
 export function defaultCfg(cat, it, cur = {}) {
   switch (cat) {
-    case 'top': return { id: it.id, color: cur.color || TOP_COLORS[0][1], pattern: it.patterns.includes(cur.pattern) ? cur.pattern : it.patterns[0] };
+    case 'top': if (it.fixedColor) return { id: it.id, color: it.fixedColor, pattern: 'solid' };
+      return { id: it.id, color: cur.color || TOP_COLORS[0][1], pattern: it.patterns.includes(cur.pattern) ? cur.pattern : it.patterns[0] };
     case 'bottom': return { id: it.id, color: cur.color || BOTTOM_COLORS[1][1], pattern: it.patterns.includes(cur.pattern) ? cur.pattern : it.patterns[0], fit: cur.fit || 'Regular' };
     case 'shoes': return { id: it.id, colorway: 0, spikes: it.spikes, closure: it.closure };
     case 'hat': return it.id === 'hat-none' ? { id: 'hat-none' } : { id: it.id, color: it.style === 'panama' ? '#e8dcb5' : (cur.color || '#1c2a44'), pattern: it.patterns.includes(cur.pattern) ? cur.pattern : 'solid', logo: cur.logo ?? true, fit: cur.fit || 'Structured' };
@@ -210,7 +211,7 @@ export class Locker {
       </div>
       <div class="lk-grid">${items.map((it, i) => {
         const cfg = eq?.id === it.id ? eq : defaultCfg(cat, it, eq);
-        const locked = itemUnlock(it) > lvl;
+        const locked = itemLocked(it, this.profile);
         const r = RARITY[it.rarity || 'common'];
         const isEq = eq?.id === it.id;
         return `<button class="lk-item r-${it.rarity || 'common'} ${isEq ? 'eq' : ''} ${locked ? 'locked' : ''}" data-item="${it.id}" data-cat="${cat}" style="--rc:${r.color};--i:${Math.min(i, 24)}">
@@ -218,7 +219,7 @@ export class Locker {
           <div class="lk-brand">${esc(it.brand ? BRANDS[it.brand].name : '—')}</div>
           <div class="lk-name">${esc(it.name)}</div>
           <div class="lk-rar">${r.name}</div>
-          ${isEq ? '<div class="lk-eq">✓</div>' : ''}${locked ? `<div class="lk-lock">🔒 LV ${itemUnlock(it)}</div>` : ''}
+          ${isEq ? '<div class="lk-eq">✓</div>' : ''}${locked ? `<div class="lk-lock">${it.special === 'masters' ? '🏆 WIN THE MASTERS' : `🔒 LV ${itemUnlock(it)}`}</div>` : ''}
         </button>`;
       }).join('') || '<div class="dim pad">No items match these filters.</div>'}</div>`;
   }
@@ -226,7 +227,8 @@ export class Locker {
   openDetail(cat, id, cfg = null) {
     const it = ALL_ITEMS[id];
     if (!it) return;
-    if (itemUnlock(it) > this.profile.level) { audio.tick(false); this.toast('LOCKED', `Reach level ${itemUnlock(it)} to unlock ${RARITY[it.rarity].name.toLowerCase()} items`, 'info', 1800); return; }
+    if (it.special === 'masters' && itemLocked(it, this.profile)) { audio.tick(false); this.toast('THE GREEN JACKET', 'Win the Masters to earn it'); return; }
+    if (itemLocked(it, this.profile)) { audio.tick(false); this.toast('LOCKED', `Reach level ${itemUnlock(it)} to unlock ${RARITY[it.rarity].name.toLowerCase()} items`, 'info', 1800); return; }
     const eq = this.look.outfit[cat];
     this.draft = clone(this.look);
     this.draft.outfit[cat] = cfg ? clone(cfg) : eq?.id === id ? clone(eq) : defaultCfg(cat, it, eq);
@@ -249,7 +251,10 @@ export class Locker {
     const sw = (key, list, cur) => `<div class="swatches">${list.map(([n, hex]) => `<button class="sw ${String(cur).toLowerCase() === hex.toLowerCase() ? 'on' : ''}" style="background:${hex}" data-opt="${key}" data-val="${hex}" title="${esc(n)}"></button>`).join('')}</div>`;
     let opts = '';
     let fit = '—', color = '—';
-    if (cat === 'top') {
+    if (cat === 'top' && it.fixedColor) {
+      opts += this.row('Color', '<span class="dim">Augusta green, of course.</span>');
+      fit = it.fit; color = 'Masters Green';
+    } else if (cat === 'top') {
       opts += this.row('Color', sw('color', TOP_COLORS, cfg.color));
       opts += this.row('Pattern', opt('pattern', TOP_PATTERNS.filter(p => it.patterns.includes(p[0])), cfg.pattern));
       fit = it.fit; color = colorName(cfg.color, TOP_COLORS);
@@ -439,7 +444,7 @@ export class Locker {
   randomize() {
     const L = this.look;
     const lvl = this.profile.level;
-    const ok = (list) => list.filter(i => itemUnlock(i) <= lvl);
+    const ok = (list) => list.filter(i => !i.special && itemUnlock(i) <= lvl);
     Object.assign(L, {
       height: 0.94 + Math.random() * 0.12, build: 0.9 + Math.random() * 0.22, shoulders: 0.94 + Math.random() * 0.14, legs: 0.95 + Math.random() * 0.1,
       skin: Math.floor(Math.random() * SKIN_TONES.length), faceShape: pick(FACE_SHAPES)[0], jaw: pick(JAWS)[0], eyeShape: pick(EYE_SHAPES)[0],

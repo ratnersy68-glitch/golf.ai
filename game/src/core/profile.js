@@ -20,6 +20,8 @@ export function newProfile() {
     look: normalizeLook(DEFAULT_LOOK),
     outfits: [], // saved outfits: { id, name, outfit }
     closet: [], // favourited items: { cat, cfg }
+    masters: null, // tournament in progress (see game/masters.js)
+    mastersWins: 0, mastersHistory: [],
     level: 1, xp: 0, skillPoints: 0,
     skills: { driving: 50, approach: 50, shortGame: 50, putting: 50, recovery: 50 },
     bag: DEFAULT_BAG.slice(),

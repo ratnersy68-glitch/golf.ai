@@ -102,14 +102,14 @@ export class Play {
       const t0 = performance.now();
       const hole = this.hole = new Hole(this.course, idx, {
         teeFactor: this.tee.factor, pinSeed: this.pinSeed + idx * 7,
-        pinDifficulty: { easy: 0.2, medium: 0.5, sunday: 0.95 }[this.app.profile.settings.pins] ?? 0.5,
+        pinDifficulty: { easy: 0.2, medium: 0.5, sunday: 0.95 }[this.cfg.pins || this.app.profile.settings.pins] ?? 0.5,
       });
       this.world.loadHole(hole, { name: this.golferName, toPar: this.roundToPar() });
       console.log(`hole ${idx + 1} built in ${(performance.now() - t0).toFixed(0)}ms`);
       this.card.yards = hole.yards;
       // wind
       const [wmin, wmax] = this.course.wind;
-      const setting = { calm: 0.3, normal: 1, windy: 1.7 }[this.app.profile.settings.windSetting] ?? 1;
+      const setting = { calm: 0.3, normal: 1, windy: 1.7 }[this.cfg.wind || this.app.profile.settings.windSetting] ?? 1;
       const r = mulberry32(this.pinSeed ^ (idx * 977));
       this.windBaseMph = (wmin + r() * (wmax - wmin)) * setting * this.diff.wind;
       this.windDirPlan = r() * Math.PI * 2; // direction the wind blows toward (plan angle, 0 = +y)
@@ -941,6 +941,7 @@ export class Play {
       return;
     }
     card.strokes = strokes;
+    this.app.onHoleComplete?.(this);
     card.fairway = hole.par >= 4 ? !!log.fairway : null;
     card.gir = log.onGreenAt != null && log.onGreenAt <= hole.par - 2;
     card.drive = log.drive || 0;

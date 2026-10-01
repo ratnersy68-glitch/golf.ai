@@ -90,6 +90,7 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
   - **Rarity:** Common to Legendary. It is cosmetic only and unlocks with your level.
 
   You can also play as tour pros with their own ratings.
+- **The Masters:** a four-round, 72-hole tournament at Augusta National from the championship tees against a field of 51 pros. A live leaderboard and position ticker move as you play each hole. The low 30 and ties make the cut after Friday, Sunday brings the toughest pins, and the winner gets a green-jacket ceremony and the Green Jacket for the locker. Tournaments save between rounds.
 - **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots) and a Driving Range with launch-monitor data.
 - **Career:** earn XP, level up, spend skill points on Driving, Approach, Short Game, Putting and Recovery (skills also improve a little each round), and unlock equipment, balls and clothing.
 - **Scoring and stats:** a full scorecard with out/in/total and birdie/bogey markers. Per-round and career stats include fairways, greens in regulation, putts, driving distance, longest drive and putt, sand saves, up-and-downs and scoring average.
