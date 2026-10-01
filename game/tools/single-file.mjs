@@ -2,7 +2,8 @@
 // Google Sites "Embed code". Run `npm run build` first. Usage: node tools/single-file.mjs <out.html>
 import { readFileSync, writeFileSync } from 'node:fs';
 const html = readFileSync('index.html', 'utf8');
-const css = readFileSync('styles.css', 'utf8');
+import { transformSync } from 'esbuild';
+const css = transformSync(readFileSync('styles.css', 'utf8'), { loader: 'css', minify: true }).code;
 const js = readFileSync('dist/game.js', 'utf8');
 if (js.includes('</script')) throw new Error('bundle contains </script');
 let head = html.slice(html.indexOf('<head>') + 6, html.indexOf('</head>'));

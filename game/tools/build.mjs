@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'site');
 const t0 = Date.now();
 
-await build({ entryPoints: [path.join(root, 'src/main.js')], bundle: true, format: 'iife', minify: true, target: 'es2019', outfile: path.join(root, 'dist/game.js'), logLevel: 'warning' });
+await build({ entryPoints: [path.join(root, 'src/main.js')], bundle: true, format: 'iife', minify: true, target: 'es2019', legalComments: 'none', pure: ['console.log', 'console.warn'], outfile: path.join(root, 'dist/game.js'), logLevel: 'warning' });
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
@@ -17,7 +17,9 @@ const copy = (rel) => {
   fs.mkdirSync(path.dirname(dst), { recursive: true });
   fs.cpSync(src, dst, { recursive: true });
 };
-['index.html', 'styles.css', 'manifest.webmanifest', 'dist/game.js', 'icons', 'assets'].forEach(copy);
+['index.html', 'manifest.webmanifest', 'dist/game.js', 'icons', 'assets'].forEach(copy);
+// minified stylesheet for the site (the source stays readable)
+await build({ entryPoints: [path.join(root, 'styles.css')], minify: true, outfile: path.join(out, 'styles.css'), logLevel: 'warning' });
 const version = `${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}`;
 fs.writeFileSync(path.join(out, 'sw.js'), fs.readFileSync(path.join(root, 'sw.js'), 'utf8').replace('__VERSION__', version));
 // cache-bust the bundle & stylesheet per build

@@ -28,55 +28,7 @@ export const PROS = [
     look: { skin: 4, hair: 'bald', hairColor: '#111', hat: 'cap', hatColor: '#111111', shirt: '#c1121f', shirtStyle: 'polo', pants: '#111111', legs: 'trousers', shoes: '#111111', glove: '#ffffff', beard: false, glasses: false } },
 ];
 
-export const SKIN_TONES = ['#f3d2b3', '#e0ac85', '#c68863', '#9b6a47', '#6b4630', '#4a3021'];
-export const HAIR_STYLES = [
-  { id: 'short', name: 'Short' }, { id: 'buzz', name: 'Buzz' }, { id: 'curly', name: 'Curly' },
-  { id: 'long', name: 'Long' }, { id: 'ponytail', name: 'Ponytail' }, { id: 'bald', name: 'Bald' },
-];
-export const HAIR_COLORS = ['#111111', '#2a1d15', '#4a3322', '#7a5a3a', '#b58a55', '#d9b77a', '#9a3a1c', '#9c9c9c', '#e9e9e9'];
-export const PALETTE = ['#ffffff', '#111111', '#1c2a44', '#1e56b8', '#3a6ea5', '#7fb3d5', '#0d6e6e', '#2f7d3a', '#9ccc65', '#f2c94c', '#f2994a', '#c1121f', '#7b1f2b', '#f2b8c6', '#8e44ad', '#bfc3c8', '#6b4a2b', '#d4d0c5'];
-
-// Cosmetic catalogue: unlock = profile level required.
-export const HATS = [
-  { id: 'none', name: 'No Hat', unlock: 1 },
-  { id: 'cap', name: 'Tour Cap', unlock: 1 },
-  { id: 'visor', name: 'Visor', unlock: 1 },
-  { id: 'bucket', name: 'Bucket Hat', unlock: 2 },
-  { id: 'flatcap', name: 'Flat Cap (Scottish)', unlock: 3 },
-  { id: 'panama', name: 'Panama', unlock: 5 },
-];
-export const SHIRTS = [
-  { id: 'polo', name: 'Tour Polo', unlock: 1 },
-  { id: 'stripe', name: 'Striped Polo', unlock: 1 },
-  { id: 'quarterzip', name: 'Quarter-Zip', unlock: 2 },
-  { id: 'vest', name: 'Sweater Vest', unlock: 3 },
-  { id: 'greenjacket', name: 'Green Jacket', unlock: 8, fixedColor: '#1f6b3a' },
-];
-export const LEGS = [
-  { id: 'trousers', name: 'Trousers', unlock: 1 },
-  { id: 'shorts', name: 'Shorts', unlock: 1 },
-  { id: 'skirt', name: 'Skort', unlock: 1 },
-  { id: 'plusfours', name: 'Plus Fours', unlock: 6 },
-];
-export const SHOES = [
-  { id: 'fj', name: 'FootJoy Premiere Series', unlock: 1 },
-  { id: 'ecco', name: 'ECCO Biom H5', unlock: 2 },
-  { id: 'adidas', name: 'adidas Tour360 24', unlock: 3 },
-  { id: 'jordan', name: 'Air Jordan 1 Low G', unlock: 5 },
-];
-export const GLOVES = [
-  { id: 'fj', name: 'FootJoy StaSof', unlock: 1 },
-  { id: 'titleist', name: 'Titleist Players', unlock: 2 },
-  { id: 'tm', name: 'TaylorMade Tour Preferred', unlock: 3 },
-  { id: 'none', name: 'No Glove', unlock: 1 },
-];
-export const ACCESSORIES = [
-  { id: 'none', name: 'None', unlock: 1 },
-  { id: 'sunglasses', name: 'Oakley Sunglasses', unlock: 2 },
-  { id: 'watch', name: 'Rolex Watch', unlock: 4 },
-  { id: 'both', name: 'Sunglasses + Watch', unlock: 7 },
-];
-
+// Pro looks above use the original (v1) look format; data/look.js converts them.
 export const DEFAULT_LOOK = {
   name: 'You', gender: 'M', skin: 1, hair: 'short', hairColor: '#4a3322',
   hat: 'cap', hatColor: '#1c2a44', shirt: '#ffffff', shirtStyle: 'polo', shirtAlt: '#1c2a44',
