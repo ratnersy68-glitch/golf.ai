@@ -345,8 +345,17 @@ export class Play {
       return;
     }
     const mode = settings.landingMarker ? this.diff.landing : 'line';
+    // Short shots: preview the swing this shot actually needs (a 15-yard chip shouldn't show a full-swing landing).
+    const full = fullCarry(this.club, this.typeId, this.surf, this.attrs.recovery);
+    let power = 1;
+    if (full > 0 && this.distPin < full * 0.92) {
+      const dk = this.diffKey;
+      power = dk === 'easy' || dk === 'normal' ? (this.idealPower(dk === 'easy') ?? clamp(this.distPin / full, 0.1, 1)) : clamp(this.distPin / full, 0.1, 1);
+      power = clamp(power, 0.08, 1);
+    }
+    this.previewPower = power;
     const launch = computeLaunch({
-      club: this.club, typeId: this.typeId, power: 1, timing: 0, heading: this.heading,
+      club: this.club, typeId: this.typeId, power, timing: 0, heading: this.heading,
       shape: this.shapeSel, traj: this.trajSel, spin: this.spin, surf: this.surf,
       attrs: this.attrs, diff: { ...this.diff, disp: 0 }, rng: () => 0.5, noNoise: true,
     });

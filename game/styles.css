@@ -787,3 +787,4 @@ body.touch .bagview.card-open .bv-top { opacity: 0; pointer-events: none; }
 body.desktop #rotate { display: none !important; }
 /* menu/scorecard/fullscreen buttons stay tappable above dialogs and the bag view */
 .top-btns { z-index: 6; }
+.pm-confirm { flex-basis: 100%; text-align: right; color: #ffd2cd; font-weight: 600; font-size: 14px; }

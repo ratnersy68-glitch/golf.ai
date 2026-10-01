@@ -63,7 +63,7 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
 
 ## Features
 
-- **10 real courses, 180 holes:** Augusta National, Pebble Beach, TPC Sawgrass, Torrey Pines South, Bethpage Black, Pinehurst No. 2, St Andrews Old Course, Valhalla, Oakmont and Riviera. Each has its own look: trees (loblolly pines, Monterey cypress, palms, eucalyptus, gorse), grass colors, sky, wind, green speed, firmness, water and buildings. Signature holes include Amen Corner with Rae's Creek, Pebble's 7th and 18th along the ocean, the Sawgrass Island Green, Oakmont's Church Pews, Riviera's bunker in the middle of the 6th green, St Andrews' Road Hole, the Swilcan Bridge and the Valley of Sin, and Pinehurst's turtle-back greens.
+- **15 real courses, 270 holes, all free to play from the start:** Augusta National, Pebble Beach, TPC Sawgrass, Torrey Pines South, Bethpage Black, Pinehurst No. 2, St Andrews Old Course, Valhalla, Oakmont, Riviera, Whistling Straits, Kiawah Island Ocean Course, Carnoustie, Royal Portrush and Muirfield Village. Each has its own look: trees (loblolly pines, Monterey cypress, palms, eucalyptus, gorse), grass colors, sky, wind, green speed, firmness, water and buildings. Signature holes include Amen Corner with Rae's Creek, Pebble's 7th and 18th along the ocean, the Sawgrass Island Green, Oakmont's Church Pews, Riviera's bunker in the middle of the 6th green, St Andrews' Road Hole, the Swilcan Bridge and the Valley of Sin, and Pinehurst's turtle-back greens.
 - **Tees:** Championship, Tournament, Member and Forward.
 - **Ball physics:** drag and Magnus lift from real ball speed, launch and spin, plus wind that strengthens with height. Balls bounce off sloped terrain and bite or roll out based on spin and surface. Rolling responds to green speed, slope, lie, firmness, water, sand, trees (leaves and trunks), the flagstick and lip-outs.
 - **Golf bag:** 19 club types from real brands, including TaylorMade, Callaway, Titleist, Ping, Cobra, Mizuno, Srixon, Cleveland, Bettinardi, Scotty Cameron and Odyssey. Each club has its own carry, launch, spin, accuracy and forgiveness. You build your own 14-club bag and choose your ball.
@@ -91,7 +91,7 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
 
   You can also play as tour pros with their own ratings.
 - **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots) and a Driving Range with launch-monitor data.
-- **Career:** earn XP, level up, spend skill points on Driving, Approach, Short Game, Putting and Recovery (skills also improve a little each round), and unlock courses, equipment, balls and clothing.
+- **Career:** earn XP, level up, spend skill points on Driving, Approach, Short Game, Putting and Recovery (skills also improve a little each round), and unlock equipment, balls and clothing.
 - **Scoring and stats:** a full scorecard with out/in/total and birdie/bogey markers. Per-round and career stats include fairways, greens in regulation, putts, driving distance, longest drive and putt, sand saves, up-and-downs and scoring average.
 - **Difficulty:**
   - **Easy:** big sweet spot, wind-adjusted landing marker, full putt preview, gimmes

@@ -211,6 +211,7 @@ class App {
   }
 
   quitToMenu() {
+    this.pendingQuit = false;
     this.play.stop();
     this.hud.closeModal();
     this.menus.show(true);
@@ -242,14 +243,17 @@ class App {
     const r = m.querySelector('#pm-restart'); if (r) r.onclick = () => { hud.closeModal(); play.replayHole(); };
     m.querySelector('#pm-guide').onclick = () => { this.profile.settings.puttGuide = !this.profile.settings.puttGuide; this.save(); if (play.state === 'aim') play.updateAim(); this.pauseMenu(); };
     m.querySelector('#pm-cam').onclick = () => { this.profile.settings.autoCamera = !this.profile.settings.autoCamera; this.save(); this.pauseMenu(); };
-    // confirm in the menu itself (browser confirm() dialogs are blocked inside embeds like Google Sites)
-    const q = m.querySelector('#pm-quit');
-    q.onclick = () => {
-      if (q.dataset.armed) { this.quitToMenu(); return; }
-      q.dataset.armed = '1';
-      q.textContent = 'TAP AGAIN TO QUIT';
-      setTimeout(() => { if (q.isConnected) { delete q.dataset.armed; q.textContent = 'QUIT TO MENU'; } }, 3000);
+    // confirm inside the menu (browser confirm() dialogs are blocked inside embeds like Google Sites)
+    m.querySelector('#pm-quit').onclick = () => {
+      const btns = m.querySelector('.modal-btns');
+      btns.innerHTML = `<div class="pm-confirm">Leave this round? Your progress on it won't be saved.</div>
+        <button class="btn" id="pm-stay">KEEP PLAYING</button>
+        <button class="btn danger" id="pm-leave">YES, QUIT TO MENU <kbd>Enter</kbd></button>`;
+      btns.querySelector('#pm-stay').onclick = () => this.pauseMenu();
+      btns.querySelector('#pm-leave').onclick = () => this.quitToMenu();
+      this.pendingQuit = true;
     };
+    this.pendingQuit = false;
   }
 
   // ---------------- input ----------------
@@ -266,6 +270,7 @@ class App {
         return;
       }
       if (this.hud.modalOpen()) {
+        if (e.key === 'Enter' && this.pendingQuit && this.hud.pauseOpen()) { e.preventDefault(); this.quitToMenu(); return; }
         if (e.key === 'Escape') { if (this.hud.pauseOpen()) this.pauseMenu(true); else if (play.state !== 'holed') this.hud.closeModal(); }
         if (e.key === 'Enter' && play.state === 'holed' && this.hud.pendingNext) { const f = this.hud.pendingNext; this.hud.pendingNext = null; f(); }
         return;

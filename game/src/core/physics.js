@@ -83,6 +83,7 @@ export function simulate(hole, start, launch, env, opts = {}) {
   let lastGroundH = hole.heightAt(x, y);
   let lipped = false;
   let pinHit = false;
+  let creep = 0;
 
   while (t < maxT) {
     t += dt; step++;
@@ -290,10 +291,13 @@ export function simulate(hole, start, launch, env, opts = {}) {
         pushFrame();
         break;
       }
-      if (sp2 < 0.01) {
-        const slopeA = Math.hypot(ax, ay);
-        if (slopeA < rollA * 1.05) { vx = vy = 0; pushFrame(); break; }
-      }
+      // at rest: friction can hold the ball on this slope and it is barely moving.
+      // (on steep faces the slope adds ~slopeA*dt each step, so compare against that too)
+      const slopeA = Math.hypot(ax, ay);
+      if (sp2 < Math.max(0.01, slopeA * dt * 1.5) && slopeA < rollA * 1.05) { vx = vy = 0; pushFrame(); break; }
+      // a ball creeping at walking-pace-of-a-snail for a long time has effectively stopped
+      creep = sp2 < 0.12 ? creep + dt : 0;
+      if (creep > 1.5) { vx = vy = 0; pushFrame(); break; }
     }
     if (step % rec === 0) pushFrame();
   }
