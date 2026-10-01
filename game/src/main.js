@@ -224,7 +224,7 @@ class App {
   onRoundComplete(round, st, cfg) {
     if (cfg.masters) return this.onMastersRound(round, st, cfg);
     let award = null;
-    if (cfg.custom && (cfg.mode === 'round18' || cfg.mode === 'round9')) {
+    if (cfg.mode === 'round18' || cfg.mode === 'round9') {
       award = awardXp(this.profile, st, cfg.difficulty, st.holes);
       recordRound(this.profile, round);
     } else if (cfg.mode === 'round18' || cfg.mode === 'round9') {

@@ -80,19 +80,10 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
   - a comparison with the club in your hands, with ▲▼ differences
 
   SELECT CLUB closes the card and lowers the camera behind the golfer. The new club cross-fades into the golfer's hands and the HUD and aim update.
-- **Locker room (golfer customization):**
-  - **Body:** height, build, shoulders and leg/torso proportions, and 12 skin tones.
-  - **Face:** face shape, jaw, eye shape and color, brows, nose, mouth and facial hair.
-  - **Hair:** 18 styles and 15 colors.
-  - **Apparel:** a pro-shop style catalogue of 98 items from Peter Millar, Nike, adidas, Under Armour, FootJoy, TravisMathew, Ralph Lauren, J.Lindeberg, lululemon, Titleist, PUMA, New Balance, ECCO and more. It covers polos, performance tops, quarter-zips, sweaters and vests; pants, trousers, joggers and shorts; shoes; hats; and gloves. Items come in colors, patterns (stripes, gingham, plaid, houndstooth, prints), fits, shoe colorways, spiked or spikeless soles, laces or BOA, and hat logos and fits.
-  - **Previewing:** tap an item to preview it on the 3D golfer, then EQUIP or ADD TO CLOSET. BACK reverts. Changes cross-fade on the model rather than popping. Rotate the preview by dragging, zoom it, or jump to front, side or back views. The camera frames the part you're editing.
-  - **Outfits:** save up to 12 outfits, then rename, update, equip or delete them.
-  - **Rarity:** Common to Legendary. It is cosmetic only and unlocks with your level.
-
-  You can also play as tour pros with their own ratings.
-- **The Masters:** a four-round, 72-hole tournament at Augusta National from the championship tees against a field of 51 pros. A live leaderboard and position ticker move as you play each hole. The low 30 and ties make the cut after Friday, Sunday brings the toughest pins, and the winner gets a green-jacket ceremony and the Green Jacket for the locker. Tournaments save between rounds.
+- **Tour pros:** play as real tour pros, including Scheffler, McIlroy, Rahm, DeChambeau, Spieth, Thomas, Morikawa, Hovland, Schauffele, Åberg, Korda and Woods. Each has their own power, accuracy, short game, putting and recovery ratings.
+- **The Masters:** pick a pro and play a four-round, 72-hole tournament at Augusta National from the championship tees against the rest of the field. A live leaderboard and position ticker move as you play each hole. The low 30 and ties make the cut after Friday, Sunday brings the toughest pins, and the winner gets a green-jacket ceremony. Tournaments save between rounds.
 - **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots) and a Driving Range with launch-monitor data.
-- **Career:** earn XP, level up, spend skill points on Driving, Approach, Short Game, Putting and Recovery (skills also improve a little each round), and unlock equipment, balls and clothing.
+- **Career:** earn XP and level up to unlock equipment and balls.
 - **Scoring and stats:** a full scorecard with out/in/total and birdie/bogey markers. Per-round and career stats include fairways, greens in regulation, putts, driving distance, longest drive and putt, sand saves, up-and-downs and scoring average.
 - **Difficulty:**
   - **Easy:** big sweet spot, wind-adjusted landing marker, full putt preview, gimmes
@@ -120,7 +111,7 @@ src/
               clubModel.js (procedural club heads), clubViewer.js (3D club card), apparelTex.js (fabric & logo textures),
               camera.js, sky.js, textures.js
   ui/         hud.js (in-round HUD & scorecard), bagView.js (club selection), menus.js (front-end screens),
-              locker.js (customization), icons.js (SVG product icons)
+              icons.js (club icons)
   audio/      audio.js (WebAudio synthesis)
 ```
 

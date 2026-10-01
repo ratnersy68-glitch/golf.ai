@@ -38,11 +38,11 @@ function holeScore(rng, par, avg, skill, sunday) {
   return par;
 }
 
-export function newTournament(course, difficulty, playerName) {
+export function newTournament(course, difficulty, playerName, proId = null) {
   const seed = (Date.now() & 0x7fffffff) >>> 0;
   const rng = mulberry32(seed);
   const pars = course.holes.map(h => h.p);
-  const pros = PROS.filter(p => p.id !== 'korda').map(p => [p.name, p.country, Math.min(0.95, ((p.power + p.accuracy + p.shortGame + p.putting) / 4 - 60) / 38)]);
+  const pros = PROS.filter(p => p.id !== 'korda' && p.id !== proId).map(p => [p.name, p.country, Math.min(0.95, ((p.power + p.accuracy + p.shortGame + p.putting) / 4 - 60) / 38)]);
   const field = [...pros, ...FIELD_EXTRA].map(([name, country, skill]) => {
     const form = (rng() - 0.5) * 0.2; // this week's form
     const rounds = [0, 1, 2, 3].map(rd => {
@@ -51,7 +51,7 @@ export function newTournament(course, difficulty, playerName) {
     });
     return { name, country, skill, rounds };
   });
-  return { v: 1, seed, round: 1, difficulty, playerName, pars, field, player: { rounds: [] }, cutMade: null, finished: false, result: null, started: Date.now() };
+  return { v: 1, seed, round: 1, difficulty, playerName, proId, pars, field, player: { rounds: [] }, cutMade: null, finished: false, result: null, started: Date.now() };
 }
 
 const toParOf = (scores, pars) => scores.reduce((a, s, i) => a + (s - pars[i]), 0);
