@@ -19,7 +19,14 @@ const THUMB_KEY = 'golfai.thumbs.v4';
 // Desktop (computer) layout can be forced with window.GOLF_DESKTOP = true or ?desktop in the URL,
 // e.g. when the game is embedded in another site.
 export const FORCE_DESKTOP = (typeof window !== 'undefined') && (window.GOLF_DESKTOP === true || /[?&](desktop|pc)(=|&|$)/i.test(location.search));
-export const IS_TOUCH = !FORCE_DESKTOP && (typeof window !== 'undefined') && (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches);
+// Phone/tablet layout only on actual phones and tablets: touchscreen laptops and Chromebooks
+// have a keyboard and trackpad and get the computer layout.
+const UA = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+export const IS_CHROMEBOOK = /CrOS/.test(UA);
+const IS_MOBILE_DEVICE = /iPhone|iPad|iPod|Android/i.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+export const IS_TOUCH = !FORCE_DESKTOP && !IS_CHROMEBOOK && IS_MOBILE_DEVICE;
+// low-power machines (most Chromebooks) default to the light graphics setting
+const LOW_END = IS_CHROMEBOOK || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
 
 class App {
   constructor() {
@@ -50,7 +57,7 @@ class App {
   save() { saveProfile(this.profile); }
 
   // 'auto' = medium on phones/tablets (battery + heat), high on desktop
-  qualityFor(q) { return !q || q === 'auto' ? (IS_TOUCH ? 'medium' : 'high') : q; }
+  qualityFor(q) { return !q || q === 'auto' ? (IS_TOUCH ? 'medium' : LOW_END ? 'low' : 'high') : q; }
 
   // Fullscreen where the browser allows it (iPhone Safari does not: fall back gracefully)
   toggleFullscreen() {
@@ -398,14 +405,27 @@ function installMobileGuards() {
   window.addEventListener('offline', upd); window.addEventListener('online', upd); upd();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+function bootFail(msg) {
+  const m = document.getElementById('boot-msg');
+  if (m) { m.textContent = msg; m.classList.add('err'); }
+  else document.body.insertAdjacentHTML('beforeend', `<div style="position:fixed;inset:0;display:grid;place-items:center;color:#fff;font:16px sans-serif;background:#111;z-index:99;padding:20px;text-align:center">${msg}</div>`);
+}
+
+function boot() {
   installMobileGuards();
   // let the boot screen paint before the (blocking) first course build
   requestAnimationFrame(() => setTimeout(() => {
     try { new App(); }
     catch (e) {
       console.error(e);
-      document.body.insertAdjacentHTML('beforeend', `<div style="position:fixed;inset:0;display:grid;place-items:center;color:#fff;font:16px sans-serif;background:#111;z-index:99;padding:20px;text-align:center">Failed to start: ${e.message}. A WebGL-capable browser is required.</div>`);
+      bootFail(/webgl/i.test(e.message || '') || !window.WebGLRenderingContext
+        ? 'This browser has 3D graphics (WebGL) turned off. In Chrome, open chrome://settings/system and turn on "Use graphics acceleration", then reload.'
+        : `The game couldn't start: ${e.message}`);
     }
   }, 30));
-});
+}
+// show unexpected startup errors on the loading screen instead of hanging silently
+window.addEventListener('error', (e) => { if (!window.__app && document.getElementById('boot')) bootFail(`The game couldn't start: ${e.message}`); });
+// the page may already be loaded when this script runs (e.g. inside a Google Sites embed)
+if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', boot);
+else boot();

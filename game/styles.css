@@ -403,7 +403,7 @@ input[type=range] { accent-color: var(--accent); width: 220px; }
 @keyframes rot { 0%, 20% { transform: rotate(0); } 55%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
 .rotate-title { margin-top: 34px; font-family: var(--cond); font-weight: 800; font-size: 30px; letter-spacing: .08em; }
 .rotate-sub { margin-top: 6px; color: var(--dim); font-size: 15px; }
-@media (orientation: portrait) and (max-width: 600px) { #rotate { display: flex; } }
+@media (orientation: portrait) and (max-width: 600px) { body.touch #rotate { display: flex; } }
 
 #offline { position: fixed; top: calc(var(--st) + 8px); left: 50%; transform: translate(-50%, -150%); z-index: 45; background: rgba(120, 20, 16, 0.92); border: 1px solid rgba(255,120,110,.6); border-radius: 12px; padding: 8px 16px; display: flex; gap: 10px; align-items: baseline; transition: transform .35s; pointer-events: none; font-size: 13px; }
 #offline b { font-family: var(--cond); letter-spacing: .1em; font-size: 15px; }
@@ -867,3 +867,5 @@ body.touch .mticker { top: calc(var(--st) + 64px); left: calc(var(--sl) + 10px);
   .m-logo { font-size: 40px; } .m-hero { padding-bottom: 8px; } .md { min-width: 84px; padding: 5px 8px; }
   .mc-card { padding: 14px; } .mc-card .m-logo { font-size: 32px; } .mc-name { font-size: 24px; }
 }
+
+.boot-msg.err { color: #ffd2cd; max-width: 520px; margin: 14px auto 0; line-height: 1.5; letter-spacing: .02em; text-transform: none; }
