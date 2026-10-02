@@ -6,6 +6,9 @@
 import { Noise2D, mulberry32, hashString, clamp, lerp, smoothstep } from './noise.js';
 import { THEMES } from '../data/themes.js';
 
+// max() with a rounded corner where both are positive (rounded ends for bands)
+const rmax = (a, b) => (a > 0 && b > 0 ? Math.hypot(a, b) : Math.max(a, b));
+
 export const S = {
   DEEP: 0, ROUGH: 1, FIRSTCUT: 2, FAIRWAY: 3, FRINGE: 4, GREEN: 5, TEE: 6,
   SAND: 7, WASTE: 8, WATER: 9, BRUSH: 10, STRAW: 11, PATH: 12,
@@ -313,7 +316,7 @@ export class Hole {
         const nz = this.noise, o = r() * 50;
         const sdf = (x, y, s, d) => {
           let v = off + 4 * nz.n1(s / 45 + o) - side * d;
-          v = Math.max(v, s1 - s, s - s2);
+          v = rmax(v, Math.max(s1 - s, s - s2)); // rounded ends instead of square corners
           if (k === 'lat') v = Math.max(v, side * d - (off + width));
           return v;
         };
@@ -378,16 +381,10 @@ export class Hole {
     // fairway start
     const p = this.def.p;
     this.fStart = this.def.range ? 12 : p === 3 ? this.L - 40 : (this.links ? 30 : Math.min(T.fairwayFrom ?? 150, this.L * 0.38));
-    // water levels
+    // the sea's big shoreline rise must not bury ponds and creeks: apply it before them
+    this.shapes.sort((p, q) => (q.kind === 'ocean') - (p.kind === 'ocean'));
     for (const sh of this.shapes) {
-      if (sh.surf === S.WATER) {
-        if (sh.kind === 'ocean') sh.level = T.seaLevel ?? -8;
-        else {
-          const [lx, ly] = sh.levelAt;
-          sh.level = this.baseHeight(lx, ly) - 0.9;
-          if (sh.kind === 'island') sh.level = Math.min(sh.level, this.baseHeight(this.G[0], this.G[1]) - 1.2);
-        }
-      } else if (sh.surf === S.BRUSH && sh.levelAt) {
+      if (sh.surf === S.BRUSH && sh.levelAt) {
         const [lx, ly] = sh.levelAt;
         sh.level = this.baseHeight(lx, ly);
       }
@@ -404,6 +401,44 @@ export class Hole {
     this.teeDir = [tp.tx, tp.ty];
   }
 
+  // Pick each pond/creek's surface height from the terrain it actually sits in, so the water
+  // is visible (not buried) and never spills over the grass or greens around it.
+  setWaterLevels() {
+    const water = this.shapes.filter(sh => sh.surf === S.WATER);
+    const tmp = [0, 0];
+    const pct = (a, q) => { if (!a.length) return null; a.sort((m, n) => m - n); return a[Math.min(a.length - 1, Math.floor(a.length * q))]; };
+    const samples = new Map();
+    for (const sh of water) {
+      if (sh.kind === 'ocean') { sh.level = this.theme.seaLevel ?? -8; continue; }
+      let x0 = this.gx0, x1 = this.gx0 + this.gnx, y0 = this.gy0, y1 = this.gy0 + this.gny;
+      if (sh.rad && !sh.band) { x0 = sh.cx - sh.rad - 8; x1 = sh.cx + sh.rad + 8; y0 = sh.cy - sh.rad - 8; y1 = sh.cy + sh.rad + 8; }
+      const step = Math.max(2, Math.min(5, Math.sqrt((x1 - x0) * (y1 - y0) / 2500)));
+      const inner = [], rim = [], pts = [];
+      let greenRim = Infinity;
+      for (let y = y0; y <= y1; y += step) for (let x = x0; x <= x1; x += step) {
+        this.nearest(x, y, tmp);
+        const v = sh.sdf(x, y, tmp[0], tmp[1]);
+        if (v > 3) continue;
+        const h = this.heightFeatures(x, y, tmp[0], tmp[1], false, true);
+        if (v < 0) { inner.push(h); pts.push([x, y]); } else rim.push(h);
+        if (this.greenSdf(x, y) < 6) greenRim = Math.min(greenRim, h);
+      }
+      const li = pct(inner, 0.3), lr = pct(rim, 0.1);
+      let L = Math.min(li == null ? 0 : li - 0.7, lr == null ? Infinity : lr - 0.25);
+      if (greenRim < Infinity) L = Math.min(L, greenRim - 0.45);
+      if (sh.kind === 'island') L = Math.min(L, this.baseHeight(this.G[0], this.G[1]) - 1.2);
+      sh.level = L;
+      samples.set(sh, pts);
+    }
+    // ponds and creeks that touch share one surface (no steps or gaps where they meet)
+    const ws = water.filter(sh => sh.kind !== 'ocean');
+    for (let i = 0; i < ws.length; i++) for (let j = i + 1; j < ws.length; j++) {
+      const A = ws[i], B = ws[j];
+      const touch = (samples.get(A) || []).some(([x, y]) => { this.nearest(x, y, tmp); return B.sdf(x, y, tmp[0], tmp[1]) < 6; });
+      if (touch) A.level = B.level = Math.min(A.level, B.level);
+    }
+  }
+
   // ---------- heights ----------
   // smooth base terrain available everywhere (no local features)
   baseHeight(x, y) {
@@ -417,7 +452,7 @@ export class Hole {
     return E + U;
   }
 
-  heightFeatures(x, y, s, d, far = false) {
+  heightFeatures(x, y, s, d, far = false, noHaz = false) {
     const T = this.theme;
     const base = this.baseHeight(x, y);
     let h = far ? base - 1.0 : base;
@@ -453,6 +488,7 @@ export class Hole {
         h -= 1.3 * Math.exp(-r2 / (2 * 36)) * smoothstep(-6, 2, gs);
       }
     }
+    if (noHaz) return h;
     // hazards
     for (const sh of this.shapes) {
       if (sh.rad && !sh.band) {
@@ -468,7 +504,12 @@ export class Hole {
         else if (sh.kind === 'ocean') {
           if (v < 3.5) h = lerp(L - 1.2, Math.max(h, L + 3), smoothstep(0, 3.5, v));
           else h = Math.max(h, L + 3 + (v - 3.5) * 0.05);
-        } else if (v < 6) h = lerp(h, Math.max(h, L + 0.12 + v * 0.07), gk);
+        } else if (v < 9) {
+          // banks: never below the water (no flooding), never a cliff above it
+          const lo = L + 0.12 + v * 0.07, hi = L + 0.3 + v * 0.55;
+          const t = clamp(h, lo, hi);
+          h = lerp(h, t, (v < 6 ? 1 : 1 - smoothstep(6, 9, v)) * (h < lo ? 1 : gk));
+        }
       } else if (far) {
         continue;
       } else if (sh.surf === S.BRUSH) {
@@ -580,6 +621,8 @@ export class Hole {
     minY = Math.floor(minY - 90); maxY = Math.ceil(maxY + 100);
     this.gx0 = minX; this.gy0 = minY;
     this.gnx = maxX - minX + 1; this.gny = maxY - minY + 1;
+    // water levels need the tees, green and grid extent, but must be set before heights are computed
+    this.setWaterLevels();
     const nx = this.gnx, ny = this.gny, N = nx * ny;
     this.gS = new Float32Array(N); this.gD = new Float32Array(N); this.gH = new Float32Array(N);
     const tmp = [0, 0];
