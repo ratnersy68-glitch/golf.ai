@@ -35,6 +35,13 @@ body = body.replace('<script src="dist/game.js"></script>', () => `<script>
 </script>`);
 // tiny inline style so the loading screen looks right while the real stylesheet unpacks
 const boot = '<style>html,body{margin:0;height:100%;background:#0b0f0d;color:#eef3ef;font-family:Inter,system-ui,sans-serif;overflow:hidden}#rotate,#offline{display:none}#boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}</style>';
+// file previews (e.g. iPhone Files / Quick Look) show the page but never run scripts:
+// hide the phone-only screens with inline styles and explain how to play instead
+body = body.replace('<div id="rotate">', '<div id="rotate" style="display:none">').replace('<div id="offline">', '<div id="offline" style="display:none">');
+body = body.replace('<div class="boot-msg" id="boot-msg">Loading course…</div>', `<div class="boot-msg" id="boot-msg">Loading course…</div>
+    <noscript><p style="max-width:520px;margin:16px auto;font:16px sans-serif;color:#eef3ef;text-align:center">This viewer can't run games. On iPhone, open <b>https://ratnersy68-glitch.github.io/golf.ai/</b> in Safari. On a computer, open this file in Chrome or paste it into Google Sites.</p></noscript>`);
+const unhide = "['rotate','offline'].forEach(function(id){var e=document.getElementById(id);if(e)e.removeAttribute('style');});";
+body = body.replace('(function () {\n  var CSS', '(function () {\n  ' + unhide + '\n  var CSS');
 const out = `<!DOCTYPE html>\n<html lang="en">\n<head>${head}\n${boot}\n</head>\n<body>\n${body}\n</body>\n</html>\n`;
 writeFileSync(process.argv[2] || 'golf-packed.html', out);
 console.log(`wrote ${process.argv[2]} (${(out.length / 1024).toFixed(0)} KB)`);
