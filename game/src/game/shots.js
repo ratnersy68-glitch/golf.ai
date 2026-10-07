@@ -139,6 +139,12 @@ export function computeLaunch(inp) {
   launch = Math.max(typeId === 'chip' ? 5 : 4, launch);
   // lower power -> slightly lower launch & spin
   if (power < 1) { launch *= 0.85 + 0.15 * power; spin *= 0.6 + 0.4 * power; }
+  if (typeId === 'chip' && club.loft) {
+    // a chip launches at a little over half the club's loft (hands ahead), with modest spin:
+    // LW pops up and stops, PW releases, a 7-iron runs like a putt
+    launch = club.loft * 0.55 + 3.5 * (inp.traj || 0) - 1.5 * sp.y + (surf === S.ROUGH || surf === S.DEEP ? 1.2 : 0);
+    spin = (1200 + club.loft * 70) * (0.6 + 0.4 * Math.min(1, power)) * lie.spin * (1 - 0.42 * sp.y);
+  }
   const recovery = attrs.recovery ?? 50;
   const lieMul = lieMultiplier(surf, typeId, club, recovery, inp.noNoise ? 0.5 : rng());
   const trajMul = inp.traj ? 0.97 : 1;
