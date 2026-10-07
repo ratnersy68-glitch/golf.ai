@@ -342,7 +342,11 @@ class App {
     this.last = now;
     this.menuT += dt;
     this.frames = (this.frames || 0) + 1;
-    if (this.frames === 3) { const b = document.getElementById('boot'); if (b) { b.classList.add('done'); setTimeout(() => b.remove(), 700); } }
+    if (this.frames === 3) {
+      // the opening animation (index.html) removes the boot screen once it has played
+      if (window.__bootReady) window.__bootReady();
+      else { const b = document.getElementById('boot'); if (b) { b.classList.add('done'); setTimeout(() => b.remove(), 700); } }
+    }
     let focus = null;
     if (this.mode === 'play' && this.play.hole) {
       this.play.update(dt);
