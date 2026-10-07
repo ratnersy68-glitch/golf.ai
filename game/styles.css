@@ -118,6 +118,10 @@ kbd { font-family: var(--sans); font-size: 10px; background: rgba(255,255,255,0.
 .aim-pad { position: absolute; right: 18px; bottom: 130px; display: none; gap: 10px; }
 @media (pointer: coarse) { .aim-pad { display: flex; } .help { display: none; } }
 .help { position: absolute; right: 18px; bottom: 18px; padding: 10px 12px; font-size: 11px; color: var(--dim); line-height: 1.9; }
+.help .help-tab { display: none; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.help:not(.open):not(:hover) { padding: 6px 12px; }
+.help:not(.open):not(:hover) > div:not(.help-tab) { display: none; }
+.help:not(.open):not(:hover) .help-tab { display: block; }
 
 .pin-marker { position: absolute; left: 0; top: 0; pointer-events: none !important; display: none; margin: -30px 0 0 -18px; font-family: var(--cond); font-weight: 700; font-size: 14px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.8); white-space: nowrap; }
 .pin-marker span { color: var(--accent2); margin-right: 4px; }

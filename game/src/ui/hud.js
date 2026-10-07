@@ -100,7 +100,8 @@ export class Hud {
         </div>
       </div>
       <button class="m-swing" id="m-swing"><span>SWING</span><small id="m-swing-hint">HOLD</small></button>
-      <div class="help glass" id="help">
+      <div class="help glass open" id="help">
+        <div class="help-tab">⌨ CONTROLS</div>
         <div><kbd>←</kbd><kbd>→</kbd> Aim <kbd>↑</kbd><kbd>↓</kbd> Club <kbd>B</kbd> Bag <kbd>X</kbd> Shot</div>
         <div><kbd>Q</kbd>/<kbd>E</kbd> Draw/Fade <kbd>T</kbd> Height <kbd>R</kbd> Aim at pin</div>
         <div><kbd>C</kbd> Camera <kbd>M</kbd> Map <kbd>G</kbd> Putt guide <kbd>Tab</kbd> Card</div>
@@ -215,7 +216,13 @@ export class Hud {
     }
   }
 
-  show(v) { this.root.classList.toggle('visible', v); if (!v) { this.closeModal(); this.practiceResult(null); } }
+  show(v) {
+    this.root.classList.toggle('visible', v);
+    if (!v) { this.closeModal(); this.practiceResult(null); }
+    // keyboard help: shown as a round starts, then folds away to a small tab (hover to read)
+    const help = $('#help', this.root);
+    if (v && help) { help.classList.add('open'); clearTimeout(this.helpT); this.helpT = setTimeout(() => help.classList.remove('open'), 10000); }
+  }
 
   // meter domain [-0.35, 1.15]
   mpos(v) { return ((v + 0.35) / 1.5) * 100; }
