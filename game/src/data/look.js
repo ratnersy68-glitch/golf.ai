@@ -47,10 +47,10 @@ export function normalizeLook(look = {}) {
   if (look.build) L.build = look.build;
   if (look.accessory || look.glasses) L.accessory = look.glasses ? 'sunglasses' : look.accessory;
   const st = look.shirtStyle || 'polo';
-  const top = st === 'quarterzip' ? findStyle(TOPS, 'quarterzip', TOPS[5]) : st === 'vest' ? findStyle(TOPS, 'vest', TOPS[5]) : st === 'greenjacket' || st === 'sweater' ? findStyle(TOPS, 'sweater', TOPS[5]) : st === 'mock' ? findStyle(TOPS, 'mock', TOPS[5]) : TOPS[5];
+  const top = st === 'quarterzip' ? findStyle(TOPS, 'quarterzip', TOPS[0]) : st === 'vest' ? findStyle(TOPS, 'vest', TOPS[0]) : st === 'greenjacket' || st === 'sweater' ? findStyle(TOPS, 'sweater', TOPS[0]) : st === 'mock' ? findStyle(TOPS, 'mock', TOPS[0]) : TOPS[0];
   L.outfit.top = { id: top.id, color: look.shirt || '#f4f4f2', pattern: st === 'stripe' ? 'stripe' : 'solid' };
   const bst = look.legs === 'shorts' ? 'shorts' : look.legs === 'skirt' ? 'shorts' : 'pants';
-  L.outfit.bottom = { id: findStyle(BOTTOMS, bst, BOTTOMS[3]).id, color: look.pants || '#1d2638', pattern: 'solid', fit: 'Regular' };
+  L.outfit.bottom = { id: findStyle(BOTTOMS, bst, BOTTOMS[0]).id, color: look.pants || '#1d2638', pattern: 'solid', fit: 'Regular' };
   L.outfit.shoes = { id: SHOES[0].id, colorway: look.shoes && look.shoes !== '#ffffff' && look.shoes !== '#f4f4f4' ? 1 : 0, spikes: true, closure: 'laces' };
   const hatStyle = { cap: 'cap', visor: 'visor', bucket: 'bucket', flatcap: 'flatcap', panama: 'panama' }[look.hat];
   L.outfit.hat = hatStyle ? { id: findStyle(HATS, hatStyle, HATS[0]).id, color: look.hatColor || '#1c2a44', pattern: 'solid', logo: true, fit: 'Structured' } : { id: 'hat-none' };

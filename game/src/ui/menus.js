@@ -4,7 +4,6 @@ import { COURSES, TEE_SETS, coursePar, courseYards, getCourse } from '../data/co
 import { PROS, GOATS, ALL_GOLFERS, golferById, overall, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
 import { portrait } from './portrait.js';
 import { normalizeLook } from '../data/look.js';
-import { TOPS, BOTTOMS, SHOES, HATS, GLOVES, RARITY, itemUnlock } from '../data/apparel.js';
 import { newTournament, leaderboard, boardHtml, projectedCut, fmtPar, ROUND_DAYS } from '../game/masters.js';
 import { GREEN_JACKET } from '../data/apparel.js';
 import { CLUB_TYPES, BRAND_MODELS, BALLS, buildBag } from '../data/clubs.js';
@@ -30,7 +29,6 @@ export function unlocksAt(lv) {
     ...COURSES.filter(x => x.unlock === lv).map(x => `⛳ ${x.short}`),
     ...Object.values(BRAND_MODELS).flat().filter(x => x.unlock === lv).map(x => `🏌 ${x.brand} ${x.model}`),
     ...BALLS.filter(x => x.unlock === lv).map(x => `⚪ ${x.brand} ${x.model}`),
-    ...Object.entries(RARITY).filter(([, r]) => r.unlock === lv && lv > 1).map(([k, r]) => `👕 ${[...TOPS, ...BOTTOMS, ...SHOES, ...HATS, ...GLOVES].filter(i => (i.rarity || 'common') === k).length} ${r.name.toLowerCase()} apparel items`),
   ];
 }
 
@@ -289,7 +287,7 @@ export class Menus {
           ${p.mastersWins ? `<div class="m-wins">🏆 ${p.mastersWins} Green Jacket${p.mastersWins > 1 ? 's' : ''}</div>` : ''}
         </div>
         <div class="cols two">
-          <div class="col">${this.mastersBoardFor(m) || `<div class="mboard intro"><div class="mb-head"><span>THE FIELD</span></div><div class="m-field">${['Scottie Scheffler', 'Rory McIlroy', 'Jon Rahm', 'Bryson DeChambeau', 'Xander Schauffele', 'Ludvig Åberg', 'Collin Morikawa', 'Hideki Matsuyama', 'Jordan Spieth', 'Tiger Woods', 'Brooks Koepka', 'Tommy Fleetwood'].map(n => `<span>${n}</span>`).join('')}<span class="dim">…and 39 more</span></div></div>`}</div>
+          <div class="col">${this.mastersBoardFor(m) || `<div class="mboard intro"><div class="mb-head"><span>THE FIELD</span></div><div class="m-field">${['Scottie Scheffler', 'Rory McIlroy', 'Jon Rahm', 'Bryson DeChambeau', 'Xander Schauffele', 'Ludvig Åberg', 'Collin Morikawa', 'Hideki Matsuyama', 'Jordan Spieth', 'Justin Thomas', 'Brooks Koepka', 'Tommy Fleetwood'].map(n => `<span>${n}</span>`).join('')}<span class="dim">…and ${PROS.length + 40 - 12} more</span></div></div>`}</div>
           <div class="col glass m-side">${side}${hist ? `<div class="section-title">PAST MASTERS</div><table class="list">${hist}</table>` : ''}</div>
         </div>
       </div>`, 'page-screen masters-screen');
