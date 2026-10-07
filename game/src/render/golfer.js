@@ -117,6 +117,8 @@ export class Golfer {
     this.armGeo = new THREE.CylinderGeometry(1, 1, 1, 12);
     this.armGeo.translate(0, 0.5, 0);
     this.armGeo.userData.keep = true;
+    this.jointGeo = new THREE.SphereGeometry(1, 10, 8);
+    this.jointGeo.userData.keep = true;
     neck.castShadow = true;
     this.poseLegs(true);
     for (const L of this.legs) for (const k of ['thigh', 'shin', 'foot']) L[k + 'Inv'] = L[k].matrix.clone().invert();
@@ -304,10 +306,12 @@ export class Golfer {
     for (let i = 0; i < 2; i++) {
       const sleeve = new THREE.Mesh(this.armGeo, sleeveMat);
       const fore = new THREE.Mesh(this.armGeo, longS ? body : this.shared.skin);
-      armG.add(sleeve, fore);
-      let cuff = null;
+      const elbow = new THREE.Mesh(this.jointGeo, longS ? body : this.shared.skin);
+      armG.add(sleeve, fore, elbow);
+      let cuff = null, upper = null;
       if (longS) { cuff = new THREE.Mesh(this.armGeo, style === 'sweater' || style === 'vest' ? mat(shadeHex(t.color, 0.82), 0.95) : trim); armG.add(cuff); }
-      set.arms.push({ sleeve, fore, cuff });
+      else { upper = new THREE.Mesh(this.armGeo, this.shared.skin); armG.add(upper); }
+      set.arms.push({ sleeve, fore, cuff, upper, elbow });
     }
     this.armSets.push(set);
     armG.userData.dynamic = true; // arms are re-posed every frame
@@ -761,21 +765,39 @@ export class Golfer {
     const h = new THREE.Vector3().setFromMatrixPosition(this.hands.matrixWorld).applyMatrix4(inv);
     const up = new THREE.Vector3(0, 1, 0);
     const bw = b.build;
+    // two-bone arms: elbows fold toward the ground, so the trail arm bends at the top
+    // and the lead arm folds in the finish instead of the arms stretching
+    const U = 0.31, F = 0.35;
     [sL, sR].forEach((sh, i) => {
-      const dir = new THREE.Vector3().subVectors(h, sh);
-      const len = dir.length();
-      dir.normalize();
-      const q = new THREE.Quaternion().setFromUnitVectors(up, dir);
+      const side = i === 0 ? 1 : -1;
+      const ax = new THREE.Vector3().subVectors(h, sh);
+      const d = ax.length();
+      ax.divideScalar(d || 1);
+      const elbow = new THREE.Vector3();
+      if (d >= U + F) elbow.copy(sh).addScaledVector(ax, d * U / (U + F));
+      else {
+        const a = (U * U - F * F + d * d) / (2 * d);
+        const hgt = Math.sqrt(Math.max(0, U * U - a * a));
+        const pole = new THREE.Vector3(side * 0.35, -1, -0.25);
+        pole.addScaledVector(ax, -pole.dot(ax)).normalize();
+        elbow.copy(sh).addScaledVector(ax, a).addScaledVector(pole, hgt);
+      }
+      const du = new THREE.Vector3().subVectors(elbow, sh), lu = du.length(); du.divideScalar(lu || 1);
+      const df = new THREE.Vector3().subVectors(h, elbow), lf = df.length(); df.divideScalar(lf || 1);
+      const qu = new THREE.Quaternion().setFromUnitVectors(up, du);
+      const qf = new THREE.Quaternion().setFromUnitVectors(up, df);
       for (const set of this.armSets) {
         const a = set.arms[i];
-        a.sleeve.position.copy(sh); a.sleeve.quaternion.copy(q);
-        a.sleeve.scale.set(0.06 * bw, len * 0.45, 0.06 * bw);
-        const mid = sh.clone().addScaledVector(dir, len * 0.45);
-        a.fore.position.copy(mid); a.fore.quaternion.copy(q);
-        a.fore.scale.set((set.long ? 0.049 : 0.043) * bw, len * (set.long ? 0.47 : 0.55), (set.long ? 0.049 : 0.043) * bw);
+        const rS = 0.06 * bw, rF = (set.long ? 0.049 : 0.043) * bw;
+        a.sleeve.position.copy(sh); a.sleeve.quaternion.copy(qu);
+        a.sleeve.scale.set(rS, set.long ? lu : lu * 0.62, rS);
+        if (a.upper) { a.upper.position.copy(sh); a.upper.quaternion.copy(qu); a.upper.scale.set(0.046 * bw, lu, 0.046 * bw); }
+        a.elbow.position.copy(elbow); a.elbow.scale.setScalar(set.long ? rF * 1.08 : 0.045 * bw);
+        a.fore.position.copy(elbow); a.fore.quaternion.copy(qf);
+        a.fore.scale.set(rF, lf, rF);
         if (a.cuff) {
-          a.cuff.position.copy(sh).addScaledVector(dir, len * 0.86); a.cuff.quaternion.copy(q);
-          a.cuff.scale.set(0.052 * bw, len * 0.07, 0.052 * bw);
+          a.cuff.position.copy(elbow).addScaledVector(df, lf * 0.84); a.cuff.quaternion.copy(qf);
+          a.cuff.scale.set(0.052 * bw, lf * 0.1, 0.052 * bw);
         }
       }
     });
