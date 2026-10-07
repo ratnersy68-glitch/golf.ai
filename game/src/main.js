@@ -10,11 +10,12 @@ import { Hole } from './core/holeGen.js';
 import { COURSES } from './data/courses.js';
 import { buildBag } from './data/clubs.js';
 import { THEMES } from './data/themes.js';
+import { holeMap } from './ui/holeMap.js';
 import { loadProfile, saveProfile, awardXp, recordRound, customAttrs } from './core/profile.js';
 import { audio } from './audio/audio.js';
 import { leaderboard, completeRound, boardHtml, projectedCut } from './game/masters.js';
 
-const THUMB_KEY = 'golfai.thumbs.v4';
+const THUMB_KEY = 'golfai.thumbs.v6';
 
 // Desktop (computer) layout can be forced with window.GOLF_DESKTOP = true or ?desktop in the URL,
 // e.g. when the game is embedded in another site.
@@ -42,7 +43,7 @@ class App {
     this.menus = new Menus(document.getElementById('menu'), this);
     this.play = new Play(this);
     this.thumbs = {};
-    try { Object.assign(this.thumbs, JSON.parse(localStorage.getItem(THUMB_KEY) || '{}')); } catch (e) { /* noop */ }
+    try { localStorage.removeItem('golfai.thumbs.v4'); localStorage.removeItem('golfai.thumbs.v5'); Object.assign(this.thumbs, JSON.parse(localStorage.getItem(THUMB_KEY) || '{}')); } catch (e) { /* noop */ }
     this.loadPhotoOverrides();
     this.mode = 'menu';
     this.menuT = 0;
@@ -148,46 +149,28 @@ class App {
   }
 
   // ---------------- thumbnails ----------------
+  // course cards: small top-down maps of each course's signature hole (2D canvas, no WebGL)
   ensureThumbs(onEach) {
-    if (this.thumbBusy) { this.thumbCb = onEach; return; }
+    this.thumbCb = onEach;
+    if (this.thumbBusy) return;
     const todo = COURSES.filter(c => !this.thumbs[c.id]);
     if (!todo.length) return;
-    this.thumbBusy = true; this.thumbCb = onEach;
-    const cv = document.createElement('canvas');
-    cv.width = 640; cv.height = 360;
-    const tw = new World(cv);
-    tw.renderer.setPixelRatio(1);
-    tw.renderer.setSize(640, 360, false);
-    tw.camera.aspect = 640 / 360; tw.camera.updateProjectionMatrix();
-    tw.renderer.preserveDrawingBuffer = true;
+    this.thumbBusy = true;
     const next = () => {
       const c = todo.shift();
       if (!c) {
         this.thumbBusy = false;
-        tw.clearHole(); tw.renderer.dispose(); tw.renderer.forceContextLoss?.();
         try { localStorage.setItem(THUMB_KEY, JSON.stringify(Object.fromEntries(Object.entries(this.thumbs).filter(([k]) => !this.photo?.[k])))); } catch (e) { /* quota */ }
         return;
       }
       try {
         const sigs = c.holes.map((h, i) => (h.sig ? i : -1)).filter(i => i >= 0);
-        const idx = c.cardHole ?? sigs[0] ?? 0;
-        const hole = new Hole(c, idx, { pinSeed: 5 });
-        tw.setCourseEnv(c, THEMES[c.theme]);
-        tw.loadHole(hole);
-        tw.setBall(-9999, -9999, -9999);
-        const s = Math.max(0, hole.L - (hole.par === 3 ? hole.L * 0.75 : 150));
-        const a = hole.at(s);
-        const cam = P(a.x + a.ty * 22, a.y - a.tx * 22, hole.heightAt(a.x, a.y) + (hole.par === 3 ? 18 : 30));
-        const look = P(hole.G[0], hole.G[1], hole.heightAt(hole.G[0], hole.G[1]));
-        tw.camera.position.copy(cam); tw.camera.lookAt(look);
-        tw.update(0.016, look);
-        tw.render();
-        if (!this.thumbs[c.id]) this.thumbs[c.id] = cv.toDataURL('image/jpeg', 0.82);
+        if (!this.thumbs[c.id]) this.thumbs[c.id] = holeMap(c, c.cardHole ?? sigs[0] ?? 0);
       } catch (e) { console.warn('thumb failed', c.id, e); }
       this.thumbCb?.();
-      setTimeout(next, 30);
+      setTimeout(next, 0);
     };
-    setTimeout(next, 50);
+    setTimeout(next, 0);
   }
 
   // ---------------- rounds ----------------

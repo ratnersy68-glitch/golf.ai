@@ -253,7 +253,7 @@ kbd { font-family: var(--sans); font-size: 10px; background: rgba(255,255,255,0.
 .course-card { border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.04); border: 1px solid var(--line); cursor: pointer; position: relative; transition: all .2s; }
 .course-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.3); box-shadow: 0 16px 40px rgba(0,0,0,.4); }
 .course-card.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 16px 40px rgba(61,220,132,.2); }
-.cc-img { height: 170px; background: linear-gradient(135deg, var(--accent), #0d1a12); background-size: cover; background-position: center; position: relative; }
+.cc-img { height: 170px; background: linear-gradient(135deg, var(--accent), #0d1a12); background-size: cover; image-rendering: auto; background-position: center; position: relative; }
 .cc-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(8,12,10,0.9)); }
 .shimmer { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.12) 50%, transparent 80%); background-size: 200% 100%; animation: shim 1.3s infinite; }
 @keyframes shim { from { background-position: 150% 0; } to { background-position: -50% 0; } }

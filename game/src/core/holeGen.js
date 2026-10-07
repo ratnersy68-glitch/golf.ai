@@ -37,6 +37,7 @@ export class Hole {
     this.buildGreen();
     this.buildHazards();
     this.buildTees();
+    if (opts.planOnly) return; // layout only (menu hole maps): no terrain grid
     this.buildGrid();
     this.placeTrees();
     this.buildDecor();
