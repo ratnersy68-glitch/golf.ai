@@ -96,7 +96,7 @@ export class Menus {
             <button class="menu-item small" data-go="settings"><b>SETTINGS</b><span>Difficulty · audio</span></button>
           </div>
         </div>
-        ${last ? `<div class="last-round glass">LAST ROUND · ${esc(getCourse(last.course).short)} · ${last.holes} holes · <b>${last.score}</b> (${fmtToPar(last.toPar)})</div>` : ''}
+        ${last ? `<div class="last-round glass">LAST ROUND · ${esc(COURSES.find(c => c.id === last.course)?.short || last.course)} · ${last.holes} holes · <b>${last.score}</b> (${fmtToPar(last.toPar)})</div>` : ''}
         <div class="credits">Personal-use project. Course layouts are approximations of the real courses.</div>
       </div>`, 'main');
   }
@@ -107,7 +107,7 @@ export class Menus {
     this.setup = {
       mode, step: 0,
       golfer: PROS.some(x => x.id === this.setup?.golfer) ? this.setup.golfer : PROS[0].id,
-      courseId: s.lastCourse || 'augusta', teeId: s.lastTee || 'tour',
+      courseId: getCourse(s.lastCourse).id, teeId: s.lastTee || 'tour',
       difficulty: s.difficulty, wind: s.windSetting, pins: s.pins, nine: 'front', hole: 0, practiceKind: 'approach',
     };
     this.renderSetup();
@@ -380,7 +380,7 @@ export class Menus {
       if (items.length) unlocks.push(`<div class="unl"><b>LEVEL ${lv}</b>${items.map(i => `<span>${esc(i)}</span>`).join('')}</div>`);
     }
     const bests = Object.entries(c.best).map(([k, v]) => { const [cid, holes] = k.split(':'); return `<tr><td>${esc(getCourse(cid).short)}</td><td>${holes}</td><td><b>${v.score}</b></td><td>${fmtToPar(v.toPar)}</td><td>${esc(v.golfer || '')}</td></tr>`; }).join('');
-    const hist = p.history.slice(0, 10).map(h => `<tr><td>${new Date(h.date).toLocaleDateString()}</td><td>${esc(getCourse(h.course).short)}</td><td>${h.holes}</td><td><b>${h.score}</b></td><td>${fmtToPar(h.toPar)}</td><td>${esc(h.golfer || '')}</td></tr>`).join('');
+    const hist = p.history.slice(0, 10).map(h => `<tr><td>${new Date(h.date).toLocaleDateString()}</td><td>${esc(COURSES.find(c => c.id === h.course)?.short || h.course)}</td><td>${h.holes}</td><td><b>${h.score}</b></td><td>${fmtToPar(h.toPar)}</td><td>${esc(h.golfer || '')}</td></tr>`).join('');
     this.render(`
       <div class="page">
         <div class="page-head"><button class="btn ghost" data-go="main">‹ MENU</button><div class="page-title">CAREER</div></div>

@@ -4,11 +4,11 @@ import { mulberry32 } from '../core/noise.js';
 
 const CANOPY_COLORS = {
   pine: '#2d4a25', longleaf: '#3c5b29', oak: '#3b5d28', maple: '#4a6b2a', cypress: '#2a4a2d',
-  palm: '#4f7c32', eucalyptus: '#667c4c', sycamore: '#557a38', torreypine: '#3b5a33',
+  palm: '#4f7c32', eucalyptus: '#667c4c', sycamore: '#557a38',
 };
 const TRUNK_COLORS = {
   pine: '#5a3d28', longleaf: '#5b412c', oak: '#4a3a2a', maple: '#4d3b2b', cypress: '#4a3a30',
-  palm: '#8a7458', eucalyptus: '#b7ab98', sycamore: '#bfb4a2', torreypine: '#5a4535',
+  palm: '#8a7458', eucalyptus: '#b7ab98', sycamore: '#bfb4a2',
 };
 
 function colorize(geo, base, rnd, darkBottom = 0.55) {
@@ -96,8 +96,7 @@ function canopyGeometry(type, variant, lod = 0) {
       parts.push(blob(0.16, 0, 0.72, 0, 1, 1, 1, 0, rnd));
       break;
     }
-    case 'eucalyptus':
-    case 'torreypine': {
+    case 'eucalyptus': {
       const n = 5;
       for (let i = 0; i < n; i++) parts.push(blob(0.5, (rnd() - 0.5) * 1.1, 0.3 + rnd() * 0.5, (rnd() - 0.5) * 1.1, 1.0, 0.75, 1.0, det, rnd));
       break;
@@ -200,7 +199,7 @@ export function buildTrees(hole, P) {
 // (the detailed canopy was 560 triangles x 900 trees).
 function farTreeGeometry(type) {
   let g;
-  if (type === 'pine' || type === 'longleaf' || type === 'torreypine') {
+  if (type === 'pine' || type === 'longleaf') {
     const a = new THREE.ConeGeometry(0.42, 0.62, 6, 1); a.translate(0, 0.45, 0);
     const b = new THREE.ConeGeometry(0.3, 0.5, 6, 1); b.translate(0, 0.78, 0);
     g = mergeGeometries([a.toNonIndexed(), b.toNonIndexed()]);

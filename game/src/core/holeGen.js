@@ -880,7 +880,6 @@ function makeTree(type, x, y, r, scale = 1) {
     case 'palm': ht = 11 + r() * 6; cr = 3.2 + r() * 1; cb = ht - 3; tr = 0.3; break;
     case 'eucalyptus': ht = 18 + r() * 8; cr = 5 + r() * 2; cb = 7; tr = 0.5; break;
     case 'sycamore': ht = 14 + r() * 5; cr = 6 + r() * 2; cb = 5; tr = 0.5; break;
-    case 'torreypine': ht = 9 + r() * 4; cr = 5 + r() * 2; cb = 4; tr = 0.4; break;
     default: ht = 14; cr = 5; cb = 5;
   }
   ht *= scale; cr *= scale; cb *= scale;

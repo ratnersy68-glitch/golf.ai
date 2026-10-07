@@ -23,20 +23,6 @@ export const THEMES = {
     undulation: 2.2, undFreq: 1 / 60, lateralRise: 0.035, trees: { types: ['palm', 'oak', 'pine', 'palm'], density: 0.75, near: 18, lines: true },
     extras: ['straw'], birds: 'songbird', crowd: 0.7, roughType: 'rough', cartPath: true, building: 'mediterranean',
   },
-  torrey: {
-    fairway: '#6c9a3c', fairway2: '#79a646', rough: '#56822f', deep: '#687a36', green: '#65a444', fringe: '#5a9a3b',
-    sand: '#eadfc6', waste: '#d7c7a0', water: '#285f7a', brush: '#8a7a4c', straw: '#7a6a45', tee: '#68a03e',
-    sky: ['#86a9c8', '#e6e9ea'], fog: '#dfe3e3', fogDensity: 0.0019, sun: { elev: 42, az: 220, color: '#fff0da', intensity: 2.7 },
-    undulation: 3.5, undFreq: 1 / 100, lateralRise: 0.02, trees: { types: ['torreypine', 'eucalyptus'], density: 0.3, near: 30, lines: false },
-    extras: [], birds: 'gull', crowd: 0.4, roughType: 'kikuyu', cartPath: true, building: 'modern', seaLevel: -30,
-  },
-  bethpage: {
-    fairway: '#4d8e33', fairway2: '#579a3b', rough: '#35712a', deep: '#607a38', green: '#5aa33f', fringe: '#4d9536',
-    sand: '#efe6d3', waste: '#e4d6b5', water: '#23443e', brush: '#6d5a36', straw: '#6d4d2b', tee: '#529a38',
-    sky: ['#7b9cbf', '#dfe6ec'], fog: '#d5dde3', fogDensity: 0.0013, sun: { elev: 40, az: 210, color: '#fff1dc', intensity: 2.8 },
-    undulation: 8, undFreq: 1 / 120, lateralRise: 0.07, trees: { types: ['oak', 'oak', 'maple', 'pine'], density: 1.0, near: 20, lines: true },
-    extras: ['fescue'], birds: 'songbird', crowd: 0.7, roughType: 'thick', building: 'colonial',
-  },
   pinehurst: {
     fairway: '#679b3c', fairway2: '#72a644', rough: '#8e8a55', deep: '#8e8a55', green: '#63a443', fringe: '#5b9a3c',
     sand: '#efe3c7', waste: '#e2d0a6', water: '#2a4d48', brush: '#8a7a4c', straw: '#8a5a2b', tee: '#60a03c',
@@ -50,13 +36,6 @@ export const THEMES = {
     sky: ['#7f9ab3', '#dfe5e8'], fog: '#d3dade', fogDensity: 0.0011, sun: { elev: 34, az: 200, color: '#f7f0e2', intensity: 2.8 },
     undulation: 2.4, undFreq: 1 / 28, lateralRise: 0.0, trees: { types: [], density: 0, near: 999, lines: false },
     extras: ['gorse', 'fescue', 'town'], birds: 'gull', crowd: 0.5, roughType: 'links', building: 'rna', links: true,
-  },
-  valhalla: {
-    fairway: '#4a9435', fairway2: '#56a03e', rough: '#327328', deep: '#2d6522', green: '#58aa40', fringe: '#4a9a37',
-    sand: '#f2ebdb', waste: '#e4d6b5', water: '#2b5550', brush: '#6d5a36', straw: '#6d4d2b', tee: '#50a03a',
-    sky: ['#4a88cf', '#d5e6f3'], fog: '#cfe0ec', fogDensity: 0.0011, sun: { elev: 52, az: 200, color: '#fff4e2', intensity: 3.2 },
-    undulation: 5, undFreq: 1 / 110, lateralRise: 0.04, trees: { types: ['oak', 'maple', 'oak'], density: 0.75, near: 22, lines: true },
-    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'thick', cartPath: true, building: 'modern',
   },
   oakmont: {
     fairway: '#5a9a3a', fairway2: '#65a542', rough: '#3c7a2c', deep: '#4f7a32', green: '#62ac48', fringe: '#55a03c',
@@ -78,34 +57,6 @@ export const THEMES = {
     sky: ['#5f8fbf', '#dde6ec'], fog: '#d3dde4', fogDensity: 0.0012, sun: { elev: 40, az: 215, color: '#fff2de', intensity: 3.0 },
     undulation: 4, undFreq: 1 / 40, lateralRise: 0.0, trees: { types: [], density: 0, near: 999, lines: false },
     extras: ['fescue'], birds: 'gull', crowd: 0.6, roughType: 'links', building: 'lodge', links: true, seaLevel: -12,
-  },
-  kiawah: {
-    fairway: '#6fa040', fairway2: '#7bab49', rough: '#5f8a34', deep: '#8a8a52', green: '#68a845', fringe: '#5f9e3e',
-    sand: '#f1e8d0', waste: '#e8dcbe', water: '#2b6377', brush: '#7a7a48', straw: '#8a6a40', tee: '#6aa040',
-    sky: ['#4f92d0', '#e3ecf1'], fog: '#dde7ec', fogDensity: 0.0012, sun: { elev: 50, az: 210, color: '#fff4e2', intensity: 3.2 },
-    undulation: 3, undFreq: 1 / 60, lateralRise: 0.0, trees: { types: ['palm', 'palm', 'oak'], density: 0.2, near: 40, lines: false },
-    extras: [], birds: 'gull', crowd: 0.5, roughType: 'sandy', building: 'lodge', cartPath: true, seaLevel: -8, sandyRough: true,
-  },
-  carnoustie: {
-    fairway: '#78a246', fairway2: '#86ae4f', rough: '#74883a', deep: '#9a8e52', green: '#72aa47', fringe: '#6da243',
-    sand: '#d8c89e', waste: '#6f7a34', water: '#33505a', brush: '#6b7a30', straw: '#7a6a45', tee: '#78a047',
-    sky: ['#7893ad', '#dde3e6'], fog: '#d1d8dc', fogDensity: 0.0012, sun: { elev: 32, az: 205, color: '#f6efe2', intensity: 2.7 },
-    undulation: 2.2, undFreq: 1 / 26, lateralRise: 0.0, trees: { types: ['pine'], density: 0.08, near: 60, lines: false },
-    extras: ['gorse', 'fescue'], birds: 'gull', crowd: 0.5, roughType: 'links', building: 'tudor', links: true,
-  },
-  portrush: {
-    fairway: '#74a144', fairway2: '#82ac4d', rough: '#6f8638', deep: '#988e52', green: '#70a946', fringe: '#6aa042',
-    sand: '#dccca2', waste: '#6f7a34', water: '#2f5566', brush: '#6b7a30', straw: '#7a6a45', tee: '#74a046',
-    sky: ['#6f8fb0', '#dee4e8'], fog: '#d0d8dd', fogDensity: 0.0013, sun: { elev: 30, az: 210, color: '#f6efe2', intensity: 2.7 },
-    undulation: 5, undFreq: 1 / 34, lateralRise: 0.03, trees: { types: [], density: 0, near: 999, lines: false },
-    extras: ['gorse', 'fescue'], birds: 'gull', crowd: 0.5, roughType: 'links', building: 'tudor', links: true, seaLevel: -14,
-  },
-  muirfield: {
-    fairway: '#4c9636', fairway2: '#58a23f', rough: '#33742a', deep: '#2d6622', green: '#5aac42', fringe: '#4c9c38',
-    sand: '#f3ecdc', waste: '#e4d6b5', water: '#24504c', brush: '#6d5a36', straw: '#6d4d2b', tee: '#52a03a',
-    sky: ['#4a88cf', '#d5e6f3'], fog: '#cfe0ec', fogDensity: 0.0011, sun: { elev: 50, az: 205, color: '#fff4e2', intensity: 3.2 },
-    undulation: 6, undFreq: 1 / 110, lateralRise: 0.05, trees: { types: ['oak', 'maple', 'oak', 'pine'], density: 0.9, near: 20, lines: true },
-    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'thick', cartPath: true, building: 'colonial',
   },
 };
 

@@ -9,7 +9,6 @@ const BUILD_STYLE = {
   antebellum: { wall: '#f4f2ea', roof: '#3f4a3f', trim: '#2f5d3a' },
   lodge: { wall: '#d9cdb8', roof: '#5a4b3c', trim: '#3d4a3a' },
   mediterranean: { wall: '#efe4d0', roof: '#b0553a', trim: '#6b5a44' },
-  modern: { wall: '#d8d4cc', roof: '#4a4a4a', trim: '#2a2a2a' },
   colonial: { wall: '#f1eee6', roof: '#3a3a3a', trim: '#2a3a55' },
   rna: { wall: '#bfae8e', roof: '#4c4c50', trim: '#3a3a3a' },
   tudor: { wall: '#ece6d6', roof: '#4a3a30', trim: '#3a2a20' },
