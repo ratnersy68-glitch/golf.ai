@@ -445,7 +445,7 @@ export class Hole {
     const sc = (x * this.chordDir[0] + y * this.chordDir[1]) / this.chordLen;
     const E = el * smoothstep(0.1, 0.92, sc);
     const f = T.undFreq;
-    let U = T.undulation * this.noise.fbm(x * f + 17.3, y * f - 4.1, 4);
+    let U = T.undulation * (this.def.und ?? 1) * this.noise.fbm(x * f + 17.3, y * f - 4.1, 4); // def.und: per-hole terrain calm/roughness
     if (this.links) U += 1.1 * this.noise.fbm(x / 11 + 3.1, y / 11 + 8.7, 3);
     return E + U;
   }
@@ -552,7 +552,8 @@ export class Hole {
   teeHeight(tb) {
     if (!tb.h) {
       const c = this.at(tb.s);
-      tb.h = this.baseHeight(c.x, c.y) + (this.par === 3 ? 1.4 : 0.6);
+      // def.th: extra lift for the back tee (tapering to none at the forward tee), for elevated tees
+      tb.h = this.baseHeight(c.x, c.y) + (this.par === 3 ? 1.4 : 0.6) + (this.def.th || 0) * clamp((tb.f - 0.75) / 0.25, 0, 1);
     }
     return tb.h;
   }

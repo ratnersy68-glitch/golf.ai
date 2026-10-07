@@ -53,7 +53,7 @@ export const COURSES = [
       { p: 5, y: 545, name: 'Azalea', sig: true, dl: -38, at: 285, el: 5, fw: 38, hz: [['lat', -1, 170, 470, 24], ['cross', 468, 482], ['gb', 150], ['gb', 175], ['gb', -165], ['flowers', 150, -45], ['flowers', 290, -40]], tip: "Hug the creek off the tee and you can reach in two. Tributary of Rae's Creek fronts the green." },
       { p: 4, y: 440, name: 'Chinese Fir', dl: -6, at: 260, el: 12, fw: 38, gs: 1.6, hz: [], tip: 'No bunkers — the green does all the defending.' },
       { p: 5, y: 550, name: 'Firethorn', sig: true, dl: 3, at: 300, el: -20, fw: 38, hz: [['gpond', 0, 1.5], ['gpond', 150, 1.0], ['gb', 90]], tip: 'Risk-reward. Pond in front and behind the green.' },
-      { p: 3, y: 170, name: 'Redbud', sig: true, ang: -8, el: -12, gs: 1.5, hz: [['lat', -1, 20, 200, 4], ['gb', 70], ['gb', 120], ['gb', -140, 0.7], ['stands', 60]], tip: 'Water all the way down the left. Sunday pin feeds off the ridge.' },
+      { p: 3, y: 170, name: 'Redbud', sig: true, ang: -8, el: -12, und: 0.25, th: 2.5, gs: 1.5, hz: [['pond', 105, -14, 30, 52], ['gb', 70], ['gb', 120], ['gb', -140, 0.7], ['stands', 60]], tip: 'All carry over the pond, which hugs the left of the green. Sunday pin feeds off the ridge toward the water.' },
       { p: 4, y: 440, name: 'Nandina', dl: 4, at: 260, el: 18, fw: 36, hz: [['gb', -15], ['gb', 20]], tip: 'Straightforward drive, tough approach.' },
       { p: 4, y: 465, name: 'Holly', sig: true, dl: 16, at: 250, el: 55, fw: 30, hz: [['fb', 285, -15, 7, 12], ['fb', 310, -20, 6, 10], ['gb', -30], ['gb', 40], ['stands', -90], ['stands', 90]], tip: 'Uphill chute to the clubhouse. Fairway bunkers left pinch the landing area.' },
     ],
