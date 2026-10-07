@@ -1,7 +1,7 @@
 // Small standalone renderer for the club info card: a slowly rotating, draggable club head.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { buildClubModel } from './clubModel.js';
+import { buildClubModel, LIE_TILT } from './clubModel.js';
 import { clubLength } from './golfer.js';
 
 export class ClubViewer {
@@ -50,10 +50,13 @@ export class ClubViewer {
     const model = buildClubModel(club, len, { detail: 1 });
     // center the head at the origin; the shaft rises out of frame
     const head = model.userData.head;
+    // same lie as in the golfer's hands, so hosel and shaft line up
+    const tilt = LIE_TILT[club.cat] ?? 0.3;
+    model.rotation.x = -tilt; head.rotation.x = tilt;
+    model.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(head);
     const c = box.getCenter(new THREE.Vector3());
     model.position.set(-c.x, -c.y, -c.z);
-    model.rotation.set(0, 0, 0);
     const holder = new THREE.Group();
     holder.add(model);
     holder.rotation.z = club.cat === 'putter' ? 0.12 : 0.35; // tilt the shaft back like a product shot

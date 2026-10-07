@@ -7,7 +7,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { normalizeLook, SKIN_TONES } from '../data/look.js';
 import { ALL_ITEMS } from '../data/apparel.js';
 import { fabricTexture, logoTexture, knitTexture, contrast } from './apparelTex.js';
-import { buildClubModel } from './clubModel.js';
+import { buildClubModel, LIE_TILT } from './clubModel.js';
 
 const M2YD = 1 / 0.9144;
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -706,7 +706,7 @@ export class Golfer {
     g.add(model);
     const head = model.userData.head;
     // lie: tilt shaft forward toward the ball, keep the sole flat
-    const extra = cat === 'putter' ? 0.14 : cat === 'wood' ? 0.42 : cat === 'hybrid' ? 0.36 : cat === 'wedge' ? 0.24 : 0.3;
+    const extra = LIE_TILT[cat] ?? 0.3;
     g.rotation.x = -extra;
     head.rotation.x = extra;
     const toeC = { wood: len > 1.12 ? 0.06 : 0.048, hybrid: 0.04, iron: 0.039, wedge: 0.037, putter: 0.05 }[cat] ?? 0.04;

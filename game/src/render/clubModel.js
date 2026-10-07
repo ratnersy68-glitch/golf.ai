@@ -60,11 +60,10 @@ export function buildHead(cat, look = {}, opts = {}) {
       const weight = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.006, 16), M('#d9dce0', 0.2, 1));
       weight.rotation.z = Math.PI / 2; weight.position.set(-D * 0.92, H * 0.22, L * 0.5); head.add(weight);
     }
-    const hosel = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.008, 0.05, 12), M('#1a1b1e', 0.4, 0.6));
-    hosel.position.set(-0.006, H * 0.7, -0.004); hosel.rotation.x = 0.25;
-    head.add(hosel);
   } else if (cat === 'iron' || cat === 'wedge') {
-    const W = cat === 'wedge' ? 0.074 : 0.078, Hh = cat === 'wedge' ? 0.05 : 0.044;
+    // long irons: longer, slimmer blades; scoring irons and wedges: shorter, taller, rounder toes
+    const lf = opts.loft ?? (cat === 'wedge' ? 54 : 30);
+    const W = cat === 'wedge' ? 0.074 : 0.081 - lf * 0.0001, Hh = cat === 'wedge' ? 0.046 + (lf - 46) * 0.0003 : 0.038 + lf * 0.00017;
     const style = look.style || 'cavity';
     const shape = bladeShape(W, Hh, cat === 'wedge' ? 0.016 : 0.01);
     const thick = style === 'blade' ? 0.008 : style === 'hollow' ? 0.02 : 0.013;
@@ -113,8 +112,6 @@ export function buildHead(cat, look = {}, opts = {}) {
     }
     const face = new THREE.Mesh(new THREE.BoxGeometry(0.001, 0.02, 0.09), M('#dadde1', 0.5, 0.7));
     face.position.set(0.0065, 0.012, 0.05); head.add(face);
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.05, 10), fin);
-    neck.position.set(-0.004, 0.035, 0.012); head.add(neck);
   }
   // loft: tilt the face up around the heel-toe axis
   const wrap = new THREE.Group();
@@ -122,6 +119,9 @@ export function buildHead(cat, look = {}, opts = {}) {
   wrap.add(head);
   return wrap;
 }
+
+// lie: the shaft leans toward the ball at address while the sole stays flat (radians)
+export const LIE_TILT = { putter: 0.14, wood: 0.42, hybrid: 0.36, wedge: 0.24, iron: 0.3 };
 
 export function buildClubModel(club, len, opts = {}) {
   const cat = club.cat;
@@ -135,7 +135,10 @@ export function buildClubModel(club, len, opts = {}) {
     const band = new THREE.Mesh(new THREE.CylinderGeometry(0.0082, 0.0082, 0.12, 12), M(club.look?.accent || '#c8102e', 0.4, 0.3));
     band.position.y = -0.45; g.add(band);
   }
-  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.0135, 0.011, 0.26, 14), M('#18191b', 0.85, 0));
+  // putters get a fat pistol grip with a flat front; full-swing clubs a tapered round grip
+  const putt = cat === 'putter';
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(putt ? 0.017 : 0.0135, putt ? 0.0125 : 0.011, putt ? 0.27 : 0.26, 14), M(putt ? '#2a2c30' : '#18191b', 0.85, 0));
+  if (putt) grip.scale.set(1, 1, 0.82);
   grip.position.y = -0.1;
   g.add(grip);
   if (opts.detail > 0.5) {

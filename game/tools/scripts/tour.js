@@ -1,7 +1,7 @@
 // Screenshots of signature holes on each course (hero view near the green + address view).
 import { frames, launch } from './util.js';
 export default async function (page, SP, logs) {
-  const list = (process.env.HOLES || 'augusta:11,pebble:6,sawgrass:16,standrews:17,pinehurst:17,oakmont:2,riviera:5,torrey:2,bethpage:3,valhalla:12,pebble:17').split(',');
+  const list = (process.env.HOLES || 'augusta:11,augusta:12,pebble:6,pebble:17,sawgrass:16,standrews:17,pinehurst:17,oakmont:2,riviera:5,straits:16').split(',');
   for (const item of list) {
     const [c, h] = item.split(':');
     await launch(page, { mode: 'coursePractice', setup: { courseId: c, hole: +h } });
