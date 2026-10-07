@@ -3,6 +3,7 @@
 // Appearance is split into slots (top, bottom, shoes, hat, hair, face, beard, glove, acc)
 // that cross-fade when changed, so edits never pop.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { normalizeLook, SKIN_TONES } from '../data/look.js';
 import { ALL_ITEMS } from '../data/apparel.js';
 import { fabricTexture, logoTexture, knitTexture, contrast } from './apparelTex.js';
@@ -20,6 +21,33 @@ function fabric(pattern, color, rough = 0.82, accent) {
   const map = fabricTexture(pattern, color, accent);
   return map ? mat('#ffffff', rough, { map }) : mat(color, rough);
 }
+// Bake a static part (e.g. the whole shirt or face) into one mesh per material: same look,
+// a fraction of the draw calls.
+function mergeByMaterial(grp) {
+  grp.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(grp.matrixWorld).invert();
+  const byMat = new Map();
+  const victims = [];
+  grp.traverse(o => {
+    if (!o.isMesh || o === grp) return;
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+    for (const a of Object.keys(g.attributes)) if (a !== 'position' && a !== 'normal' && a !== 'uv') g.deleteAttribute(a);
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    if (!g.attributes.normal) g.computeVertexNormals();
+    if (!byMat.has(o.material)) byMat.set(o.material, []);
+    byMat.get(o.material).push(g);
+    victims.push(o);
+  });
+  if (victims.length < 2) return;
+  for (const o of victims) { o.parent.remove(o); o.geometry.dispose(); }
+  while (grp.children.length) grp.remove(grp.children[0]); // drop now-empty sub-groups
+  for (const [m, geos] of byMat) {
+    const merged = mergeGeometries(geos);
+    if (merged) grp.add(new THREE.Mesh(merged, m));
+  }
+}
+
 const mesh = (geo, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); return o; };
 const shadeHex = (hex, k) => { const c = new THREE.Color(hex); c.multiplyScalar(k); return `#${c.getHexString()}`; };
 
@@ -119,6 +147,7 @@ export class Golfer {
   setSlot(name, parts, animate) {
     const old = this.slots[name];
     const wrapped = parts.map(([parent, grp]) => {
+      if (!grp.userData.dynamic) mergeByMaterial(grp);
       grp.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
       parent.add(grp);
       return grp;
@@ -270,6 +299,7 @@ export class Golfer {
       set.arms.push({ sleeve, fore, cuff });
     }
     this.armSets.push(set);
+    armG.userData.dynamic = true; // arms are re-posed every frame
     return [[this.torsoBody, g], [this.model, armG]];
   }
 

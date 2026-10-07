@@ -49,27 +49,28 @@ function blob(r, x, y, z, sx = 1, sy = 1, sz = 1, detail = 1, rnd) {
 }
 
 // Unit canopy geometry spanning y in [0,1], radius ~1
-function canopyGeometry(type, variant) {
+function canopyGeometry(type, variant, lod = 0) {
   const rnd = mulberry32(type.length * 131 + variant * 17);
+  const det = lod ? 0 : 1; // background trees: 20-tri blobs instead of 80
   const parts = [];
   switch (type) {
     case 'pine': {
       for (let i = 0; i < 4; i++) {
         const y0 = i * 0.22, hgt = 0.42;
         const rr = 1 - i * 0.22;
-        const g = new THREE.ConeGeometry(rr, hgt, 8, 1, true);
+        const g = new THREE.ConeGeometry(rr, hgt, lod ? 6 : 8, 1, true);
         g.translate((rnd() - 0.5) * 0.1, y0 + hgt / 2, (rnd() - 0.5) * 0.1);
         parts.push(g);
       }
       break;
     }
     case 'longleaf': {
-      for (let i = 0; i < 5; i++) parts.push(blob(0.45, (rnd() - 0.5) * 1.1, 0.35 + rnd() * 0.45, (rnd() - 0.5) * 1.1, 1.1, 0.6, 1.1, 1, rnd));
+      for (let i = 0; i < 5; i++) parts.push(blob(0.45, (rnd() - 0.5) * 1.1, 0.35 + rnd() * 0.45, (rnd() - 0.5) * 1.1, 1.1, 0.6, 1.1, det, rnd));
       break;
     }
     case 'cypress': {
       const lean = (rnd() - 0.5) * 0.6;
-      for (let i = 0; i < 4; i++) parts.push(blob(0.55, lean * i * 0.4 + (rnd() - 0.5) * 0.7, 0.2 + i * 0.22, (rnd() - 0.5) * 0.7, 1.6, 0.45, 1.3, 1, rnd));
+      for (let i = 0; i < 4; i++) parts.push(blob(0.55, lean * i * 0.4 + (rnd() - 0.5) * 0.7, 0.2 + i * 0.22, (rnd() - 0.5) * 0.7, 1.6, 0.45, 1.3, det, rnd));
       break;
     }
     case 'palm': {
@@ -98,16 +99,16 @@ function canopyGeometry(type, variant) {
     case 'eucalyptus':
     case 'torreypine': {
       const n = 5;
-      for (let i = 0; i < n; i++) parts.push(blob(0.5, (rnd() - 0.5) * 1.1, 0.3 + rnd() * 0.5, (rnd() - 0.5) * 1.1, 1.0, 0.75, 1.0, 1, rnd));
+      for (let i = 0; i < n; i++) parts.push(blob(0.5, (rnd() - 0.5) * 1.1, 0.3 + rnd() * 0.5, (rnd() - 0.5) * 1.1, 1.0, 0.75, 1.0, det, rnd));
       break;
     }
     default: { // oak, maple, sycamore
-      parts.push(blob(0.62, 0, 0.5, 0, 1.05, 0.85, 1.05, 1, rnd));
+      parts.push(blob(0.62, 0, 0.5, 0, 1.05, 0.85, 1.05, det, rnd));
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2 + rnd() * 0.5;
-        parts.push(blob(0.42 + rnd() * 0.12, Math.cos(a) * 0.52, 0.35 + rnd() * 0.35, Math.sin(a) * 0.52, 1, 0.85, 1, 1, rnd));
+        parts.push(blob(0.42 + rnd() * 0.12, Math.cos(a) * 0.52, 0.35 + rnd() * 0.35, Math.sin(a) * 0.52, 1, 0.85, 1, det, rnd));
       }
-      parts.push(blob(0.4, 0, 0.8, 0, 1, 0.8, 1, 1, rnd));
+      parts.push(blob(0.4, 0, 0.8, 0, 1, 0.8, 1, det, rnd));
     }
   }
   const nonIdx = parts.map(g => (g.index ? g.toNonIndexed() : g));
@@ -146,12 +147,16 @@ export function buildTrees(hole, P) {
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
   const col = new THREE.Color();
   const up = new THREE.Vector3(0, 1, 0);
-  for (const [type, list] of byType) {
+  // LOD: trees lining the hole get full detail + shadows; trees deep in the woods are simpler
+  const tmp = [0, 0];
+  const isNear = (t) => { hole.nearest(t.x, t.y, tmp); return Math.abs(tmp[1]) < hole.fwHalf(Math.max(0, Math.min(hole.L, tmp[0]))) + 45 && tmp[0] > -30 && tmp[0] < hole.L + 45; };
+  for (const [type, all] of byType) for (const lod of [0, 1]) {
+    const list = all.filter(t => isNear(t) === (lod === 0));
     const VAR = 3;
     for (let v = 0; v < VAR; v++) {
       const sub = list.filter((t, i) => i % VAR === v);
       if (!sub.length) continue;
-      const cg = canopyGeometry(type, v);
+      const cg = canopyGeometry(type, v, lod);
       const cm = new THREE.InstancedMesh(cg, canopyMat, sub.length);
       const tg = trunkGeometry(type);
       const tm = new THREE.InstancedMesh(tg, trunkMat, sub.length);
@@ -181,8 +186,8 @@ export function buildTrees(hole, P) {
         col.setRGB(tint, tint * (0.95 + t.seed * 0.1), tint * 0.95);
         cm.setColorAt(i, col);
       });
-      cm.castShadow = true; cm.receiveShadow = true;
-      tm.castShadow = true;
+      cm.castShadow = lod === 0; cm.receiveShadow = true;
+      tm.castShadow = lod === 0;
       cm.instanceMatrix.needsUpdate = true;
       if (cm.instanceColor) cm.instanceColor.needsUpdate = true;
       group.add(cm, tm);
@@ -191,15 +196,32 @@ export function buildTrees(hole, P) {
   return group;
 }
 
+// Horizon trees are only a few pixels tall: a 20-24 triangle silhouette is plenty
+// (the detailed canopy was 560 triangles x 900 trees).
+function farTreeGeometry(type) {
+  let g;
+  if (type === 'pine' || type === 'longleaf' || type === 'torreypine') {
+    const a = new THREE.ConeGeometry(0.42, 0.62, 6, 1); a.translate(0, 0.45, 0);
+    const b = new THREE.ConeGeometry(0.3, 0.5, 6, 1); b.translate(0, 0.78, 0);
+    g = mergeGeometries([a.toNonIndexed(), b.toNonIndexed()]);
+  } else {
+    g = new THREE.IcosahedronGeometry(0.5, 0).toNonIndexed();
+    g.scale(1, 0.85, 1); g.translate(0, 0.55, 0);
+  }
+  colorize(g, CANOPY_COLORS[type] || '#3b5d28', mulberry32(7), 0.5);
+  g.computeVertexNormals();
+  return g;
+}
+
 // Far-away tree band on the horizon (cheap, no shadows)
 export function buildFarTrees(hole, P, heightFn) {
   const T = hole.theme.trees;
   if (!T.types.length) return null;
   const rnd = mulberry32(hole.seed ^ 1234);
   const type = T.types[0];
-  const geo = canopyGeometry(type === 'palm' ? 'oak' : type, 0);
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
-  const N = 900;
+  const geo = farTreeGeometry(type);
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
+  const N = 700;
   const mesh = new THREE.InstancedMesh(geo, mat, N);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3();
   const cx = hole.gx0 + hole.gnx / 2, cy = hole.gy0 + hole.gny / 2;

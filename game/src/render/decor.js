@@ -146,8 +146,8 @@ function clubhouse(d, P, H, style, rnd) {
 let personGeo = null, headGeo = null;
 function people(n, positions, rnd) {
   if (!personGeo) {
-    personGeo = new THREE.CapsuleGeometry(0.22, 0.95, 4, 8); personGeo.translate(0, 0.72, 0);
-    headGeo = new THREE.SphereGeometry(0.13, 8, 6); headGeo.translate(0, 1.52, 0);
+    personGeo = new THREE.CapsuleGeometry(0.22, 0.95, 2, 6); personGeo.translate(0, 0.72, 0); // ~50 tris: spectators are a few pixels tall
+    headGeo = new THREE.IcosahedronGeometry(0.13, 0); headGeo.translate(0, 1.52, 0);
   }
   const bodies = new THREE.InstancedMesh(personGeo, std('#ffffff', 0.8), n);
   const heads = new THREE.InstancedMesh(headGeo, std('#ffffff', 0.7), n);
@@ -163,7 +163,7 @@ function people(n, positions, rnd) {
     bodies.setColorAt(i, c.set(shirts[Math.floor(rnd() * shirts.length)]));
     heads.setColorAt(i, c.set(skins[Math.floor(rnd() * skins.length)]));
   }
-  bodies.castShadow = true;
+  bodies.castShadow = false; // hundreds of tiny shadows cost a full extra pass for little visual gain
   const g = new THREE.Group(); g.add(bodies, heads);
   g.userData.crowd = bodies;
   return g;

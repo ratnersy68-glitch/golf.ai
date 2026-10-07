@@ -1,9 +1,44 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createSky, sunDirection } from './sky.js';
 import { buildTerrainTexture, detailTexture, waterNormalTexture } from './textures.js';
 import { buildTrees, buildFarTrees } from './trees.js';
 import { buildDecor } from './decor.js';
 import { S } from '../core/holeGen.js';
+
+// Merge a static object tree's plain meshes by material into a handful of meshes
+// (buildings, grandstands, signs, benches...: hundreds of draw calls -> a few dozen).
+function mergeStatic(root) {
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const groups = new Map();
+  const victims = [];
+  root.traverse(o => {
+    if (!o.isMesh || o.isInstancedMesh || o.userData.keep) return;
+    const m = o.material;
+    if (Array.isArray(m) || !m.isMeshStandardMaterial || m.transparent) return;
+    const key = [m.color.getHexString(), m.roughness, m.metalness, m.side, m.flatShading, m.vertexColors, m.map?.uuid || '', m.emissive.getHexString(), o.castShadow, o.receiveShadow].join('|');
+    if (!groups.has(key)) groups.set(key, { mat: m, cast: o.castShadow, recv: o.receiveShadow, geos: [], uv: !!m.map, col: m.vertexColors });
+    const gr = groups.get(key);
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+    for (const a of Object.keys(g.attributes)) if (!(a === 'position' || a === 'normal' || (a === 'uv' && gr.uv) || (a === 'color' && gr.col))) g.deleteAttribute(a);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    if (gr.uv && !g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    if (gr.col && !g.attributes.color) return;
+    gr.geos.push(g);
+    victims.push(o);
+  });
+  for (const o of victims) { o.parent.remove(o); }
+  for (const gr of groups.values()) {
+    if (!gr.geos.length) continue;
+    const merged = mergeGeometries(gr.geos);
+    if (!merged) continue;
+    const mesh = new THREE.Mesh(merged, gr.mat);
+    mesh.castShadow = gr.cast; mesh.receiveShadow = gr.recv;
+    root.add(mesh);
+  }
+}
 
 // plan (x right, y forward, h up) -> three (x, h, -y)
 export const P = (x, y, h) => new THREE.Vector3(x, h, -y);
@@ -146,6 +181,7 @@ export class World {
     g.add(decor);
     this.crowds = [];
     decor.traverse(o => { if (o.userData.crowd) this.crowds.push(o); });
+    mergeStatic(decor);
     g.add(this.buildFlag(hole));
     this.aimGroup = new THREE.Group();
     g.add(this.aimGroup);
@@ -213,7 +249,7 @@ export class World {
   }
 
   buildFarTerrain(hole) {
-    const R = 2600, N = 160;
+    const R = 2600, N = 100; // distant ground: 20k triangles is plenty
     const geo = new THREE.PlaneGeometry(R * 2, R * 2, N, N);
     geo.rotateX(-Math.PI / 2);
     const cx = hole.gx0 + hole.gnx / 2, cy = hole.gy0 + hole.gny / 2;
