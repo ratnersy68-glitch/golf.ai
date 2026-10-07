@@ -157,11 +157,11 @@ export function computePutt(inp) {
   const a = greenRollDecel(stimp);
   const D = Math.max(0.05, power * scaleYd);
   const skill = attrs.putting ?? 50;
-  const errDir = gaussRand(rng) * (1.25 - skill / 100) * 0.55 * diff.putt * (0.6 + Math.min(1, D / 15) * 0.6);
-  const errSpd = 1 + gaussRand(rng) * 0.03 * diff.putt * (1.2 - skill / 120);
+  const errDir = gaussRand(rng) * (1.25 - skill / 100) * 0.3 * diff.putt * (0.6 + Math.min(1, D / 15) * 0.6);
+  const errSpd = 1 + gaussRand(rng) * 0.015 * diff.putt * (1.2 - skill / 120);
   const v0 = Math.sqrt(2 * a * D) * errSpd;
   const offBy = Math.abs(errDir);
-  return { speed: v0, heading: heading + errDir * Math.PI / 180, angle: 0, back: 0, side: 0, rating: offBy < 0.3 ? 'PURE' : offBy < 0.7 ? 'GOOD' : errDir < 0 ? 'PULLED' : 'PUSHED', quality: 1 };
+  return { speed: v0, heading: heading + errDir * Math.PI / 180, angle: 0, back: 0, side: 0, rating: offBy < 0.15 ? 'PURE' : offBy < 0.4 ? 'GOOD' : errDir < 0 ? 'PULLED' : 'PUSHED', quality: 1 };
 }
 
 export const PUTT_SCALES_FT = [8, 15, 25, 40, 60, 90, 130];

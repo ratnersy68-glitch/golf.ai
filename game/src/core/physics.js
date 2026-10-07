@@ -68,7 +68,7 @@ export function simulate(hole, start, launch, env, opts = {}) {
   const firm = env.firmness ?? 0.6;
   const greenDecel = greenRollDecel(env.stimp ?? 12);
   const cupR = CUP_R * (env.assist?.cupMul ?? 1);
-  const capV = 1.78 * (env.assist?.captureMul ?? 1);
+  const capV = 1.3 * (env.assist?.captureMul ?? 1); // dead-centre capture speed (a putt ~5 ft past pace on stimp 12)
   const wind = env.wind || [0, 0];
   const pin = hole.pin;
   let t = 0, step = 0;
@@ -257,22 +257,30 @@ export function simulate(hole, start, launch, env, opts = {}) {
         const pdx = x - pin[0], pdy = y - pin[1];
         const pd = Math.hypot(pdx, pdy);
         if (pd < cupR) {
-          if (sp2 < capV) {
+          // capture depends on speed and on how centred the ball's path is: a dead-centre putt
+          // drops up to capV, one catching the edge needs to be dying into the hole
+          const b = sp2 > 1e-6 ? Math.abs(pdx * vy - pdy * vx) / sp2 : 0;
+          const bf = Math.min(1, b / cupR);
+          const vCap = capV * Math.max(0.3, Math.sqrt(1 - bf * bf));
+          if (sp2 < vCap && !lipped) {
             result.holed = true;
             events.push({ t, type: 'cup', x: pin[0], y: pin[1], h: hole.pinH });
             x = pin[0]; y = pin[1]; h = hole.pinH - 0.08;
             pushFrame();
             break;
           } else if (!lipped) {
-            // lip out: deflect and slow
+            // lip out: the rim turns the ball away from the centre - an edge hit rides round the lip
+            // and is turned sharply, a firm centre hit hops the back of the cup and loses more pace
             lipped = true;
-            const ang = (rng() - 0.5) * 1.4;
+            const away = Math.sign(vx * pdy - vy * pdx) || 1;
+            const ang = away * (0.15 + 1.05 * bf) * Math.min(1, 0.5 + 0.5 * vCap / sp2);
             const c = Math.cos(ang), s = Math.sin(ang);
-            const nvx = (vx * c - vy * s) * 0.55, nvy = (vx * s + vy * c) * 0.55;
+            const keep = 0.45 + 0.3 * bf;
+            const nvx = (vx * c - vy * s) * keep, nvy = (vx * s + vy * c) * keep;
             vx = nvx; vy = nvy;
             events.push({ t, type: 'lip', x, y, h });
           }
-        } else if (pd > cupR * 3) lipped = false;
+        } else if (pd > cupR * 1.5) lipped = false;
       }
       // water / penalty
       if (surf === S.WATER) {
