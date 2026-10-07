@@ -1,4 +1,4 @@
-// Offline cache for Golf.ai. The build replaces 20261002173539 so every deploy refreshes the cache.
+// Offline cache for Golf.ai. The build replaces 20261007181503 so every deploy refreshes the cache.
 const VERSION = '__VERSION__';
 const CACHE = `golfai-${VERSION}`;
 const CORE = [

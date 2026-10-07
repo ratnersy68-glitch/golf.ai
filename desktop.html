@@ -20,7 +20,54 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261002173539">
+  <link rel="stylesheet" href="styles.css?v=20261007181503">
+  <style>
+    /* opening animation (inline so it starts before the stylesheet and game load) */
+    #boot .boot-logo, #boot .boot-sub { animation: in-logo .5s cubic-bezier(.2,.8,.3,1) both, out-logo .35s 2.35s ease-in forwards; }
+    #boot .boot-logo, #boot .boot-logo > span { animation: in-logo .5s cubic-bezier(.2,.8,.3,1) both, out-text .35s 2.35s ease-in forwards; }
+    .iw { display: inline-block; position: relative; width: .135em; height: .7em; margin-left: .035em; }
+    .iw i { position: absolute; display: block; }
+    .club { left: 0; top: 0; width: 100%; height: 100%; transform-origin: 50% -55%; will-change: transform; animation: club 3s linear both; }
+    .shaft { left: 0; top: 0; width: 100%; height: 100%; background: currentColor; transform-origin: 50% 0; animation: shaft 3s both; }
+    .chead { left: -.02em; top: .56em; width: .3em; height: .14em; border-radius: .02em .07em .07em .03em; background: linear-gradient(#e9edf0, #8a9299); transform: scale(0); transform-origin: 10% 50%; animation: chead 3s both; }
+    .iball { left: .29em; top: 1.41em; width: .15em; height: .15em; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #dfe5e2 70%, #b9c2bd); opacity: 0; animation: iball 3.4s both; }
+    @keyframes in-logo { from { opacity: 0; transform: scale(.92); } }
+    @keyframes out-logo { to { opacity: 0; } }
+    @keyframes out-text { to { color: transparent; } }
+    @keyframes club {
+      0%, 33% { transform: translateY(0) rotate(0); animation-timing-function: cubic-bezier(.5,0,1,1); }
+      44% { transform: translateY(.62em) rotate(0); animation-timing-function: ease-out; }
+      48% { transform: translateY(.54em) rotate(0); animation-timing-function: ease-in; }
+      51% { transform: translateY(.55em) rotate(0); }
+      56% { transform: translateY(.55em) rotate(-6deg); animation-timing-function: cubic-bezier(.3,.6,.4,1); }
+      72% { transform: translateY(.55em) rotate(128deg); animation-timing-function: cubic-bezier(.7,0,1,.6); }
+      78% { transform: translateY(.55em) rotate(0); animation-timing-function: cubic-bezier(0,.5,.4,1); }
+      88% { transform: translateY(.55em) rotate(-155deg); opacity: 1; }
+      100% { transform: translateY(.55em) rotate(-160deg); opacity: 0; }
+    }
+    @keyframes shaft { 0%, 47% { transform: scaleY(1); background: currentColor; } 55%, 100% { transform: scaleY(1.45); background: linear-gradient(90deg, #9aa3aa, #e8ecef 45%, #8d959c); } }
+    @keyframes chead { 0%, 47% { transform: translateY(0) scale(0); } 55%, 100% { transform: translateY(.315em) scale(1); } }
+    @keyframes iball {
+      0%, 44% { opacity: 0; transform: translateY(-.25em); }
+      50% { opacity: 1; transform: translateY(0); }
+      68.7% { transform: translate(0, 0) scale(1); animation-timing-function: cubic-bezier(.55,0,.9,.5); }
+      76% { transform: translate(-.5em, -.9em) scale(5); }
+      86% { transform: translate(-1.4em, -1.2em) scale(40); opacity: 1; }
+      100% { transform: translate(-1.4em, -1.2em) scale(60); opacity: 0; }
+    }
+    /* the ball "hits the lens": a white flash that dissolves into the game */
+    #boot::after { content: ''; position: absolute; inset: 0; background: #f4f7f5; opacity: 0; pointer-events: none; animation: flash 3.4s both; }
+    @keyframes flash { 0%, 79% { opacity: 0; } 87% { opacity: .96; } 100% { opacity: 0; } }
+    #boot.skip::after { animation: none; opacity: 0; }
+    #boot .boot-msg { opacity: 0; animation: show 0s 3.1s forwards, pulse 1s 3.1s infinite alternate; }
+    #boot.skip .boot-msg { animation: none; opacity: 1; }
+    /* skipped, or still loading after the intro: show the plain logo */
+    #boot.skip .club, #boot.skip .shaft, #boot.ended .club, #boot.ended .shaft { animation: none; opacity: 1; }
+    #boot.skip .iball, #boot.skip .chead, #boot.ended .iball, #boot.ended .chead { animation: none; opacity: 0; }
+    #boot.skip .boot-logo, #boot.skip .boot-logo > span, #boot.skip .boot-sub { animation: none; opacity: 1; }
+    #boot.ended .boot-logo, #boot.ended .boot-logo > span, #boot.ended .boot-sub { animation: in-logo .5s .5s both; }
+    @keyframes show { to { opacity: 1; } }
+  </style>
 </head>
 <body>
   <canvas id="scene"></canvas>
@@ -29,11 +76,23 @@
 
   <!-- Boot loading screen (visible before the game script runs) -->
   <div id="boot">
-    <div class="boot-logo">GOLF<span>.AI</span></div>
+    <div class="boot-logo">GOLF<span>.A<i class="iw"><i class="club"><i class="shaft"></i><i class="chead"></i></i><i class="iball"></i></i></span></div>
     <div class="boot-sub">CHAMPIONSHIP GOLF</div>
-    <div class="putt-anim"><i class="ball"></i><i class="cup"></i><i class="flag"></i></div>
     <div class="boot-msg" id="boot-msg">Loading course…</div>
   </div>
+  <script>
+    // Opening: the I of "AI" drops, becomes a club and hits the ball at the camera. Tap or press a key to skip.
+    (function () {
+      var b = document.getElementById('boot'), ended = false, ready = false;
+      function finish() { if (ended && ready && !b.classList.contains('done')) { b.classList.add('done'); setTimeout(function () { b.remove(); }, 700); } }
+      function end(skip) { if (ended) return; ended = true; b.classList.add(skip ? 'skip' : 'ended'); finish(); }
+      window.__bootReady = function () { ready = true; finish(); };
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) end(true);
+      else setTimeout(function () { end(false); }, 3000);
+      b.addEventListener('pointerdown', function () { end(true); });
+      window.addEventListener('keydown', function () { end(true); }, { once: true });
+    })();
+  </script>
 
   <!-- Portrait-phone prompt -->
   <div id="rotate">
@@ -52,6 +111,6 @@
     }
   </script>
   <script>window.GOLF_DESKTOP = true;</script>
-  <script src="dist/game.js?v=20261002173539"></script>
+  <script src="dist/game.js?v=20261007181503"></script>
 </body>
 </html>
