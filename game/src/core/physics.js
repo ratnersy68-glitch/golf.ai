@@ -151,8 +151,15 @@ export function simulate(hole, start, launch, env, opts = {}) {
         const pdx = x - pin[0], pdy = y - pin[1];
         if (pdx * pdx + pdy * pdy < (0.035 + R_BALL) ** 2 && h - hole.pinH < 2.4 && h > hole.pinH + 0.05 && pdx * vx + pdy * vy < 0) {
           pinHit = true;
-          vx *= -0.25; vy *= -0.25; vz *= 0.3;
           events.push({ t, type: 'pin', x, y, h });
+          // struck low on the stick at modest pace: it drops (the stick kills the speed over the cup)
+          if (h - hole.pinH < 0.2 && Math.hypot(vx, vy) < 10) {
+            result.holed = true; events.push({ t, type: 'cup', x: pin[0], y: pin[1], h: hole.pinH, dunk: true });
+            x = pin[0]; y = pin[1]; h = hole.pinH - 0.1;
+            pushFrame();
+            break;
+          }
+          vx *= -0.25; vy *= -0.25; vz *= 0.3;
         }
       }
 
