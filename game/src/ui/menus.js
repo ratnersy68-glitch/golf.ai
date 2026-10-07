@@ -23,7 +23,6 @@ const MODES = {
   round9: { name: '9 Holes', sub: 'Front or back nine' },
   coursePractice: { name: 'Course Practice', sub: 'Pick any hole and replay it' },
   practice: { name: 'Practice', sub: 'Chipping · bunker · putting · approach' },
-  range: { name: 'Driving Range', sub: 'Launch monitor · test every club' },
 };
 
 export function unlocksAt(lv) {
@@ -91,7 +90,6 @@ export class Menus {
           <button class="menu-item" data-go="round9"><b>9 HOLES</b><span>${MODES.round9.sub}</span></button>
           <button class="menu-item" data-go="coursePractice"><b>COURSE PRACTICE</b><span>${MODES.coursePractice.sub}</span></button>
           <button class="menu-item" data-go="practice"><b>PRACTICE</b><span>${MODES.practice.sub}</span></button>
-          <button class="menu-item" data-go="range"><b>DRIVING RANGE</b><span>${MODES.range.sub}</span></button>
           <div class="menu-split">
             <button class="menu-item small" data-go="career"><b>CAREER</b><span>Stats · unlocks</span></button>
             <button class="menu-item small" data-go="bag"><b>MY BAG</b><span>Clubs & ball</span></button>
@@ -107,7 +105,7 @@ export class Menus {
   startSetup(mode) {
     const s = this.profile.settings;
     this.setup = {
-      mode, step: mode === 'range' ? 0 : 0,
+      mode, step: 0,
       golfer: PROS.some(x => x.id === this.setup?.golfer) ? this.setup.golfer : PROS[0].id,
       courseId: s.lastCourse || 'augusta', teeId: s.lastTee || 'tour',
       difficulty: s.difficulty, wind: s.windSetting, pins: s.pins, nine: 'front', hole: 0, practiceKind: 'approach',
@@ -117,7 +115,7 @@ export class Menus {
 
   renderSetup() {
     const st = this.setup;
-    const steps = st.mode === 'range' ? ['GOLFER', 'SETUP'] : ['GOLFER', 'COURSE', 'SETUP'];
+    const steps = ['GOLFER', 'COURSE', 'SETUP'];
     const stepName = steps[st.step];
     let body = '';
     if (stepName === 'GOLFER') body = this.golferPicker();
@@ -183,7 +181,7 @@ export class Menus {
     const c = getCourse(st.courseId);
     const opt = (key, val, label, sub = '') => `<button class="opt ${st[key] === val ? 'on' : ''}" data-k="${key}" data-v="${val}"><b>${label}</b>${sub ? `<span>${sub}</span>` : ''}</button>`;
     let html = '';
-    if (st.mode !== 'range') {
+    {
       html += `<div class="section-title">${esc(c.name.toUpperCase())}</div><div class="setup-course-banner" style="--accent:${c.accent}"><div class="scb-img" style="background-image:url(${this.app.thumbs[c.id] || ''})"></div><div><b>${esc(c.location)}</b><div>${esc(c.designer)}</div><div>Stimp ${c.stimp} · Firmness ${Math.round(c.firmness * 10)}/10 · Wind ${c.wind[0]}–${c.wind[1]} mph</div></div></div>`;
       html += `<div class="section-title">TEES</div><div class="opts">${TEE_SETS.map(t => opt('teeId', t.id, `<i class="tee-dot" style="background:${t.color}"></i>${t.name}`, `${courseYards(c, t.factor).toLocaleString()} yds`)).join('')}</div>`;
     }
@@ -196,7 +194,7 @@ export class Menus {
     }
     html += `<div class="section-title">DIFFICULTY</div><div class="opts">${Object.entries(DIFFICULTIES).map(([k, d]) => opt('difficulty', k, d.name, { easy: 'Big sweet spot, full assist', normal: 'Balanced', hard: 'Small window, less assist', realistic: 'Minimal assist, real dispersion' }[k])).join('')}</div>`;
     html += `<div class="section-title">CONDITIONS</div><div class="opts">${opt('wind', 'calm', 'Calm', 'Light breeze')}${opt('wind', 'normal', 'Normal Wind', 'Course typical')}${opt('wind', 'windy', 'Windy', 'Bring your low ball')}</div>`;
-    if (st.mode !== 'range') html += `<div class="opts">${opt('pins', 'easy', 'Easy Pins', 'Center of greens')}${opt('pins', 'medium', 'Medium Pins')}${opt('pins', 'sunday', 'Sunday Pins', 'Tucked & tough')}</div>`;
+    html += `<div class="opts">${opt('pins', 'easy', 'Easy Pins', 'Center of greens')}${opt('pins', 'medium', 'Medium Pins')}${opt('pins', 'sunday', 'Sunday Pins', 'Tucked & tough')}</div>`;
     return html;
   }
 
@@ -233,7 +231,7 @@ export class Menus {
     if (st.mode === 'round9') holes = st.nine === 'front' ? holes.slice(0, 9) : holes.slice(9);
     if (st.mode === 'coursePractice' || st.mode === 'practice') holes = [st.hole];
     const cfg = {
-      mode: st.mode, courseId: st.mode === 'range' ? 'range' : st.courseId, teeId: st.teeId, holes: st.mode === 'range' ? [0] : holes,
+      mode: st.mode, courseId: st.courseId, teeId: st.teeId, holes,
       difficulty: st.difficulty, attrs, look, golferName: name, practiceKind: st.practiceKind,
     };
     this.app.startRound(cfg);

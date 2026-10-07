@@ -370,9 +370,6 @@ export class Hole {
         const c = this.at(hz[1]);
         const [x, y] = this.offset(hz[1], -this.fwHalf(hz[1]) * 0.6);
         this.decorSpec.push({ kind: 'bridge', x, y, dir: [c.tx, c.ty] });
-      } else if (k === 'target') {
-        const [x, y] = this.offset(hz[1], hz[2]);
-        this.decorSpec.push({ kind: 'target', x, y, dist: hz[1] });
       } else if (k === 'flowers') {
         const [x, y] = this.offset(hz[1], hz[2]);
         this.decorSpec.push({ kind: 'flowers', x, y, r: 14 });
@@ -380,7 +377,7 @@ export class Hole {
     }
     // fairway start
     const p = this.def.p;
-    this.fStart = this.def.range ? 12 : p === 3 ? this.L - 40 : (this.links ? 30 : Math.min(T.fairwayFrom ?? 150, this.L * 0.38));
+    this.fStart = p === 3 ? this.L - 40 : (this.links ? 30 : Math.min(T.fairwayFrom ?? 150, this.L * 0.38));
     // the sea's big shoreline rise must not bury ponds and creeks: apply it before them
     this.shapes.sort((p, q) => (q.kind === 'ocean') - (p.kind === 'ocean'));
     for (const sh of this.shapes) {
@@ -591,7 +588,7 @@ export class Hole {
       if (Math.abs(s - tb.s) < 6 && ad < 5) return S.TEE;
     }
     const w = this.fwHalf(s);
-    if (this.theme.cartPath && s > 12 && s < this.L - 30 && !this.def.range) {
+    if (this.theme.cartPath && s > 12 && s < this.L - 30) {
       const off = this.cartSide * (w + 21 + 3 * this.noise.n1(s / 60 + 3));
       if (Math.abs(d - off) < 1.3) return S.PATH;
     }
@@ -823,7 +820,7 @@ export class Hole {
       }
     }
     // leaderboard near signature greens and the 18th
-    if ((this.def.sig || n === 18) && !this.def.range) {
+    if (this.def.sig || n === 18) {
       const dir = this.greenDir(r() < 0.5 ? 125 : -125);
       const dist = this.greenEdgeDist(dir[0], dir[1]) + 38;
       this.decor.push({ kind: 'board', x: this.G[0] + dir[0] * dist, y: this.G[1] + dir[1] * dist, face: [-this.gT[0], -this.gT[1]] });

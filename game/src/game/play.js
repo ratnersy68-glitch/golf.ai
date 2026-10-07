@@ -128,7 +128,7 @@ export class Play {
       this.world.windStrength = Math.min(1, this.windBaseMph / 20);
       this.hud.loading(false);
       if (this.cfg.mode === 'practice') { this.placePractice(); return; }
-      if (this.app.profile.settings.flyover && this.cfg.mode !== 'range') this.startFlyover();
+      if (this.app.profile.settings.flyover) this.startFlyover();
       else this.beginShot(true);
     }, 60);
   }
@@ -814,7 +814,7 @@ export class Play {
       const drop = this.findDrop(r);
       this.ball = drop;
       msg = r.water ? 'WATER HAZARD' : 'PENALTY AREA'; sub = '1-stroke penalty · Take a drop'; kind = 'bad';
-      if (this.cfg.mode !== 'range') this.teeShot = false;
+      this.teeShot = false;
     } else if (r.ob) {
       this.strokes++;
       this.card.penalties++;
@@ -856,14 +856,14 @@ export class Play {
         if (bigDrive && (restSurf === S.FAIRWAY || restSurf === S.FIRSTCUT)) {
           msg = 'WHAT A DRIVE!'; kind = 'great';
           audio.jingle('great'); audio.crowd('cheer', (this.theme.crowd || 0.5) * 0.8);
-        } else if (this.cfg.mode === 'range' && r.total > 280) audio.jingle('great');
+        }
       }
     }
     this.hud.toast(msg, sub, kind, 2200);
     this.lastResult = { r, toPin };
     // gimme (tap-ins inside 9 inches are always given)
     const gimmeFt = Math.max(0.75, this.diff.gimme || 0);
-    if (restSurf === S.GREEN && toPin * 3 <= gimmeFt && this.cfg.mode !== 'range') {
+    if (restSurf === S.GREEN && toPin * 3 <= gimmeFt) {
       this.strokes++;
       this.card.putts++;
       setTimeout(() => { this.hud.toast(toPin * 3 < 0.8 ? 'TAP-IN' : 'GIMME', '', 'good', 1000); this.holeOut(toPin, true, true); }, 700);
@@ -871,15 +871,15 @@ export class Play {
       return;
     }
     // max strokes pick-up
-    if (this.strokes >= Math.max(10, hole.par * 2 + 2) && this.cfg.mode !== 'range' && this.cfg.mode !== 'practice') {
+    if (this.strokes >= Math.max(10, hole.par * 2 + 2) && this.cfg.mode !== 'practice') {
       this.hud.toast('PICKED UP', 'Maximum strokes reached', 'bad', 1800);
       this.state = 'wait';
       setTimeout(() => this.holeOut(0, false, true), 1400);
       return;
     }
     this.state = 'result';
-    if (this.cfg.mode === 'range' || this.cfg.mode === 'practice') this.hud.practiceResult(this, r, sh);
-    this.resultTimer = this.cfg.mode === 'range' || this.cfg.mode === 'practice' ? 99 : 1.9;
+    if (this.cfg.mode === 'practice') this.hud.practiceResult(this, r, sh);
+    this.resultTimer = this.cfg.mode === 'practice' ? 99 : 1.9;
   }
 
   findDrop(r) {
@@ -906,15 +906,6 @@ export class Play {
   continueAfterResult() {
     if (this.state !== 'result') return;
     this.hud.practiceResult(null);
-    if (this.cfg.mode === 'range') {
-      const [tx, ty] = this.hole.tee;
-      this.ball = { x: tx, y: ty, h: this.hole.heightAt(tx, ty) };
-      this.strokes = 0; this.teeShot = true;
-      const keep = { club: this.club, typeId: this.typeId, heading: this.heading };
-      this.beginShot();
-      if (keep.club.cat !== 'putter') { this.selectClub(keep.club); this.heading = keep.heading; this.afterAimChange(); }
-      return;
-    }
     if (this.cfg.mode === 'practice' && this.practiceSpot && !this.playingOut) {
       this.ball = { ...this.practiceSpot.ball };
       this.strokes = 0; this.teeShot = !!this.practiceSpot.tee;
@@ -931,7 +922,7 @@ export class Play {
     const log = this.holeLog;
     const strokes = this.strokes;
     const diff = strokes - hole.par;
-    if (this.cfg.mode === 'practice' || this.cfg.mode === 'range') {
+    if (this.cfg.mode === 'practice') {
       this.playingOut = false;
       this.hud.toast(strokes === 1 ? 'IN THE HOLE!' : 'HOLED!', '', 'great', 1800);
       audio.jingle('birdie');

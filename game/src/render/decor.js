@@ -46,7 +46,6 @@ export function buildDecor(hole, P, info = {}) {
       case 'wall': group.add(wall(d, P, H)); break;
       case 'hotel': group.add(hotel(d, P, H)); break;
       case 'crowd': group.add(crowdLine(d, P, H, rnd)); break;
-      case 'target': group.add(target(d, P, H)); break;
       case 'board': group.add(leaderboard(d, P, H, hole, info, rnd)); break;
     }
   }
@@ -263,26 +262,6 @@ function leaderboard(d, P, H, hole, info, rnd) {
   g.position.copy(P(d.x, d.y, H(d.x, d.y)));
   // face toward the tee
   g.rotation.y = Math.atan2(d.face[0], -d.face[1]);
-  return g;
-}
-
-function target(d, P, H) {
-  const g = new THREE.Group();
-  const cols = { 50: '#e53935', 100: '#fdd835', 150: '#1e88e5', 200: '#ffffff', 250: '#8e24aa', 300: '#fb8c00' };
-  const col = cols[d.dist] || '#ffffff';
-  const ring = new THREE.Mesh(new THREE.RingGeometry(5.5, 6.2, 40), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }));
-  ring.rotation.x = -Math.PI / 2; g.add(ring);
-  const ring2 = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.0, 32), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide }));
-  ring2.rotation.x = -Math.PI / 2; g.add(ring2);
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.6), std('#ffffff'));
-  pole.position.y = 1.3; g.add(pole);
-  const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.5), new THREE.MeshStandardMaterial({ color: col, side: THREE.DoubleSide }));
-  flag.position.set(0.4, 2.3, 0); g.add(flag);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.5), new THREE.MeshBasicMaterial({ map: canvasTexture(128, 64, (ctx, w, h) => {
-    ctx.fillStyle = '#1c2a44'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(String(d.dist), w / 2, 46);
-  }), side: THREE.DoubleSide }));
-  sign.position.set(-4, 1.2, 0); g.add(sign);
-  g.position.copy(P(d.x, d.y, H(d.x, d.y) + 0.05));
   return g;
 }
 

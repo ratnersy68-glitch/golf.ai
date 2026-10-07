@@ -246,8 +246,8 @@ export class Hud {
 
   setHoleInfo(h) {
     $('#hc-num', this.root).textContent = h.number;
-    $('#hc-course', this.root).textContent = h.course + (h.mode === 'range' ? ' · DRIVING RANGE' : h.mode === 'practice' ? ' · PRACTICE' : h.mode === 'coursePractice' ? ' · COURSE PRACTICE' : ` · ${h.holeIdx + 1}/${h.holeCount}`);
-    $('#hc-title', this.root).textContent = h.mode === 'range' ? 'DRIVING RANGE' : `PAR ${h.par}`;
+    $('#hc-course', this.root).textContent = h.course + (h.mode === 'practice' ? ' · PRACTICE' : h.mode === 'coursePractice' ? ' · COURSE PRACTICE' : ` · ${h.holeIdx + 1}/${h.holeCount}`);
+    $('#hc-title', this.root).textContent = `PAR ${h.par}`;
     $('#hc-sub', this.root).textContent = `${h.yards} YDS${h.name ? ' · ' + h.name : ''}`;
     $('#hc-stroke', this.root).textContent = `SHOT ${h.stroke}`;
     const tp = $('#hc-topar', this.root);
@@ -480,7 +480,7 @@ export class Hud {
     ctx.fillText(d < 30 ? `${Math.round(d * 3)} ft` : `${Math.round(d)} y`, 6, c.height - 8);
   }
 
-  // ---------------- practice / range panel ----------------
+  // ---------------- practice panel ----------------
   practiceResult(play, r, sh) {
     const p = $('#practice-panel', this.root);
     if (!play) { p.classList.remove('show'); return; }
@@ -497,10 +497,10 @@ export class Hud {
       : [['Ball speed', `${Math.round(L.ballMph)} mph`], ['Launch', `${L.launchDeg.toFixed(1)}°`], ['Spin', `${Math.round(L.back)} rpm`],
         ['Carry', `${Math.round(r.carry)} yds`], ['Total', `${Math.round(r.total)} yds`], ['Apex', `${Math.round(r.apex * 3)} ft`],
         ['Offline', `${Math.abs(side).toFixed(0)} yds ${side > 0.5 ? 'R' : side < -0.5 ? 'L' : ''}`], ['Strike', L.rating],
-        [play.cfg.mode === 'range' ? 'Club' : 'To pin', play.cfg.mode === 'range' ? play.club.name : (toPin < 30 ? `${Math.round(toPin * 3)} ft` : `${Math.round(toPin)} yds`)]];
-    p.innerHTML = `<div class="pp-title">${play.cfg.mode === 'range' ? 'LAUNCH MONITOR' : 'SHOT DATA'}</div>
+        ['To pin', toPin < 30 ? `${Math.round(toPin * 3)} ft` : `${Math.round(toPin)} yds`]];
+    p.innerHTML = `<div class="pp-title">SHOT DATA</div>
       <div class="pp-grid">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>
-      <div class="pp-btns"><button class="btn primary" id="pp-next">${play.cfg.mode === 'range' ? 'NEXT BALL' : 'RETRY SPOT'} <kbd>Enter</kbd></button>
+      <div class="pp-btns"><button class="btn primary" id="pp-next">RETRY SPOT <kbd>Enter</kbd></button>
       ${play.cfg.mode === 'practice' ? '<button class="btn" id="pp-new">NEW SPOT <kbd>N</kbd></button>' : ''}
       ${play.cfg.mode === 'practice' && !play.lastResult?.r?.holed ? '<button class="btn" id="pp-continue">PLAY IT OUT</button>' : ''}</div>`;
     p.classList.add('show');

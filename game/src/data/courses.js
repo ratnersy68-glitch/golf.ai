@@ -509,14 +509,6 @@ export function courseYards(course, teeFactor = 1) {
   return course.holes.reduce((a, h) => a + Math.round(h.y * teeFactor), 0);
 }
 
-// Practice facility used by the Driving Range mode.
-export const RANGE_COURSE = {
-  id: 'range', name: 'Championship Practice Range', short: 'PRACTICE RANGE', location: 'Golf.ai Academy',
-  designer: '', blurb: 'Target greens every 50 yards.', theme: 'valhalla', wind: [2, 10], stimp: 12, firmness: 0.55, unlock: 1, accent: '#2f7d3a',
-  holes: [{ p: 5, y: 340, fw: 120, el: 0, gw: 1.4, range: true, hz: [['target', 50, -12], ['target', 100, 10], ['target', 150, -14], ['target', 200, 12], ['target', 250, -10], ['target', 300, 8]], tip: 'Hit every club and study the launch monitor.' }],
-};
-
 export function getCourse(id) {
-  if (id === 'range') return RANGE_COURSE;
   return COURSES.find(c => c.id === id) || COURSES[0];
 }
