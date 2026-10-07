@@ -42,7 +42,7 @@ export function newTournament(course, difficulty, playerName, proId = null) {
   const seed = (Date.now() & 0x7fffffff) >>> 0;
   const rng = mulberry32(seed);
   const pars = course.holes.map(h => h.p);
-  const pros = PROS.filter(p => p.id !== 'korda' && p.id !== proId).map(p => [p.name, p.country, Math.min(0.95, ((p.power + p.accuracy + p.shortGame + p.putting) / 4 - 60) / 38)]);
+  const pros = PROS.filter(p => p.id !== proId).map(p => [p.name, p.country, Math.min(0.95, ((p.power + p.accuracy + p.shortGame + p.putting) / 4 - 60) / 38)]);
   const field = [...pros, ...FIELD_EXTRA].map(([name, country, skill]) => {
     const form = (rng() - 0.5) * 0.2; // this week's form
     const rounds = [0, 1, 2, 3].map(rd => {

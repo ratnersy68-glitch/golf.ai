@@ -239,9 +239,26 @@ kbd { font-family: var(--sans); font-size: 10px; background: rgba(255,255,255,0.
 .golfer-card { background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 14px; padding: 14px; cursor: pointer; transition: all .15s; position: relative; }
 .golfer-card:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
 .golfer-card.sel { border-color: var(--accent); background: rgba(61,220,132,0.1); box-shadow: 0 0 0 1px var(--accent), 0 10px 30px rgba(61,220,132,.2); }
-.gc-avatar { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; float: left; margin-right: 12px; border: 1px solid rgba(255,255,255,.2); }
-.gc-avatar span { font-family: var(--cond); font-weight: 800; font-size: 22px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
-.gc-name { font-weight: 700; font-size: 16px; }
+.gc-top { display: flex; gap: 12px; align-items: center; }
+.gc-portrait { width: 58px; height: 64px; flex: none; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); }
+.gc-portrait svg { width: 100%; height: 100%; display: block; }
+.gc-id { flex: 1; min-width: 0; }
+.gc-ovr { text-align: center; line-height: 1; }
+.gc-ovr b { display: block; font-family: var(--cond); font-size: 30px; font-weight: 800; color: var(--accent); }
+.gc-ovr span { font-size: 9px; letter-spacing: .14em; color: var(--dim); font-weight: 700; }
+.gc-majors { margin-top: 4px; font-size: 10px; letter-spacing: .12em; color: #e9c46a; font-weight: 700; }
+.gc-majors b { font-size: 14px; }
+.gc-feat { margin-top: 10px; font-size: 12px; color: #e8dcc0; font-style: italic; line-height: 1.35; }
+.gtabs { display: flex; gap: 8px; margin: 14px 0 12px; }
+.gtab { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); font-family: var(--cond); font-weight: 800; letter-spacing: .1em; font-size: 15px; color: var(--dim); }
+.gtab.on { color: #0b140f; background: var(--accent); border-color: var(--accent); }
+.gtab[data-gtab="goat"].on { background: linear-gradient(135deg, #f3d27a, #b8862b); border-color: #e9c46a; }
+.goat-intro { font-size: 13px; color: #e9c46a; margin: -4px 0 12px; letter-spacing: .04em; }
+.golfer-card.goat { background: linear-gradient(160deg, rgba(233,196,106,0.14), rgba(30,22,8,0.5)); border-color: rgba(233,196,106,0.45); }
+.golfer-card.goat .gc-ovr b { color: #f3d27a; }
+.golfer-card.goat .attr-bars i b { background: linear-gradient(90deg, #b8862b, #f3d27a); }
+.golfer-card.goat.sel { border-color: #f3d27a; box-shadow: 0 0 0 1px #f3d27a, 0 10px 30px rgba(233,196,106,.25); background: linear-gradient(160deg, rgba(233,196,106,0.24), rgba(30,22,8,0.5)); }
+.gc-name { font-weight: 700; font-size: 15px; line-height: 1.2; overflow-wrap: anywhere; }
 .gc-sub { font-size: 12px; color: var(--dim); }
 .gc-tag { position: absolute; top: 12px; right: 12px; font-size: 9px; letter-spacing: .14em; font-weight: 700; color: var(--accent2); border: 1px solid var(--accent2); padding: 2px 6px; border-radius: 10px; }
 .attr-bars { clear: both; padding-top: 12px; display: grid; gap: 4px; }

@@ -41,13 +41,13 @@ export function normalizeLook(look = {}) {
   if (look.name) L.name = look.name;
   if (look.gender) L.gender = look.gender;
   if (typeof look.skin === 'number') L.skin = Math.min(SKIN_TONES.length - 1, [0, 1, 3, 5, 7, 9][look.skin] ?? 2);
-  if (look.hair) L.hair = oldHair[look.hair] || 'short';
+  if (look.hair) L.hair = oldHair[look.hair] || (HAIR_STYLES.some(h => h[0] === look.hair) ? look.hair : 'short');
   if (look.hairColor) L.hairColor = look.hairColor;
   if (look.beard) L.facialHair = 'full';
   if (look.build) L.build = look.build;
   if (look.accessory || look.glasses) L.accessory = look.glasses ? 'sunglasses' : look.accessory;
   const st = look.shirtStyle || 'polo';
-  const top = st === 'quarterzip' ? findStyle(TOPS, 'quarterzip', TOPS[5]) : st === 'vest' ? findStyle(TOPS, 'vest', TOPS[5]) : st === 'greenjacket' ? findStyle(TOPS, 'sweater', TOPS[5]) : TOPS[5];
+  const top = st === 'quarterzip' ? findStyle(TOPS, 'quarterzip', TOPS[5]) : st === 'vest' ? findStyle(TOPS, 'vest', TOPS[5]) : st === 'greenjacket' || st === 'sweater' ? findStyle(TOPS, 'sweater', TOPS[5]) : st === 'mock' ? findStyle(TOPS, 'mock', TOPS[5]) : TOPS[5];
   L.outfit.top = { id: top.id, color: look.shirt || '#f4f4f2', pattern: st === 'stripe' ? 'stripe' : 'solid' };
   const bst = look.legs === 'shorts' ? 'shorts' : look.legs === 'skirt' ? 'shorts' : 'pants';
   L.outfit.bottom = { id: findStyle(BOTTOMS, bst, BOTTOMS[3]).id, color: look.pants || '#1d2638', pattern: 'solid', fit: 'Regular' };

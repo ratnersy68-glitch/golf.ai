@@ -1,7 +1,8 @@
 // Front-end menus: main menu, round setup (golfer/course/tees), career,
 // golfer customization, bag, settings, practice and results.
 import { COURSES, TEE_SETS, coursePar, courseYards, getCourse } from '../data/courses.js';
-import { PROS, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
+import { PROS, GOATS, ALL_GOLFERS, golferById, overall, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
+import { portrait } from './portrait.js';
 import { normalizeLook } from '../data/look.js';
 import { TOPS, BOTTOMS, SHOES, HATS, GLOVES, RARITY, itemUnlock } from '../data/apparel.js';
 import { newTournament, leaderboard, boardHtml, projectedCut, fmtPar, ROUND_DAYS } from '../game/masters.js';
@@ -9,13 +10,12 @@ import { GREEN_JACKET } from '../data/apparel.js';
 import { CLUB_TYPES, BRAND_MODELS, BALLS, buildBag } from '../data/clubs.js';
 import { DIFFICULTIES, LEVEL_XP, customAttrs, resetProfile } from '../core/profile.js';
 
-const proById = (id) => PROS.find(x => x.id === id) || PROS[0];
+const proById = golferById;
 const proLook = (pro) => normalizeLook({ ...DEFAULT_LOOK, ...pro.look, name: pro.name });
 import { audio } from '../audio/audio.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const fmtToPar = (v) => v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
-const lookColors = (look) => { const o = normalizeLook(look).outfit; return [o.top.color, o.bottom.color]; };
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const MODES = {
@@ -106,7 +106,7 @@ export class Menus {
     const s = this.profile.settings;
     this.setup = {
       mode, step: 0,
-      golfer: PROS.some(x => x.id === this.setup?.golfer) ? this.setup.golfer : PROS[0].id,
+      golfer: ALL_GOLFERS.some(x => x.id === this.setup?.golfer) ? this.setup.golfer : PROS[0].id, tab: GOATS.some(x => x.id === this.setup?.golfer) ? 'goat' : 'pros',
       courseId: getCourse(s.lastCourse).id, teeId: s.lastTee || 'tour',
       difficulty: s.difficulty, wind: s.windSetting, pins: s.pins, nine: 'front', hole: 0, practiceKind: 'approach',
     };
@@ -139,17 +139,21 @@ export class Menus {
 
   golferPicker() {
     const st = this.setup;
-    const p = this.profile;
-    const card = (id, name, sub, attrs, look, extra = '') => `
-      <div class="golfer-card ${st.golfer === id ? 'sel' : ''}" data-golfer="${id}">
-        <div class="gc-avatar" style="background:linear-gradient(160deg, ${lookColors(look)[0]}, ${lookColors(look)[1]})"><span>${esc(name.split(' ').map(w => w[0]).join('').slice(0, 2))}</span></div>
-        <div class="gc-name">${esc(name)}</div><div class="gc-sub">${sub}</div>
-        <div class="attr-bars">${[['PWR', attrs.power], ['ACC', attrs.accuracy ?? attrs.approach], ['SHT', attrs.shortGame], ['PUT', attrs.putting], ['REC', attrs.recovery]].map(([k, v]) => `<div><span>${k}</span><i><b style="width:${v}%"></b></i><em>${Math.round(v)}</em></div>`).join('')}</div>${extra}
+    const goat = st.tab === 'goat';
+    const bars = (p) => [['PWR', p.power], ['ACC', p.accuracy], ['SHT', p.shortGame], ['PUT', p.putting]].map(([k, v]) => `<div><span>${k}</span><i><b style="width:${v}%"></b></i><em>${v}</em></div>`).join('');
+    const card = (p) => `
+      <div class="golfer-card ${p.goat ? 'goat' : ''} ${st.golfer === p.id ? 'sel' : ''}" data-golfer="${p.id}">
+        <div class="gc-top"><div class="gc-portrait">${portrait({ ...DEFAULT_LOOK, ...p.look }, p.goat ? '#2a2212' : '#13241a')}</div>
+          <div class="gc-id"><div class="gc-name">${esc(p.name)}</div><div class="gc-sub">${p.country}${p.goat ? ` · ${p.era}` : ''}</div>
+          ${p.goat ? `<div class="gc-majors"><b>${p.majors}</b> MAJORS</div>` : ''}</div>
+          <div class="gc-ovr"><b>${overall(p)}</b><span>OVR</span></div></div>
+        ${p.goat ? `<div class="gc-feat">${esc(p.feat)}</div>` : ''}
+        <div class="attr-bars">${bars(p)}</div>
       </div>`;
-    let html = `<div class="section-title">CHOOSE YOUR PRO</div><div class="golfer-grid">`;
-    for (const pro of PROS) html += card(pro.id, pro.name, pro.country, pro, { ...DEFAULT_LOOK, ...pro.look });
-    html += '</div>';
-    return html;
+    const tab = (id, label) => `<button class="gtab ${st.tab === id ? 'on' : ''}" data-gtab="${id}">${label}</button>`;
+    return `<div class="gtabs">${tab('pros', 'TOUR PROS')}${tab('goat', '🐐 GOAT')}</div>
+      ${goat ? '<div class="goat-intro">The greatest of all time, in their prime.</div>' : ''}
+      <div class="golfer-grid">${(goat ? GOATS : PROS).map(card).join('')}</div>`;
   }
 
   coursePicker() {
@@ -201,6 +205,7 @@ export class Menus {
   bindSetup(stepName) {
     const st = this.setup;
     this.root.querySelectorAll('[data-golfer]').forEach(e => e.onclick = () => { st.golfer = e.dataset.golfer; audio.click(); this.renderSetup(); });
+    this.root.querySelectorAll('[data-gtab]').forEach(e => e.onclick = () => { st.tab = e.dataset.gtab; audio.click(); this.renderSetup(); });
     this.root.querySelectorAll('[data-course]').forEach(e => e.onclick = () => {
       const c = getCourse(e.dataset.course);
       if (c.unlock > this.profile.level) { audio.tick(false); return; }
@@ -270,7 +275,7 @@ export class Menus {
       side = `${m?.finished ? `<div class="m-final ${m.result.won ? 'won' : ''}">${m.result.won ? 'MASTERS CHAMPION' : m.result.pos === 'MC' ? 'MISSED THE CUT' : `FINISHED ${m.result.pos}`}<small>${fmtPar(m.result.toPar)}${m.result.won ? '' : m.result.champion ? ` · Champion ${esc(m.result.champion)} ${fmtPar(m.result.winningScore)}` : ''}</small></div>` : ''}
         <div class="section-title">NEW TOURNAMENT</div>
         <div class="m-note">Four rounds at Augusta National from the championship tees against a field of ${51} of the world's best. Low 30 and ties make the cut after Friday. Sunday brings the toughest pins. Win and the Green Jacket is yours.</div>
-        <div class="set-row"><div><b>Your pro</b></div><div class="chips">${PROS.filter(x => x.id !== 'korda').map(x => `<button class="chip ${(this.mPro || 'scheffler') === x.id ? 'on' : ''}" data-mpro="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
+        <div class="set-row"><div><b>Your pro</b></div><div class="chips">${ALL_GOLFERS.map(x => `<button class="chip ${(this.mPro || 'scheffler') === x.id ? 'on' : ''}" data-mpro="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
         <div class="set-row"><div><b>Difficulty</b></div><div class="chips">${diffChips}</div></div>
         <button class="btn primary big m-tee" id="m-start">START THE MASTERS ▸</button>`;
     }
