@@ -51,8 +51,15 @@ for (let rn = 0; rn < rounds; rn++) {
       // human-ish timing error
       const timingErr = process.env.PERFECT ? 0 : (Math.random() - 0.5) * 1.4;
       const powerErr = process.env.PERFECT ? 1 : 1 + (Math.random() - 0.5) * 0.06;
+      if (putt) {
+        // human-ish putter: reads the green roughly (aim off by a few inches) and judges pace within a few %
+        const sol = play.puttSolution();
+        const perfect = !!process.env.PERFECT;
+        play.heading = sol.heading + (perfect ? 0 : (Math.random() - 0.5) * (0.3 + sol.D * 0.04) / Math.max(1, sol.D));
+        power = play.puttPerfectPower() * (perfect ? 1 : 1 + (Math.random() - 0.5) * 0.4);
+      }
       play.swingPress();
-      play.meter.power = Math.min(1.05, power * powerErr);
+      play.meter.power = Math.min(1.05, power * (putt ? 1 : powerErr));
       play.swingRelease();
       if (play.state === 'swing') {
         const w = 0.075;

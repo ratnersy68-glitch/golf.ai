@@ -112,6 +112,12 @@ kbd { font-family: var(--sans); font-size: 10px; background: rgba(255,255,255,0.
 .meter.hit-good { box-shadow: 0 0 0 2px #3ddc84, 0 0 30px rgba(61,220,132,.6); }
 .meter.hit-bad { box-shadow: 0 0 0 2px #ff5a4f, 0 0 30px rgba(255,90,79,.5); }
 .meter-wrap.putt .meter::before { display: none; }
+/* putting meter: its own look - a cool white stroke bar with a gold "perfect" band */
+.meter-wrap.putt .meter { background: linear-gradient(180deg, rgba(10,24,16,0.7), rgba(10,24,16,0.45)); border-color: rgba(255,255,255,0.28); }
+.meter-wrap.putt .meter-fill { background: linear-gradient(90deg, rgba(255,255,255,0.35), #ffffff); box-shadow: 0 0 14px rgba(255,255,255,0.45); }
+.meter-zone.putt-zone { background: rgba(255,209,102,0.35); border-color: #ffd166; box-shadow: 0 0 16px rgba(255,209,102,0.7); }
+.meter-wrap.putt .meter-target { color: #ffd166; }
+.meter-wrap.putt .meter-target::after { background: #ffd166; }
 .swing-btn { margin-top: 10px; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15); border-radius: 22px; padding: 8px 22px; font-family: var(--cond); letter-spacing: .12em; font-size: 14px; color: var(--dim); touch-action: none; }
 .swing-btn b { color: var(--text); }
 .swing-btn:active { background: rgba(61,220,132,0.3); }
@@ -766,3 +772,8 @@ body.touch .mticker { top: calc(var(--st) + 64px); left: calc(var(--sl) + 10px);
 }
 
 .boot-msg.err { color: #ffd2cd; max-width: 520px; margin: 14px auto 0; line-height: 1.5; letter-spacing: .02em; text-transform: none; }
+
+/* on the green the wind doesn't matter: dim the dial and say so */
+#wind.calm { opacity: .5; }
+#wind.calm .wind-mph { font-size: 0; }
+#wind.calm .wind-mph::after { content: 'NO EFFECT ON PUTTS'; font-size: 10px; letter-spacing: .1em; }

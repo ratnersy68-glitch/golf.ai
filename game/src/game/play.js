@@ -2,7 +2,8 @@
 // shot playback, penalties, scoring and statistics.
 import * as THREE from 'three';
 import { Hole, S } from '../core/holeGen.js';
-import { simulate, MPH, greenRollDecel } from '../core/physics.js';
+import { simulate, MPH, greenRollDecel, CUP_R } from '../core/physics.js';
+import { solvePutt, rollProbe } from './puttSolver.js';
 import { mulberry32, clamp } from '../core/noise.js';
 import { buildBag } from '../data/clubs.js';
 import { THEMES } from '../data/themes.js';
@@ -31,6 +32,7 @@ export function scoreName(diff, strokes) {
   if (diff === 3) return 'TRIPLE BOGEY';
   return `+${diff}`;
 }
+
 
 export class Play {
   constructor(app) {
@@ -182,7 +184,8 @@ export class Play {
       club = this.bag.find(c => c.cat === 'putter');
       type = 'putt';
       heading = toPinHeading;
-      this.puttScale = pickPuttScale(this.distPin);
+      this.puttSol = null;
+      this.puttScale = this.puttScaleFor();
     } else {
       // realistic club limits from poor lies
       const allowed = (c) => c.cat !== 'putter' && (onTee || c.id !== 'DR')
@@ -304,6 +307,60 @@ export class Play {
 
   isPutt() { return !!this.club && this.club.cat === 'putter'; }
 
+  // ---- putting: the solved line & pace, the perfect window and the stroke grade ----
+  puttSolution() {
+    const b = this.ball, key = `${b.x.toFixed(3)}|${b.y.toFixed(3)}`;
+    if (!this.puttSol || this.puttSol.key !== key) {
+      this.puttSol = { ...solvePutt(this.hole, b, this.hole.stimp), key };
+    }
+    return this.puttSol;
+  }
+  // smallest meter scale the perfect stroke fits comfortably inside
+  // the read: how far outside the hole the true line starts (e.g. "8 IN LEFT")
+  breakText() {
+    const b = this.puttSolution().breakYd * 36;
+    if (Math.abs(b) < 1.5) return 'STRAIGHT';
+    return Math.abs(b) >= 24 ? `${(Math.abs(b) / 12).toFixed(1)} FT ${b > 0 ? 'RIGHT' : 'LEFT'}` : `${Math.round(Math.abs(b))} IN ${b > 0 ? 'RIGHT' : 'LEFT'}`;
+  }
+  puttScaleFor() {
+    const need = this.puttSolution().dist * YD2FT / 0.85;
+    return PUTT_SCALES_FT.find(f => f >= need) || PUTT_SCALES_FT[PUTT_SCALES_FT.length - 1];
+  }
+  puttPerfectPower() { return this.puttSolution().dist / (this.puttScale / YD2FT); }
+  // how far off the perfect stroke may be and still be perfect (pace as a fraction, line in yards at the hole)
+  puttTolerance() {
+    const dk = this.diffKey;
+    const k = clamp(1.3 - (this.attrs.putting ?? 80) / 250, 0.85, 1.15);
+    return {
+      pace: ({ easy: 0.1, normal: 0.065, hard: 0.045, realistic: 0.03 }[dk] ?? 0.065) * k,
+      line: CUP_R * ({ easy: 1.6, normal: 1.2, hard: 0.9, realistic: 0.7 }[dk] ?? 1.2) / k,
+    };
+  }
+  // lateral miss at the hole (yards, + = aimed right of the true line) for the current aim
+  puttAimError(heading = this.heading) {
+    const sol = this.puttSolution();
+    const da = Math.atan2(Math.sin(heading - sol.heading), Math.cos(heading - sol.heading));
+    return da * sol.D;
+  }
+  puttStroke(power) {
+    const sol = this.puttSolution(), tol = this.puttTolerance();
+    const a = greenRollDecel(this.hole.stimp);
+    const pStar = this.puttPerfectPower();
+    const pace = power / pStar - 1, line = this.puttAimError();
+    const perfect = sol.holed && Math.abs(pace) <= tol.pace && Math.abs(line) <= tol.line;
+    let rating, sub = '';
+    if (perfect) { rating = 'PERFECT'; sub = 'Pure stroke'; }
+    else {
+      const paceWord = pace > tol.pace ? (pace > tol.pace * 3 ? 'WAY TOO FIRM' : 'TOO FIRM') : pace < -tol.pace ? (pace < -tol.pace * 3 ? 'WAY TOO SOFT' : 'TOO SOFT') : 'GOOD PACE';
+      const offLine = Math.abs(line) > tol.line;
+      rating = offLine && paceWord === 'GOOD PACE' ? (line > 0 ? 'MISREAD RIGHT' : 'MISREAD LEFT') : paceWord;
+      sub = [paceWord === 'GOOD PACE' ? '' : `pace ${pace > 0 ? '+' : ''}${Math.round(pace * 100)}%`, offLine ? `aimed ${Math.round(Math.abs(line) * 36)} in ${line > 0 ? 'right' : 'left'}` : 'on line'].filter(Boolean).join(' · ');
+    }
+    // a perfect stroke rolls exactly on the solved line at the solved pace; anything else rolls as struck
+    const speed = perfect ? sol.speed : Math.sqrt(2 * a * Math.max(0, power) * this.puttScale / YD2FT);
+    return { speed, heading: perfect ? sol.heading : this.heading, angle: 0, back: 0, side: 0, rating, sub, quality: perfect ? 1.015 : 1, perfect };
+  }
+
   env(noWind = false) {
     return {
       wind: noWind ? [0, 0] : this.wind,
@@ -320,26 +377,19 @@ export class Play {
     w.clearAim();
     const settings = this.app.profile.settings;
     if (this.isPutt()) {
-      this.puttScale = this.puttScale || pickPuttScale(this.distPin);
-      const frac = this.diff.puttPreview;
-      if (settings.puttGuide) {
-        const D = this.distPin + 0.4;
-        const power = D / (this.puttScale / YD2FT);
-        const l = computePutt({ power, scaleYd: this.puttScale / YD2FT, heading: this.heading, attrs: { putting: 200 }, diff: { putt: 0 }, stimp: hole.stimp, rng: () => 0.5 });
-        l.heading = this.heading; l.speed = Math.sqrt(2 * greenRollDecel(hole.stimp) * Math.min(D, this.puttScale / YD2FT));
-        const sim = simulate(hole, this.ball, l, this.env(true), { putt: true });
-        const n = Math.max(2, Math.floor(sim.frames.length * (frac > 0 ? frac : 0.12)));
-        const ground = sim.frames.slice(0, n).filter((f, i) => i % 2 === 0).map(f => [f.x, f.y, f.h]);
-        w.showAim({ ground, groundWidth: 0.07 });
-        w.showSlopeGrid(hole, (this.ball.x + hole.pin[0]) / 2, (this.ball.y + hole.pin[1]) / 2, Math.min(18, this.distPin / 2 + 4));
-      } else {
-        const ground = [];
-        for (let d = 0; d <= Math.min(3, this.distPin); d += 0.25) {
-          const x = this.ball.x + Math.sin(this.heading) * d, y = this.ball.y + Math.cos(this.heading) * d;
-          ground.push([x, y, hole.heightAt(x, y)]);
-        }
-        w.showAim({ ground });
-      }
+      this.puttScale = this.puttScale || this.puttScaleFor();
+      const sol = this.puttSolution();
+      // the true roll along the current aim at perfect pace, cut off just past the hole
+      const r = rollProbe(hole, this.ball, this.heading, sol.speed, hole.stimp);
+      const tol = this.puttTolerance();
+      const onLine = sol.holed && Math.abs(this.puttAimError()) <= tol.line;
+      const frac = settings.puttGuide ? this.diff.puttPreview : 0.12;
+      let pts = r.frames.map(f => [f.x, f.y, f.h]);
+      // stop the drawn line at the hole when the putt is on line
+      if (onLine) { const k = pts.findIndex(p => Math.hypot(p[0] - hole.pin[0], p[1] - hole.pin[1]) < CUP_R); if (k > 0) pts = pts.slice(0, k + 1); }
+      const n = Math.max(3, Math.ceil(pts.length * clamp(frac, 0.08, 1)));
+      w.showPuttLine(pts.slice(0, n), { onLine, cup: [hole.pin[0], hole.pin[1], hole.pinH] });
+      if (settings.puttGuide) w.showSlopeGrid(hole, (this.ball.x + hole.pin[0]) / 2, (this.ball.y + hole.pin[1]) / 2, Math.min(18, this.distPin / 2 + 4));
       this.previewLanding = null;
       this.hud.drawMap(this);
       return;
@@ -398,7 +448,7 @@ export class Play {
     this.hud.setInfo({
       lie: this.teeShot && this.strokes === 0 ? 'TEE' : lie.name, lieColor: lie.color,
       liePct: lieRangeText(this.surf, this.typeId, this.club, this.attrs.recovery),
-      toPin: this.distPin, playsLike: pl, elevFt: el * 3, putt,
+      toPin: this.distPin, playsLike: pl, elevFt: el * 3, putt, breakTxt: putt ? this.breakText() : '',
       club: this.club, carry, typeId: this.typeId, typeName: SHOT_TYPES[this.typeId].name,
       types: putt ? ['putt'] : availableTypes(this.surf, this.club, this.distPin),
       shape: this.shapeSel, traj: this.trajSel, spin: this.spin, puttScale: this.puttScale,
@@ -411,7 +461,8 @@ export class Play {
     let tick = null;
     const dk = this.diffKey;
     if (putt) {
-      tick = dk === 'easy' ? this.idealPower(false) : this.distPin * YD2FT / this.puttScale;
+      // realistic: only the straight-line distance; everyone else sees the true pace for the slope
+      tick = dk === 'realistic' ? this.distPin * YD2FT / this.puttScale : this.puttPerfectPower();
     } else if (carry > 0) {
       if ((dk === 'easy' || dk === 'normal') && this.distPin < carry * 1.15) tick = this.idealPower(dk === 'easy');
       else if (dk !== 'realistic') {
@@ -421,7 +472,10 @@ export class Play {
       if (tick != null && tick > 1.12) tick = null;
     }
     this.hud.meterTarget(tick, putt ? this.puttScale : null);
-    this.hud.meterWindow(putt ? 0 : timingWindow(this.club, this.typeId, this.surf, this.attrs, this.diff, 1));
+    if (putt) {
+      const pS = this.puttPerfectPower(), t = this.puttTolerance().pace;
+      this.hud.meterPuttZone(dk === 'realistic' ? null : [pS * (1 - t), pS * (1 + t)]);
+    } else this.hud.meterWindow(timingWindow(this.club, this.typeId, this.surf, this.attrs, this.diff, 1));
   }
 
   // ---------------- input ----------------
@@ -505,7 +559,7 @@ export class Play {
   }
   selectClub(c, opts = {}) {
     this.club = c;
-    if (c.cat === 'putter') { this.typeId = 'putt'; this.puttScale = pickPuttScale(this.distPin); }
+    if (c.cat === 'putter') { this.typeId = 'putt'; this.puttScale = this.puttScaleFor(); }
     else {
       if (this.typeId === 'putt') this.typeId = this.defaultType(c, this.distPin);
       this.ensureType();
@@ -663,7 +717,7 @@ export class Play {
     const putt = this.isPutt();
     let launch;
     if (putt) {
-      launch = computePutt({ power: m.power, scaleYd: this.puttScale / YD2FT, heading: this.heading, attrs: this.attrs, diff: this.diff, stimp: hole.stimp, rng: this.rng });
+      launch = this.puttStroke(m.power);
     } else {
       launch = computeLaunch({
         club: this.club, typeId: this.typeId, power: m.power, timing: e, heading: this.heading,
@@ -674,7 +728,7 @@ export class Play {
     this.lastLaunch = launch;
     this.lastTiming = e;
     const startSurf = this.surf;
-    const result = simulate(hole, { ...this.ball }, launch, this.env(false), { putt });
+    const result = simulate(hole, { ...this.ball }, launch, this.env(putt), { putt }); // wind never moves a putt
     this.shot = { launch, result, t: 0, startBall: { ...this.ball }, startSurf, club: this.club, typeId: this.typeId, evIdx: 0, landingCamSet: false, power: m.power, rolling: false };
     this.strokes++;
     this.prevBall = { ...this.ball };
@@ -686,7 +740,7 @@ export class Play {
     this.hud.meterUpdate(m.power, putt ? 0 : m.marker, 'hit', launch.rating);
     this.hud.meterShow(false);
     audio.impact(this.club.cat, launch.quality, putt ? m.power * 0.5 : m.power);
-    if (!putt) this.hud.toast(launch.rating, '', ratingKind(launch.rating), 1100);
+    this.hud.toast(launch.rating, launch.sub || '', putt ? (launch.perfect ? 'great' : launch.rating === 'GOOD PACE' ? 'good' : 'bad') : ratingKind(launch.rating), putt ? 1600 : 1100);
     this.followT = 0;
     // camera choice
     const auto = this.app.profile.settings.autoCamera;

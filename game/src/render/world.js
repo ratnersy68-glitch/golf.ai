@@ -517,6 +517,46 @@ export class World {
     }
   }
 
+  // Putting line: a trail of dots a foot apart along the true roll, fading with distance, and a ring
+  // around the cup. Both turn green when the aim is on the line that holes the putt.
+  showPuttLine(pts, { onLine = false, cup = null } = {}) {
+    this.clearAim();
+    const g = this.aimGroup;
+    const col = new THREE.Color(onLine ? '#2bff72' : '#ffffff');
+    // resample by arc length
+    const dots = [];
+    let carry = 0.25;
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0, h0] = pts[i - 1], [x1, y1, h1] = pts[i];
+      const seg = Math.hypot(x1 - x0, y1 - y0);
+      while (carry <= seg) { const t = carry / seg; dots.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, h0 + (h1 - h0) * t]); carry += 1 / 3; }
+      carry -= seg;
+    }
+    if (dots.length) {
+      this.puttDotGeo = this.puttDotGeo || new THREE.CircleGeometry(0.05, 14).rotateX(-Math.PI / 2);
+      const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.95, depthWrite: false, depthTest: false, toneMapped: false });
+      const im = new THREE.InstancedMesh(this.puttDotGeo, mat, dots.length);
+      const m4 = new THREE.Matrix4(), c = new THREE.Color();
+      dots.forEach(([x, y, h], i) => {
+        const f = i / Math.max(1, dots.length - 1);
+        const sc = 1.2 - 0.5 * f;
+        m4.makeScale(sc, 1, sc).setPosition(x, h + 0.012, -y);
+        im.setMatrixAt(i, m4);
+        im.setColorAt(i, c.copy(col).multiplyScalar(1 - 0.4 * f));
+      });
+      im.renderOrder = 10;
+      im.frustumCulled = false;
+      g.add(im);
+    }
+    if (cup) {
+      const [x, y, h] = cup;
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.13, 0.22, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: onLine ? '#2bff72' : '#ffd166', transparent: true, opacity: 0.95, depthWrite: false, depthTest: false, toneMapped: false }));
+      ring.position.set(x, h + 0.015, -y);
+      ring.renderOrder = 11;
+      g.add(ring);
+    }
+  }
+
   // ---------- tactical (club selection) overlay ----------
   labelSprite(text, { color = '#ffffff', bg = 'rgba(8,12,10,0.78)', size = 1, sub = '' } = {}) {
     const c = document.createElement('canvas');
@@ -670,7 +710,7 @@ export class World {
       const [gx, gy] = hole.gradAt(x, y);
       const m = Math.hypot(gx, gy);
       if (m < 0.003) continue;
-      const len = (0.18 + Math.min(0.35, m * 9)) * strength;
+      const len = (0.1 + Math.min(0.2, m * 5)) * strength;
       const dx = -gx / m, dy = -gy / m;
       const px = -dy, py = dx;
       const h = hole.heightAt(x, y) + 0.03;
@@ -682,7 +722,7 @@ export class World {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
     mesh.renderOrder = 9;
     g.add(mesh);
   }

@@ -44,11 +44,14 @@ export class CameraRig {
     switch (this.mode) {
       case 'address': {
         const putt = ctx.putt;
-        const yaw = ctx.heading + this.orbitYaw;
+        // putting looks down the ball-to-hole line (not the aim) so a big break never pushes the cup off screen
+        const yaw = (putt && hole.pin ? Math.atan2(hole.pin[0] - bx, hole.pin[1] - by) : ctx.heading) + this.orbitYaw;
         const sx = Math.sin(yaw), sy = Math.cos(yaw);
         const pv = this.preview; // 0..1 flies along the aim line
-        const dist = (putt ? 5.2 : 6.8) * this.zoom;
-        const hgt = (putt ? 1.9 : 2.6) * this.zoom + this.orbitPitch * 4;
+        // putting: a low read-the-line view, pulled back and up for longer putts so ball, line and cup all fit
+        const pd = putt ? Math.min(ctx.aimDist || 4, 25) : 0;
+        const dist = (putt ? 3.2 + pd * 0.12 : 6.8) * this.zoom;
+        const hgt = (putt ? 1.15 + pd * 0.11 : 2.6) * this.zoom + this.orbitPitch * 4;
         if (pv > 0.01 && ctx.aimDist) {
           const d = ctx.aimDist * pv;
           const px = bx + hx * d, py = by + hy * d;
@@ -58,16 +61,16 @@ export class CameraRig {
           this.dLook.copy(P(lx, ly, H(lx, ly)));
         } else {
           const rx = Math.cos(yaw), ry = -Math.sin(yaw);
-          const side = putt ? 0.75 : 0.55;
+          const side = putt ? 0.45 : 0.55;
           const cx = bx - sx * dist + rx * side, cy = by - sy * dist + ry * side;
           const ch = Math.max(H(cx, cy) + 0.6, bh + hgt);
           this.dPos.copy(P(cx, cy, ch));
           // frame the golfer and ball above the HUD: pitch the camera down slightly
-          const la = putt ? Math.min(ctx.aimDist || 6, 6) : 40;
+          const la = putt ? pd * 0.55 + 0.6 : 40;
           const lx = bx + sx * la, ly = by + sy * la;
-          this.dLook.copy(P(lx, ly, putt ? H(lx, ly) - 0.2 : bh - 4.5 + this.orbitPitch * -3));
+          this.dLook.copy(P(lx, ly, putt ? H(lx, ly) - 0.35 : bh - 4.5 + this.orbitPitch * -3));
         }
-        fov = putt ? 50 : 52;
+        fov = putt ? 48 : 52;
         break;
       }
       case 'player': {

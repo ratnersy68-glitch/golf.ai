@@ -38,7 +38,7 @@ export class Hud {
       <div class="hud-bottom-left glass" id="info">
         <div class="info-row"><span>LIE</span><b id="i-lie">TEE</b><em id="i-liepct"></em></div>
         <div class="info-row"><span>TO PIN</span><b id="i-pin">0</b></div>
-        <div class="info-row"><span>PLAYS LIKE</span><b id="i-plays">0</b></div>
+        <div class="info-row"><span id="i-plays-l">PLAYS LIKE</span><b id="i-plays">0</b></div>
         <div class="info-row"><span>ELEVATION</span><b id="i-elev">0 ft</b></div>
         <div class="info-row"><span>AIM</span><div class="aimbar" id="i-aimbar"><i></i><em>⚑</em></div><em id="i-aim"></em></div>
         <div class="club-card">
@@ -277,7 +277,9 @@ export class Hud {
     $('#i-liepct', this.root).textContent = i.liePct;
     const pinTxt = i.putt || i.toPin < 30 ? `${Math.round(i.toPin * 3)} FT` : `${Math.round(i.toPin)} YDS`;
     $('#i-pin', this.root).textContent = pinTxt;
-    $('#i-plays', this.root).textContent = i.putt ? '—' : `${Math.round(i.playsLike)} YDS`;
+    $('#i-plays-l', this.root).textContent = i.putt ? 'BREAK' : 'PLAYS LIKE';
+    $('#i-plays', this.root).textContent = i.putt ? (i.breakTxt || 'STRAIGHT') : `${Math.round(i.playsLike)} YDS`;
+    $('#wind', this.root).classList.toggle('calm', !!i.putt); // wind never affects a putt
     const ef = Math.round(i.elevFt);
     $('#i-elev', this.root).textContent = `${ef > 0 ? '▲ +' : ef < 0 ? '▼ ' : ''}${ef} FT`;
     // aim relative to the flag
@@ -345,10 +347,20 @@ export class Hud {
   }
   meterWindow(w) {
     const z = $('#meter-zone', this.root);
+    z.classList.remove('putt-zone');
     if (!w) { z.style.display = 'none'; return; }
     z.style.display = '';
     z.style.left = this.mpos(-w) + '%';
     z.style.width = (this.mpos(w) - this.mpos(-w)) + '%';
+  }
+  // putting: the gold "perfect" band on the meter (lo..hi power), or none
+  meterPuttZone(range) {
+    const z = $('#meter-zone', this.root);
+    z.classList.toggle('putt-zone', !!range);
+    if (!range) { z.style.display = 'none'; return; }
+    z.style.display = '';
+    z.style.left = this.mpos(range[0]) + '%';
+    z.style.width = Math.max(0.6, this.mpos(range[1]) - this.mpos(range[0])) + '%';
   }
   meterTarget(v, puttScale) {
     const t = $('#meter-target', this.root);
@@ -366,7 +378,7 @@ export class Hud {
     $('#meter-marker', this.root).style.left = this.mpos(Math.max(-0.35, marker)) + '%';
     if (phase === 'hit') {
       const m = $('#meter', this.root);
-      m.classList.add(rating === 'PERFECT' || rating === 'GREAT' || rating === 'PURE' || rating === 'GOOD' ? 'hit-good' : 'hit-bad');
+      m.classList.add(rating === 'PERFECT' || rating === 'GREAT' || rating === 'GOOD PACE' ? 'hit-good' : 'hit-bad');
     }
   }
 

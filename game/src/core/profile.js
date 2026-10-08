@@ -6,9 +6,9 @@ const KEY = 'golfai.profile.v1';
 
 export const DIFFICULTIES = {
   easy: { name: 'Easy', window: 1.8, disp: 0.5, putt: 0.4, wind: 0.6, cupMul: 1.45, captureMul: 1.35, landing: 'wind', puttPreview: 1.0, xp: 0.7, gimme: 2 },
-  normal: { name: 'Normal', window: 1.0, disp: 0.85, putt: 0.8, wind: 1.0, cupMul: 1.15, captureMul: 1.15, landing: 'nowind', puttPreview: 0.6, xp: 1.0, gimme: 0 },
-  hard: { name: 'Hard', window: 0.72, disp: 1.1, putt: 1.1, wind: 1.15, cupMul: 1.0, captureMul: 1.0, landing: 'line', puttPreview: 0.3, xp: 1.3, gimme: 0 },
-  realistic: { name: 'Realistic', window: 0.55, disp: 1.4, putt: 1.4, wind: 1.35, cupMul: 1.0, captureMul: 0.95, landing: 'none', puttPreview: 0, xp: 1.6, gimme: 0 },
+  normal: { name: 'Normal', window: 1.0, disp: 0.85, putt: 0.8, wind: 1.0, cupMul: 1.15, captureMul: 1.15, landing: 'nowind', puttPreview: 1.0, xp: 1.0, gimme: 0 },
+  hard: { name: 'Hard', window: 0.72, disp: 1.1, putt: 1.1, wind: 1.15, cupMul: 1.0, captureMul: 1.0, landing: 'line', puttPreview: 0.55, xp: 1.3, gimme: 0 },
+  realistic: { name: 'Realistic', window: 0.55, disp: 1.4, putt: 1.4, wind: 1.35, cupMul: 1.0, captureMul: 0.95, landing: 'none', puttPreview: 0.3, xp: 1.6, gimme: 0 },
 };
 
 export const LEVEL_XP = (lvl) => 500 + (lvl - 1) * 300; // xp needed to go from lvl -> lvl+1

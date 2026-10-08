@@ -84,6 +84,7 @@ export function simulate(hole, start, launch, env, opts = {}) {
   let lipped = false;
   let pinHit = false;
   let creep = 0;
+  const probe = opts.probe && pin ? { d: Infinity, v: 0, side: 0 } : null;
 
   while (t < maxT) {
     t += dt; step++;
@@ -258,6 +259,12 @@ export function simulate(hole, start, launch, env, opts = {}) {
       x += vx * dt; y += vy * dt;
       h = hole.heightAt(x, y);
       sp2 = Math.hypot(vx, vy);
+      // putt solver probe: where the ball passes closest to the hole, its speed there and which side it passes
+      if (probe) {
+        const qx = x - pin[0], qy = y - pin[1], qd = Math.hypot(qx, qy);
+        if (qd < probe.d) { probe.d = qd; probe.v = sp2; probe.side = Math.sign(vx * qy - vy * qx); }
+        else if (qd > probe.d + 0.8 && probe.d < 3) { pushFrame(); break; } // well past the hole: the rest doesn't matter
+      }
 
       // cup
       if (pin) {
@@ -323,7 +330,7 @@ export function simulate(hole, start, launch, env, opts = {}) {
   return {
     frames, events, duration: t,
     end: { x, y, h }, surf: endSurf, carry, apex: apex - start.h,
-    total: Math.hypot(x - start.x, y - start.y), ...result,
+    total: Math.hypot(x - start.x, y - start.y), ...result, probe,
   };
 }
 
