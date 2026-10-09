@@ -338,15 +338,20 @@ class App {
   }
 
   loop(now) {
+    // keep the loop alive whatever happens inside a frame
+    requestAnimationFrame(this.loop.bind(this));
+    try { this.frame(now); } catch (e) {
+      console.error(e);
+      if (!this.frameErr) { this.frameErr = true; bootFail(`Something went wrong: ${e.message}`); finishBoot(); }
+    }
+  }
+
+  frame(now) {
     const dt = Math.max(0, Math.min(0.05, (now - this.last) / 1000));
     this.last = now;
     this.menuT += dt;
     this.frames = (this.frames || 0) + 1;
-    if (this.frames === 3) {
-      // the opening animation (index.html) removes the boot screen once it has played
-      if (window.__bootReady) window.__bootReady();
-      else { const b = document.getElementById('boot'); if (b) { b.classList.add('done'); setTimeout(() => b.remove(), 700); } }
-    }
+    if (this.frames === 3) finishBoot();
     let focus = null;
     if (this.mode === 'play' && this.play.hole) {
       this.play.update(dt);
@@ -362,8 +367,14 @@ class App {
       this.world.update(dt, focus);
       this.world.render();
     }
-    requestAnimationFrame(this.loop.bind(this));
   }
+}
+
+// hide the loading screen (after the opening animation, which index.html runs)
+function finishBoot() {
+  if (window.__bootReady) { window.__bootReady(); return; }
+  const b = document.getElementById('boot');
+  if (b) { b.classList.add('done'); setTimeout(() => b.remove(), 700); }
 }
 
 // ---------- mobile browser hygiene ----------
@@ -400,16 +411,24 @@ function bootFail(msg) {
 
 function boot() {
   installMobileGuards();
-  // let the boot screen paint before the (blocking) first course build
-  requestAnimationFrame(() => setTimeout(() => {
-    try { new App(); }
-    catch (e) {
+  // let the boot screen paint before the (blocking) first course build. Embedded pages (Google Sites)
+  // may get no animation frames while the browser treats them as hidden, so a timer starts it too.
+  let started = false;
+  const start = () => {
+    if (started) return;
+    started = true;
+    try {
+      new App();
+      setTimeout(finishBoot, 8000); // never leave the loading screen up once the game is running
+    } catch (e) {
       console.error(e);
       bootFail(/webgl/i.test(e.message || '') || !window.WebGLRenderingContext
         ? 'This browser has 3D graphics (WebGL) turned off. In Chrome, open chrome://settings/system and turn on "Use graphics acceleration", then reload.'
         : `The game couldn't start: ${e.message}`);
     }
-  }, 30));
+  };
+  requestAnimationFrame(() => setTimeout(start, 30));
+  setTimeout(start, 400);
 }
 // show unexpected startup errors on the loading screen instead of hanging silently
 window.addEventListener('error', (e) => { if (!window.__app && document.getElementById('boot')) bootFail(`The game couldn't start: ${e.message}`); });
