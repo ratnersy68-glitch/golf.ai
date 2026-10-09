@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261008202059">
+  <link rel="stylesheet" href="styles.css?v=20261009124840">
   <style>
     /* opening animation (inline so it starts before the stylesheet and game load) */
     #boot .boot-logo, #boot .boot-sub { animation: in-logo .5s cubic-bezier(.2,.8,.3,1) both, out-logo .35s 2.35s ease-in forwards; }
@@ -91,6 +91,12 @@
       else setTimeout(function () { end(false); }, 3000);
       b.addEventListener('pointerdown', function () { end(true); });
       window.addEventListener('keydown', function () { end(true); }, { once: true });
+      // the game script never started (e.g. the pasted code was cut off): say so instead of loading forever
+      setTimeout(function () {
+        if (window.__app || !document.getElementById('boot')) return;
+        var m = document.getElementById('boot-msg');
+        if (m) { m.className = 'boot-msg err'; m.style.opacity = 1; m.style.animation = 'none'; m.textContent = "The game didn't start. If you pasted this into Google Sites, the code may have been cut off: delete the embed, paste the whole file again, then republish."; }
+      }, 25000);
     })();
   </script>
 
@@ -110,6 +116,6 @@
       window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
     }
   </script>
-  <script src="dist/game.js?v=20261008202059"></script>
+  <script src="dist/game.js?v=20261009124840"></script>
 </body>
 </html>
