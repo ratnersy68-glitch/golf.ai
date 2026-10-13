@@ -829,7 +829,8 @@ body.touch .mticker { top: calc(var(--st) + 64px); left: calc(var(--sl) + 10px);
 @media (max-height: 520px) {
   .creator { padding: 8px 10px; }
   .cr-panel { width: min(400px, 52vw); padding: 10px 12px; max-height: calc(var(--app-h, 100vh) - 16px); }
-  .cr-title { font-size: 20px; } .cr-tabs { margin: 6px 0 4px; } .cr-tabs .gtab { padding: 5px 9px; font-size: 12px; }
+  .cr-title { font-size: 19px; white-space: nowrap; }
+  #cr-back { white-space: nowrap; padding-left: 4px; padding-right: 6px; } .cr-tabs { margin: 6px 0 4px; } .cr-tabs .gtab { padding: 5px 9px; font-size: 12px; }
   .sw { width: 24px; height: 24px; }
   .cr-foot .btn { padding: 7px 12px; font-size: 14px; min-height: 0; }
   .cr-foot { margin-top: 6px; }
@@ -913,3 +914,107 @@ body.touch .mticker { top: calc(var(--st) + 64px); left: calc(var(--sl) + 10px);
 .badge .xpbar { width: 100%; max-width: 220px; }
 .b-coins { flex-shrink: 0; }
 body.touch .b-coins { font-size: 14px; padding: 4px 9px; }
+
+/* ================= FIT EVERY SCREEN (short phones, small embeds) ================= */
+.b-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bv-dist b { white-space: nowrap; }
+@media (max-width: 1100px) { #hud.bag-open .hud-top-left { opacity: 0; pointer-events: none; } }
+/* modal buttons always on screen: they stick to the bottom of a scrolling card */
+.modal-card > .modal-btns { position: sticky; bottom: -22px; margin: 12px -26px -22px; padding: 10px 26px 12px; background: rgba(14,20,17,0.97); border-top: 1px solid var(--line); border-radius: 0 0 18px 18px; z-index: 1; }
+body.touch .modal-card > .modal-btns { bottom: -12px; margin: 8px -14px -12px; padding: 8px 14px 10px; }
+
+@media (max-height: 720px) {
+  /* main menu: two-up rows so the whole menu fits without scrolling */
+  .main-menu { display: grid; grid-template-columns: repeat(6, 1fr); align-content: start; }
+  .main-menu > * { grid-column: span 6; min-width: 0; }
+  .main-menu > .menu-item:nth-child(3), .main-menu > .menu-item:nth-child(4), .main-menu > .menu-item:nth-child(5), .main-menu > .golfer-item { grid-column: span 3; }
+  .main-menu > .shop-item { grid-column: span 6; }
+  .main-menu > .menu-item:nth-child(n+3) span { display: none; }
+  .main-menu > .menu-item:nth-child(n+3) { padding: 7px 10px; }
+  .main-menu > .menu-item:nth-child(n+3) b { font-size: 15px; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .menu-item:hover { transform: none; }
+  .menu-split { grid-template-columns: repeat(3, 1fr); margin-top: 0; }
+}
+@media (max-height: 520px) {
+  /* scorecards / pause */
+  .modal-card { padding: 12px 14px; }
+  .modal-card > .modal-btns { bottom: -12px; margin: 8px -14px -12px; padding: 8px 14px 10px; }
+  .modal-card .modal-btns .btn, body.touch .modal-card .modal-btns .btn { padding: 8px 12px; font-size: 14px; }
+  body.touch .modal-card > .modal-btns { gap: 6px; }
+  body.touch .scorecard tr.score td { font-size: 13px; }
+  body.touch .sc { width: 19px; height: 19px; }
+  .modal-title { font-size: 18px; margin-bottom: 6px; }
+  .scorecard { font-size: 11px; margin-bottom: 4px; }
+  .scorecard th, .scorecard td { padding: 2px 2px; }
+  .scorecard tr.hdr th { font-size: 13px; }
+  .scorecard tr.score td { font-size: 14px; }
+  .sc { width: 20px; height: 20px; }
+  .sc-legend { display: none; }
+  .sc-total b { font-size: 20px; }
+  /* club selection */
+  .bv-top { padding: 5px 8px 5px 12px; gap: 10px; }
+  .bv-title { font-size: 15px; }
+  .bv-dist b { font-size: 16px; }
+  .bv-close { width: 30px; height: 30px; }
+  .bv-track { padding-top: 18px; }
+  .bv-club { flex-basis: 108px; padding: 6px 8px 8px; }
+  .bv-club.focus { transform: translateY(-6px) scale(1.05); }
+  .bvk-ico svg { width: 30px; height: 30px; }
+  .bvk-short { font-size: 22px; }
+  .bvk-carry b { font-size: 18px; }
+  .bv-hint { display: none; }
+  .bv-card { top: calc(var(--st) + 52px); bottom: calc(var(--sb) + 128px); width: min(330px, 46vw); }
+  /* pro shop */
+  .sh-layout { grid-template-columns: minmax(0, 1.3fr) minmax(230px, 1fr); gap: 10px; }
+  .sh-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .sh-detail { position: sticky; top: 4px; order: 0; padding: 10px; gap: 6px; max-height: calc(var(--app-h, 100vh) - 16px); overflow-y: auto; }
+  .sh-preview { height: 130px; }
+  .sh-portrait > *, .sh-portrait svg { width: 120px !important; height: 120px !important; }
+  .sh-bigico { font-size: 60px; }
+  .sh-dname b { font-size: 22px; }
+  .sh-blurb { font-size: 12px; }
+  .sh-card { padding: 8px 10px; gap: 5px; }
+  .sh-name b { font-size: 16px; }
+  .sh-tabs { margin: 0 0 8px; }
+  .sh-tabs .chip { padding: 5px 10px; font-size: 12px; }
+  .coins.big { font-size: 20px; }
+  /* creator */
+  .cr-panel { width: min(400px, 52vw); padding: 10px 12px; }
+  .cr-title { font-size: 19px; white-space: nowrap; }
+  #cr-back { white-space: nowrap; padding-left: 4px; padding-right: 6px; }
+  .cr-title small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cr-tabs { margin: 6px 0 4px; gap: 4px; }
+  .cr-tabs .gtab { padding: 4px 9px; font-size: 11px; }
+  .cr-row { margin: 6px 0; }
+  .cr-ovr b { font-size: 24px; }
+  /* results */
+  .result-hero { gap: 20px; padding: 10px 16px; margin-bottom: 10px; }
+  .rh-score, .rh-par { font-size: 54px; }
+  .rh-xp { font-size: 22px; }
+  .coin-block { padding: 8px 12px; margin: 6px 0; }
+  .cb-head b { font-size: 22px; }
+}
+@media (max-width: 560px) {
+  .sh-layout { grid-template-columns: 1fr; }
+  .sh-detail { position: static; order: -1; max-height: none; }
+}
+/* small desktop windows / website embeds (mouse): keep the HUD panels clear of each other */
+@media (max-height: 640px), (max-width: 1100px) {
+  body:not(.touch) .hud-bottom-left { top: auto; bottom: 12px; left: 12px; width: 220px; padding: 10px 12px; transform: scale(.82); transform-origin: bottom left; }
+  body:not(.touch) .hud-bottom-center { left: auto; right: 12px; bottom: 12px; transform: none; min-width: 0; width: calc(100vw - 220px); max-width: 760px; gap: 6px; }
+  body:not(.touch) .minimap canvas { width: 96px; height: 154px; }
+}
+@media (max-height: 640px) {
+  body:not(.touch) .hud-top-left { transform: scale(.8); transform-origin: top left; min-width: 0; }
+  body:not(.touch) .hud-top-right { transform: scale(.85); transform-origin: top right; top: 56px; }
+  body:not(.touch) .top-btns { top: 10px; right: 10px; }
+  body:not(.touch) .info-row { padding: 1px 0; }
+  body:not(.touch) .info-row b { font-size: 16px; }
+  body:not(.touch) .club-card { margin-top: 6px; padding: 6px 10px; }
+  body:not(.touch) .shot-controls { padding: 6px 8px; gap: 5px; }
+  body:not(.touch) .help { display: none; }
+}
+@media (max-height: 400px) {
+  body:not(.touch) .hud-bottom-left { transform: scale(.72); }
+  body:not(.touch) .hud-bottom-center { width: calc(100vw - 190px); }
+}
