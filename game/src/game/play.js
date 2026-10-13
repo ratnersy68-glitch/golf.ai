@@ -5,7 +5,7 @@ import { Hole, S } from '../core/holeGen.js';
 import { simulate, MPH, greenRollDecel, CUP_R } from '../core/physics.js';
 import { solvePutt, rollProbe } from './puttSolver.js';
 import { mulberry32, clamp } from '../core/noise.js';
-import { buildBag } from '../data/clubs.js';
+import { buildBag, BALLS } from '../data/clubs.js';
 import { THEMES } from '../data/themes.js';
 import { TEE_SETS, getCourse } from '../data/courses.js';
 import { DIFFICULTIES } from '../core/profile.js';
@@ -15,6 +15,7 @@ import {
 } from './shots.js';
 import { Golfer, clubLength } from '../render/golfer.js';
 import { P } from '../render/world.js';
+import { BagProp } from '../render/bagModel.js';
 import { audio } from '../audio/audio.js';
 
 const DEG = Math.PI / 180;
@@ -63,6 +64,7 @@ export class Play {
     this.rng = mulberry32((Date.now() & 0xffffffff) >>> 0);
     this.pinSeed = Math.floor(this.rng() * 1e6);
     this.round = {
+      id: `${Date.now().toString(36)}-${this.pinSeed.toString(36)}`, // unique: rewards are paid once per round id
       courseId: this.course.id, tee: this.tee.id, holes: cfg.holes, idx: 0,
       cards: cfg.holes.map(i => ({ hole: i, par: this.course.holes[i].p, yards: 0, strokes: null, putts: 0, fairway: null, gir: false, penalties: 0 })),
       stats: null, golferName: cfg.golferName, difficulty: this.diffKey,
@@ -75,8 +77,10 @@ export class Play {
     }
     this.golfer.root.visible = true;
     this.world.setCourseEnv(this.course, this.theme);
-    const ball = app.profile.equipment.ball;
-    this.world.setBallStyle(ball === 'optic' ? '#f6ff3c' : ball === 'chrome' ? '#fff8d0' : '#ffffff');
+    this.world.setBallStyle((BALLS.find(b => b.id === app.profile.equipment.ball) || BALLS[0]).color);
+    if (!this.bagProp) this.bagProp = new BagProp(this.world.scene);
+    this.bagProp.set(app.profile.equipment.bag, app.profile.equipment.headcover);
+    this.bagProp.hide();
     this.state = 'loading';
     this.hud.show(true);
     this.loadHole(0);
@@ -90,6 +94,7 @@ export class Play {
     audio.stopAmbience();
     this.hud.show(false);
     if (this.golfer) this.golfer.root.visible = false;
+    this.bagProp?.hide();
   }
 
   get card() { return this.round.cards[this.round.idx]; }
@@ -230,6 +235,9 @@ export class Play {
     this.rig.orbitYaw = 0; this.rig.orbitPitch = 0; this.rig.zoom = 1; this.rig.preview = 0;
     this.meter = { state: 'idle', power: 0, marker: 0 };
     this.placeGolfer();
+    // your bag stands beside the tee box
+    if (onTee) this.bagProp?.place(hole, this.ball.x, this.ball.y, heading, this.attrs?.hand === 'L');
+    else this.bagProp?.hide();
     this.world.clearTrail();
     this.world.setBall(this.ball.x, this.ball.y, this.ball.h, onTee);
     this.world.placeGrass(hole, this.ball.x, this.ball.y);
@@ -348,9 +356,10 @@ export class Play {
     const dk = this.diffKey;
     const k = clamp(1.3 - (this.attrs.putting ?? 80) / 250, 0.85, 1.15);
     const pm = pressureMul(this.attrs);
+    const pk = this.bag?.find(c => c.cat === 'putter')?.putt || { pace: 0, line: 0 }; // putter model: feel vs forgiveness
     return {
-      pace: ({ easy: 0.1, normal: 0.065, hard: 0.045, realistic: 0.03 }[dk] ?? 0.065) * k * pm,
-      line: CUP_R * ({ easy: 1.6, normal: 1.2, hard: 0.9, realistic: 0.7 }[dk] ?? 1.2) / k * pm,
+      pace: ({ easy: 0.1, normal: 0.065, hard: 0.045, realistic: 0.03 }[dk] ?? 0.065) * k * pm * (1 + pk.pace),
+      line: CUP_R * ({ easy: 1.6, normal: 1.2, hard: 0.9, realistic: 0.7 }[dk] ?? 1.2) / k * pm * (1 + pk.line),
     };
   }
   // lateral miss at the hole (yards, + = aimed right of the true line) for the current aim

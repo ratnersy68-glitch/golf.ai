@@ -7,7 +7,10 @@ import { Creator } from './creator.js';
 import { normalizeLook } from '../data/look.js';
 import { newTournament, leaderboard, boardHtml, projectedCut, fmtPar, ROUND_DAYS, MAJOR } from '../game/masters.js';
 import { CHAMPION_BLAZER } from '../data/apparel.js';
-import { CLUB_TYPES, BRAND_MODELS, BALLS, buildBag } from '../data/clubs.js';
+import { CLUB_TYPES, buildBag } from '../data/clubs.js';
+import { CATALOG, owns } from '../data/shop.js';
+import { ProShop, BAG_SLOTS, coinHtml } from './shop.js';
+import { fmtCoins, ACHIEVEMENTS } from '../core/wallet.js';
 import { DIFFICULTIES, LEVEL_XP, customAttrs, resetProfile } from '../core/profile.js';
 
 const proById = golferById;
@@ -30,9 +33,17 @@ const MODES = {
 export function unlocksAt(lv) {
   return [
     ...COURSES.filter(x => x.unlock === lv).map(x => `⛳ ${x.short}`),
-    ...Object.values(BRAND_MODELS).flat().filter(x => x.unlock === lv).map(x => `🏌 ${x.brand} ${x.model}`),
-    ...BALLS.filter(x => x.unlock === lv).map(x => `⚪ ${x.brand} ${x.model}`),
   ];
+}
+
+// Golf Coins earned by a round / tournament (see core/wallet.js)
+function coinBlock(pay) {
+  if (!pay || (!pay.coins && !pay.achievements.length)) return '';
+  return `<div class="coin-block glass">
+    <div class="cb-head"><span>GOLF COINS</span><b>+${fmtCoins(pay.coins + pay.achievements.reduce((s, a) => s + a.coins, 0))}</b><small>Balance ${coinHtml(pay.balance)}</small></div>
+    <div class="cb-lines">${pay.lines.map(([k, v]) => `<div><span>${esc(k)}</span><b>${v >= 0 ? '+' : ''}${fmtCoins(v)}</b></div>`).join('')}
+    ${pay.achievements.map(a => `<div class="cb-ach"><span>🏆 ${esc(a.name)} — ${esc(a.desc)}</span><b>+${fmtCoins(a.coins)}</b></div>`).join('')}</div>
+  </div>`;
 }
 
 export class Menus {
@@ -41,6 +52,7 @@ export class Menus {
     this.app = app;
     this.setup = null;
     this.creator = new Creator(this);
+    this.shop = new ProShop(this);
   }
   get profile() { return this.app.profile; }
 
@@ -59,7 +71,7 @@ export class Menus {
   render(html, cls = '') {
     this.root.innerHTML = `<div class="screen ${cls}">${html}</div>`;
     this.root.scrollTop = 0;
-    this.root.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { audio.init(); audio.click(); this.go(b.dataset.go); }));
+    this.root.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); audio.init(); audio.click(); this.go(b.dataset.go); }));
   }
 
   go(where) {
@@ -69,6 +81,7 @@ export class Menus {
       case 'main': return this.main();
       case 'career': return this.career();
       case 'bag': return this.bag();
+      case 'shop': return this.shop.open();
       case 'settings': return this.settings();
       case 'masters': return this.masters();
       case 'stats': return this.career();
@@ -84,7 +97,8 @@ export class Menus {
     return `<div class="badge glass" ${g ? 'data-go="mygolfer"' : ''}>
       ${g ? `<div class="avatar portrait">${portrait({ ...g.look, hand: g.hand })}</div>` : '<div class="avatar" style="background:#1f6b3a">⛳</div>'}
       <div><div class="b-name">${g ? esc(g.name) : 'Golf.ai Tour'}</div><div class="b-lvl">LEVEL ${p.level}${g ? ` · ${golferOverall(g)} OVR` : ''}</div>
-      <div class="xpbar"><i style="width:${Math.min(100, p.xp / need * 100)}%"></i></div></div></div>`;
+      <div class="xpbar"><i style="width:${Math.min(100, p.xp / need * 100)}%"></i></div></div>
+      <button class="b-coins" data-go="shop" title="Golf Coins · Pro Shop">${coinHtml(p.coins || 0)}</button></div>`;
   }
 
   main() {
@@ -105,8 +119,9 @@ export class Menus {
           <button class="menu-item" data-go="coursePractice"><b>COURSE PRACTICE</b><span>${MODES.coursePractice.sub}</span></button>
           <button class="menu-item" data-go="practice"><b>PRACTICE</b><span>${MODES.practice.sub}</span></button>
           <button class="menu-item golfer-item" data-go="mygolfer"><b>${p.golfer ? 'MY GOLFER' : 'CREATE GOLFER'}</b><span>${p.golfer ? `${esc(p.golfer.name)} · ${golferOverall(p.golfer)} OVR${p.skillPoints ? ` · ${p.skillPoints} skill point${p.skillPoints === 1 ? '' : 's'} to place` : ''}` : 'Build your own golfer and play every mode as them'}</span></button>
+          <button class="menu-item shop-item" data-go="shop"><b>PRO SHOP</b><span>${fmtCoins(p.coins || 0)} Golf Coins · clubs, balls, apparel & bags</span></button>
           <div class="menu-split">
-            <button class="menu-item small" data-go="career"><b>CAREER</b><span>Stats · unlocks</span></button>
+            <button class="menu-item small" data-go="career"><b>CAREER</b><span>Stats · achievements</span></button>
             <button class="menu-item small" data-go="bag"><b>MY BAG</b><span>Clubs & ball</span></button>
             <button class="menu-item small" data-go="settings"><b>SETTINGS</b><span>Difficulty · audio</span></button>
           </div>
@@ -353,12 +368,12 @@ export class Menus {
     });
   }
 
-  mastersAfterRound(played, st, award, result, scorecard) {
+  mastersAfterRound(played, st, award, result, scorecard, pay = null) {
     const p = this.profile;
     const m = p.masters;
     const rows = leaderboard(m, played, 18, m.player.rounds[played - 1]);
     const me = rows.find(r => r.isPlayer);
-    if (result?.won) return this.mastersCeremony(result, rows);
+    if (result?.won) return this.mastersCeremony(result, rows, pay);
     let headline, sub;
     if (result?.pos === 'MC') { headline = 'MISSED THE CUT'; sub = `The cut fell at ${fmtPar(m.cutLine)}. You finished at ${fmtPar(result.toPar)}.`; }
     else if (result) { headline = `FINISHED ${result.pos}`; sub = `${esc(result.champion)} wins ${MAJOR.name} at ${fmtPar(result.winningScore)}.`; }
@@ -369,6 +384,7 @@ export class Menus {
         <div class="m-hero small"><div class="m-logo">${MAJOR.name}</div><div class="m-sub">${ROUND_DAYS[played - 1]} · ROUND ${played} · YOU SHOT ${st.strokes} (${fmtPar(st.toPar)})</div></div>
         <div class="m-final ${result?.pos === 'MC' ? 'mc' : ''}">${headline}<small>${sub}</small></div>
         ${award ? `<div class="center dim">+${award.xp} XP${award.levelUps.length ? ` · LEVEL UP → ${award.to}` : ''}</div>` : ''}
+        ${coinBlock(pay)}
         <div class="cols two">
           <div class="col">${boardHtml(rows, { limit: 14, title: result ? 'FINAL LEADERBOARD' : `LEADERBOARD · AFTER ROUND ${played}` })}</div>
           <div class="col glass sc-wrap">${scorecard}</div>
@@ -380,7 +396,7 @@ export class Menus {
     audio.jingle(result?.pos === 'MC' ? 'bogey' : 'great');
   }
 
-  mastersCeremony(result, rows) {
+  mastersCeremony(result, rows, pay = null) {
     const p = this.profile;
     // put the champion in the blazer for the ceremony
     const look = this.player(p.masters.proId).look;
@@ -393,6 +409,7 @@ export class Menus {
           <div class="mc-name">${esc(p.masters.playerName)}</div>
           <div class="mc-score">${fmtPar(result.toPar)}${result.playoff ? ` · won a playoff against ${esc(result.playoff.against.join(', '))}` : ''}</div>
           <div class="mc-jacket">Slip on the ${MAJOR.trophy}.</div>
+          ${coinBlock(pay)}
           ${boardHtml(rows, { limit: 5, title: 'FINAL LEADERBOARD', highlight: false })}
           <div class="mc-btns"><button class="btn primary" id="m-hub">TOURNAMENT HOME</button></div>
         </div>
@@ -438,7 +455,9 @@ export class Menus {
             <div class="section-title">RECENT</div>
             <table class="list">${hist || '<tr><td class="dim">—</td></tr>'}</table>
           </div>
-          <div class="col glass"><div class="section-title">UPCOMING UNLOCKS</div>${unlocks.join('') || '<div class="dim">Everything unlocked!</div>'}</div>
+          <div class="col glass"><div class="section-title">ACHIEVEMENTS <small>${Object.keys(p.achievements || {}).length}/${ACHIEVEMENTS.length}</small></div>
+            <div class="ach-list">${ACHIEVEMENTS.map(a => `<div class="ach ${p.achievements?.[a.id] ? 'done' : ''}"><b>${p.achievements?.[a.id] ? '✔' : '○'} ${esc(a.name)}</b><span>${esc(a.desc)}</span>${coinHtml(a.coins)}</div>`).join('')}</div>
+            ${unlocks.length ? `<div class="section-title">UPCOMING UNLOCKS</div>${unlocks.join('')}` : ''}</div>
         </div>
       </div>`, 'page-screen');
   }
@@ -446,9 +465,10 @@ export class Menus {
   // ---------------- bag ----------------
   bag() {
     const p = this.profile;
-    const lvl = p.level;
     const bag = buildBag(p.bag, p.equipment, customAttrs(p));
-    const slot = (cat, label) => `<div class="cust-row"><label>${label}</label><div class="chips">${BRAND_MODELS[cat].map(m => `<button class="chip ${p.equipment[cat] === m.id ? 'on' : ''} ${m.unlock > lvl ? 'locked' : ''}" data-eq="${cat}" data-val="${m.id}">${esc(m.brand)} <b>${esc(m.model)}</b>${m.unlock > lvl ? ` 🔒${m.unlock}` : ''}</button>`).join('')}</div></div>`;
+    const owned = (slot) => CATALOG.filter(i => i.kind === 'equip' && i.slot === slot && owns(p, i.id));
+    const forSale = CATALOG.filter(i => i.kind === 'equip' && !owns(p, i.id)).length;
+    const slot = (cat, label) => `<div class="cust-row"><label>${label}</label><div class="chips">${owned(cat).map(m => `<button class="chip ${p.equipment[cat] === m.id ? 'on' : ''}" data-eq="${cat}" data-val="${esc(m.id)}">${esc(m.brand)} <b>${esc(m.name)}</b></button>`).join('')}</div></div>`;
     this.render(`
       <div class="page">
         <div class="page-head"><button class="btn ghost" data-go="main">‹ MENU</button><div class="page-title">MY BAG</div><div class="bag-count">${p.bag.length}/14 CLUBS</div></div>
@@ -456,9 +476,9 @@ export class Menus {
           <div class="col glass">
             <div class="section-title">CLUBS IN BAG <small>(max 14, putter required)</small></div>
             <div class="club-toggle">${CLUB_TYPES.map(c => `<button class="chip ${p.bag.includes(c.id) ? 'on' : ''}" data-club="${c.id}" ${c.id === 'PT' ? 'disabled' : ''}>${c.name}</button>`).join('')}</div>
-            <div class="section-title">EQUIPMENT</div>
-            ${slot('wood', 'Woods')}${slot('hybrid', 'Hybrids')}${slot('iron', 'Irons')}${slot('wedge', 'Wedges')}${slot('putter', 'Putter')}
-            <div class="cust-row"><label>Golf ball</label><div class="chips">${BALLS.map(b => `<button class="chip ${p.equipment.ball === b.id ? 'on' : ''} ${b.unlock > lvl ? 'locked' : ''}" data-eq="ball" data-val="${b.id}">${esc(b.brand)} <b>${esc(b.model)}</b>${b.unlock > lvl ? ` 🔒${b.unlock}` : ''}</button>`).join('')}</div></div>
+            <div class="section-title">EQUIPMENT <small>(items you own)</small></div>
+            ${BAG_SLOTS.map(([k, n]) => slot(k, n)).join('')}
+            <div class="bag-shop"><span>${forSale} more items in the Pro Shop</span> ${coinHtml(p.coins || 0)} <button class="btn small" data-go="shop">PRO SHOP ›</button></div>
           </div>
           <div class="col glass">
             <div class="section-title">YARDAGES <small>(tour-average player)</small></div>
@@ -479,7 +499,7 @@ export class Menus {
       this.app.save(); audio.click(); this.bag();
     });
     this.root.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => {
-      if (b.classList.contains('locked')) { audio.tick(false); return; }
+      if (!owns(p, b.dataset.val)) { audio.tick(false); return; }
       p.equipment[b.dataset.eq] = b.dataset.val; this.app.save(); audio.click(); this.bag();
     });
   }
@@ -536,7 +556,7 @@ export class Menus {
   }
 
   // ---------------- results ----------------
-  results(round, st, award, cfg, hudScorecard) {
+  results(round, st, award, cfg, hudScorecard, pay = null) {
     const pct = (a, b) => b ? `${a}/${b} (${Math.round(a / b * 100)}%)` : '—';
     const c = getCourse(round.courseId);
     this.render(`
@@ -547,6 +567,7 @@ export class Menus {
           <div class="rh-par ${st.toPar < 0 ? 'under' : st.toPar > 0 ? 'over' : ''}">${fmtToPar(st.toPar)}<small>TO PAR</small></div>
           ${award ? `<div class="rh-xp"><b>+${award.xp} XP</b>${award.levelUps.length ? `<div class="lvlup">LEVEL UP! → ${award.to}</div><div class="unl">${award.levelUps.flatMap(unlocksAt).map(i => `<span>${esc(i)}</span>`).join('')}</div>` : ''}<div class="xpbar big"><i style="width:${this.profile.xp / LEVEL_XP(this.profile.level) * 100}%"></i></div></div>` : '<div class="rh-xp dim">Tour pro round · no XP</div>'}
         </div>
+        ${coinBlock(pay)}
         <div class="glass sc-wrap">${hudScorecard}</div>
         <div class="glass"><div class="section-title">STATISTICS</div><div class="stat-grid wide">
           ${[['Fairways hit', pct(st.fairways, st.fairwayChances)], ['Greens in regulation', pct(st.gir, st.girChances)], ['Total putts', st.putts], ['Putts per hole', (st.putts / Math.max(1, st.holes)).toFixed(2)],

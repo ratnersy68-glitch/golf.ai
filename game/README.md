@@ -88,7 +88,9 @@ Putting uses a single press: hold to set power and release to stroke. The game s
 - **Golfers:** 12 fictional tour pros (GLF-01 to GLF-12) and 3 fictional legends (LEG-01 to LEG-03), each with power, accuracy, short game, putting and recovery ratings.
 - **The Granite Crown:** a fictional major. Pick a golfer and play four rounds, 72 holes, at Blackstone Ridge from the championship tees against a field of fictional players. A live leaderboard and position ticker move as you play each hole. The low 30 and ties make the cut after Friday, Sunday brings the toughest pins, and the winner gets the Champion's Blazer. Tournaments save between rounds.
 - **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots).
-- **Career:** earn XP and level up to unlock equipment and balls.
+- **Golf Coins and the Pro Shop:** earn Golf Coins by finishing 9 and 18-hole rounds. A round pays 60 or 150, plus 20 per birdie, 75 per eagle, 300 per ace and 15 per stroke under par, scaled by difficulty (Easy ×0.8 up to Realistic ×1.5). Granite Crown rounds also pay out at the end: 2,500 for a win, down to 150 for a missed cut. Ten one-time achievements (first birdie, break 80, make the Crown cut…) pay bonuses. Practice modes pay nothing. Spend coins in the **Pro Shop** on fictional clubs (Vortex, Alder Forge, Northline), balls (AeroPeak), gloves, apparel, shoe colourways and Ridge & Roll bags and headcovers (SKUs EQ-001 to EQ-015). Each item has a store card with ratings, its trade-off and a 3D preview. Clubs trade one strength for another rather than being straight upgrades. No real money is involved. My Bag lists only what you own; your golf bag stands beside you on the tee.
+  - Coins and owned items come from a hash-chained ledger in the save, and every reward has a unique id, so nothing pays twice. An edited save falls back to the last valid entry. This only stops casual save editing; real anti-cheat needs the online server.
+- **Career:** earn XP, level up, track stats and achievements.
 - **Scoring and stats:** a full scorecard with out/in/total and birdie/bogey markers. Per-round and career stats include fairways, greens in regulation, putts, driving distance, longest drive and putt, sand saves, up-and-downs and scoring average.
 - **Difficulty:**
   - **Easy:** big sweet spot, wind-adjusted landing marker, full putt preview, gimmes
@@ -108,8 +110,8 @@ Course cards show a top-down map of each course's signature hole. To use approve
 
 ```
 src/
-  data/       courses.js (hole layouts), clubs.js, golfers.js, themes.js (per-course look & lies)
-  core/       holeGen.js (layout -> terrain/surfaces/hazards/trees), physics.js, noise.js, profile.js (save + progression)
+  data/       courses.js (hole layouts), clubs.js, shop.js (Pro Shop catalogue), golfers.js, themes.js (per-course look & lies)
+  core/       holeGen.js (layout -> terrain/surfaces/hazards/trees), physics.js, noise.js, profile.js (save + progression), wallet.js (Golf Coins ledger + rewards)
   game/       play.js (round flow, swing meter, rules, scoring, stats), shots.js (shot types, launch model)
   data/       apparel.js (brands, clothing catalogue, rarity), look.js (body/face/hair options, v1 -> v2 look migration)
   render/     world.js (three.js scene + tactical overlay), trees.js, decor.js, golfer.js (appearance slots + rig + swing),

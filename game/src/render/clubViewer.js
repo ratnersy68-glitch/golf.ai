@@ -40,12 +40,16 @@ export class ClubViewer {
     c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
   }
 
-  setClub(club) {
+  clear() {
     while (this.pivot.children.length) {
       const o = this.pivot.children[0];
       this.pivot.remove(o);
-      o.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material) m.material.dispose(); });
+      o.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material) { m.material.map?.dispose(); m.material.dispose(); } });
     }
+  }
+
+  setClub(club) {
+    this.clear();
     const len = clubLength(club.cat, club.id);
     const model = buildClubModel(club, len, { detail: 1 });
     // center the head at the origin; the shaft rises out of frame
@@ -63,6 +67,20 @@ export class ClubViewer {
     this.pivot.add(holder);
     const size = box.getSize(new THREE.Vector3()).length();
     this.dist = Math.max(0.2, size * 2.4);
+    this.pop = 0;
+  }
+
+  // any other product (golf bag, ball): centred and framed by its bounding box
+  setModel(obj) {
+    this.clear();
+    obj.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(obj);
+    const c = box.getCenter(new THREE.Vector3());
+    obj.position.sub(c);
+    const holder = new THREE.Group();
+    holder.add(obj);
+    this.pivot.add(holder);
+    this.dist = Math.max(0.12, box.getSize(new THREE.Vector3()).length() * 1.25);
     this.pop = 0;
   }
 

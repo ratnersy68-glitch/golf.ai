@@ -1,6 +1,8 @@
 // Save/load + progression (XP, levels, skills, unlocks, career stats).
 import { DEFAULT_LOOK, normalizeLook } from '../data/look.js';
-import { DEFAULT_BAG, DEFAULT_EQUIPMENT, BRAND_MODELS, BALLS } from '../data/clubs.js';
+import { DEFAULT_BAG, DEFAULT_EQUIPMENT } from '../data/clubs.js';
+import { ITEM, owns, outfitItemIds } from '../data/shop.js';
+import { newWallet, syncWallet, grant } from './wallet.js';
 import { COURSES } from '../data/courses.js';
 import { ATTRS, ATTR_START, ATTR_POOL, ATTR_MAX, golferAttrs } from '../data/golfers.js';
 
@@ -13,14 +15,15 @@ export const DIFFICULTIES = {
   realistic: { name: 'Realistic', window: 0.55, disp: 1.4, putt: 1.4, wind: 1.35, cupMul: 1.0, captureMul: 0.95, landing: 'none', puttPreview: 0.3, xp: 1.6, gimme: 0 },
 };
 
-// v2: original (fictional) courses, golfers, brands and tournament. Older saves are migrated, never wiped.
-export const PROFILE_VERSION = 2;
+// v2: original (fictional) courses, golfers, brands and tournament.
+// v3: Pro Shop — Golf Coins wallet + owned inventory. Older saves are migrated, never wiped.
+export const PROFILE_VERSION = 3;
 
 export const LEVEL_XP = (lvl) => 500 + (lvl - 1) * 300; // xp needed to go from lvl -> lvl+1
 export const MAX_LEVEL = 30;
 
 export function newProfile() {
-  return {
+  return syncWallet({
     version: PROFILE_VERSION,
     look: normalizeLook(DEFAULT_LOOK),
     outfits: [], // saved outfits: { id, name, outfit }
@@ -32,6 +35,7 @@ export function newProfile() {
     skills: { driving: 50, approach: 50, shortGame: 50, putting: 50, recovery: 50 },
     bag: DEFAULT_BAG.slice(),
     equipment: { ...DEFAULT_EQUIPMENT },
+    wallet: newWallet(), // Golf Coins ledger (coins/inventory/achievements are derived from it, see core/wallet.js)
     settings: {
       difficulty: 'normal', puttGuide: true, landingMarker: true, tracer: true, flyover: true,
       autoCamera: true, quality: 'auto', master: 0.8, sfx: 0.9, amb: 0.6, windSetting: 'normal', pins: 'medium', lastCourse: COURSES[0].id, lastTee: 'tour',
@@ -45,7 +49,7 @@ export function newProfile() {
       best: {},
     },
     history: [],
-  };
+  });
 }
 
 export function loadProfile() {
@@ -55,7 +59,7 @@ export function loadProfile() {
     const p = migrate(JSON.parse(raw));
     const base = newProfile();
     // shallow merge for forward compatibility
-    return {
+    const out = {
       ...base, ...p,
       look: normalizeLook(p.look || base.look),
       golfer: p.golfer ? { ...p.golfer, look: normalizeLook(p.golfer.look), attrs: { ...newGolfer().attrs, ...p.golfer.attrs } } : null,
@@ -65,7 +69,14 @@ export function loadProfile() {
       equipment: { ...base.equipment, ...p.equipment },
       settings: { ...base.settings, ...p.settings },
       career: { ...base.career, ...p.career, best: { ...(p.career?.best || {}) } },
+      wallet: p.wallet && Array.isArray(p.wallet.ledger) ? p.wallet : newWallet(),
     };
+    syncWallet(out);
+    // never equip something the ledger says you don't own
+    for (const slot of Object.keys(DEFAULT_EQUIPMENT)) {
+      if (!ITEM[out.equipment[slot]] || ITEM[out.equipment[slot]].slot !== slot || !owns(out, out.equipment[slot])) out.equipment[slot] = DEFAULT_EQUIPMENT[slot];
+    }
+    return out;
   } catch (e) {
     console.warn('profile load failed', e);
     return newProfile();
@@ -84,13 +95,26 @@ function migrate(p) {
     p.masters = null; p.mastersWins = 0; p.mastersHistory = [];
     // equipment from real brands -> the fictional equivalents (old picks kept in legacy)
     const eq = p.equipment || {};
-    const valid = (cat, id) => (cat === 'ball' ? BALLS : BRAND_MODELS[cat] || []).some(m => m.id === id);
+    const valid = (cat, id) => ITEM[id]?.slot === cat || (cat === 'wood' && id === 'vx-x9') || (cat === 'wedge' && id === 'al-spin');
     const old = {};
-    for (const cat of Object.keys(DEFAULT_EQUIPMENT)) if (eq[cat] && !valid(cat, eq[cat])) { old[cat] = eq[cat]; eq[cat] = DEFAULT_EQUIPMENT[cat]; }
+    for (const cat of Object.keys(eq)) if (eq[cat] && !valid(cat, eq[cat])) { old[cat] = eq[cat]; eq[cat] = DEFAULT_EQUIPMENT[cat]; }
     if (Object.keys(old).length) p.legacy.equipment = old;
     p.equipment = eq;
     if (p.settings && !COURSES.some(c => c.id === p.settings.lastCourse)) p.settings.lastCourse = COURSES[0].id;
     p.version = 2;
+  }
+  if (p.version < 3) {
+    // the shop arrives: anything already equipped or worn is kept for free
+    const eq = { ...DEFAULT_EQUIPMENT, ...(p.equipment || {}) };
+    if (eq.wood === 'vx-x9') { eq.driver = 'vx-x9'; eq.wood = DEFAULT_EQUIPMENT.wood; } // v2 X9 woods -> X9 driver
+    if (eq.wedge === 'al-spin') eq.wedge = 'al-spin60';
+    for (const slot of Object.keys(eq)) if (ITEM[eq[slot]]?.slot !== slot) eq[slot] = DEFAULT_EQUIPMENT[slot];
+    p.equipment = eq;
+    p.wallet = newWallet();
+    const keep = new Set(Object.values(eq).filter(id => ITEM[id]?.price));
+    for (const o of [p.look?.outfit, p.golfer?.look?.outfit, ...(p.outfits || []).map(x => x.outfit)]) outfitItemIds(o).forEach(id => keep.add(id));
+    for (const id of keep) grant(p, id);
+    p.version = 3;
   }
   return p;
 }

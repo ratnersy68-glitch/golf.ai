@@ -1,6 +1,6 @@
 // Club selection: swipeable bag carousel + animated club info card with a 3D model,
 // full stat breakdown and a comparison against the club in hand.
-import { BRAND_MODELS } from '../data/clubs.js';
+import { BRAND_MODELS, slotFor } from '../data/clubs.js';
 import { fullCarry, computeLaunch } from '../game/shots.js';
 import { flatCarry } from '../core/physics.js';
 import { clubIcon } from './icons.js';
@@ -12,7 +12,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // Stats for a club from the current lie (uses the same launch model as the game).
 export function clubStats(play, c) {
-  const m = (BRAND_MODELS[c.cat] || []).find(x => x.id === c.modelId) || {};
+  const m = (BRAND_MODELS[slotFor(c)] || []).find(x => x.id === c.modelId) || {};
   if (c.cat === 'putter') {
     return { putter: true, model: m, forg: c.forgiveness, acc: c.accuracy, spec: c.putterSpec || m.putter || {} };
   }

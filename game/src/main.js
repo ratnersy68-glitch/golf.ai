@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { World, P } from './render/world.js';
 import { CameraRig } from './render/camera.js';
 import { Golfer } from './render/golfer.js';
+import { BagProp } from './render/bagModel.js';
 import { Hud } from './ui/hud.js';
 import { Menus } from './ui/menus.js';
 import { Play } from './game/play.js';
@@ -12,6 +13,7 @@ import { buildBag } from './data/clubs.js';
 import { THEMES } from './data/themes.js';
 import { holeMap } from './ui/holeMap.js';
 import { loadProfile, saveProfile, awardXp, recordRound, customAttrs } from './core/profile.js';
+import { payRound, payCrownRound } from './core/wallet.js';
 import { audio } from './audio/audio.js';
 import { leaderboard, completeRound, boardHtml, projectedCut, MAJOR } from './game/masters.js';
 
@@ -99,6 +101,7 @@ class App {
     this.mode = 'menu';
     this.world.ball.visible = true;
     if (this.previewGolfer) this.previewGolfer.root.visible = false;
+    this.previewBag?.hide();
     if (this.menuHole && this.world.hole === this.menuHole) { this.rig.set('menu', { t: this.menuT }); return; }
     const unlocked = COURSES.filter(c => c.unlock <= this.profile.level);
     const course = unlocked[Math.floor(Math.random() * unlocked.length)] || COURSES[0];
@@ -143,6 +146,10 @@ class App {
       const keep = this.locker && !first ? { yaw: this.locker.yaw, zoom: this.locker.zoom } : { yaw: 0.35, zoom: 1 };
       this.locker = { ...keep, focus: 'full', faceYaw: Math.atan2(Math.cos(h), -Math.sin(h)) + (hand === 'L' ? Math.PI : 0), center: [g.root.position.x, -g.root.position.z, th] };
     }
+    // the equipped golf bag stands beside the golfer
+    if (!this.previewBag) this.previewBag = new BagProp(this.world.scene);
+    this.previewBag.set(this.profile.equipment.bag, this.profile.equipment.headcover);
+    this.previewBag.place(hole, hole.tee[0], hole.tee[1], Math.atan2(hole.teeDir[0], hole.teeDir[1]), hand === 'L');
     Object.assign(this.locker, opts);
     this.rig.set('locker', { ...this.locker, snap: first });
   }
@@ -182,6 +189,7 @@ class App {
   startRound(cfg) {
     audio.init();
     this.menus.show(false);
+    this.previewBag?.hide();
     if (this.previewGolfer) this.previewGolfer.root.visible = false;
     this.menuHole = null;
     this.world.ball.visible = true;
@@ -211,19 +219,19 @@ class App {
 
   onRoundComplete(round, st, cfg) {
     if (cfg.masters) return this.onMastersRound(round, st, cfg);
-    let award = null;
+    let award = null, pay = null;
     if (cfg.mode === 'round18' || cfg.mode === 'round9') {
       award = awardXp(this.profile, st, cfg.difficulty, st.holes, !!cfg.custom);
       recordRound(this.profile, round);
-    } else if (cfg.mode === 'round18' || cfg.mode === 'round9') {
-      recordRound(this.profile, round);
+      // Golf Coins: only for completed 9/18-hole rounds, once per round id
+      if (st.holes >= 9) pay = payRound(this.profile, round.id, st, cfg.difficulty, st.holes);
     }
     this.save();
     const sc = this.hud.scorecardHtml(this.play);
     this.play.stop();
     this.mode = 'menu';
     this.menus.show(true);
-    this.menus.results(round, st, award, cfg, sc);
+    this.menus.results(round, st, award, cfg, sc, pay);
     this.menuScene();
   }
 
@@ -234,6 +242,7 @@ class App {
     const strokes = round.cards.map(c => c.strokes);
     const playedRound = m.round;
     const result = completeRound(m, strokes);
+    const pay = payCrownRound(this.profile, m, playedRound, st, cfg.difficulty, result);
     if (result) {
       this.profile.mastersHistory = [{ date: Date.now(), pos: result.pos, toPar: result.toPar, won: !!result.won, champion: result.champion || null }, ...(this.profile.mastersHistory || [])].slice(0, 20);
       if (result.won) this.profile.mastersWins = (this.profile.mastersWins || 0) + 1;
@@ -244,7 +253,7 @@ class App {
     this.hud.mastersTicker(null);
     this.mode = 'menu';
     this.menus.show(true);
-    this.menus.mastersAfterRound(playedRound, st, award, result, sc);
+    this.menus.mastersAfterRound(playedRound, st, award, result, sc, pay);
     if (!result?.won) this.menuScene();
   }
 

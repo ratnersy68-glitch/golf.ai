@@ -6,6 +6,8 @@ import {
 import { TOPS, BOTTOMS, SHOES, HATS, GLOVES, ALL_ITEMS } from '../data/apparel.js';
 import { ATTRS, ATTR_START, ATTR_CREATE_MAX, ATTR_MAX, golferOverall } from '../data/golfers.js';
 import { newGolfer } from '../core/profile.js';
+import { owns, ownsColorway, ITEM, colorwayId } from '../data/shop.js';
+import { fmtCoins, payCreateGolfer } from '../core/wallet.js';
 import { audio } from '../audio/audio.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -70,6 +72,14 @@ export class Creator {
   chips(key, list, cur) {
     return `<div class="chips">${list.map(([v, n]) => `<button class="chip ${cur === v ? 'on' : ''}" data-set="${key}" data-v="${esc(v)}">${esc(n)}</button>`).join('')}</div>`;
   }
+  // like chips(), but items you don't own yet show their Pro Shop price and can't be picked
+  shopChips(key, list, cur, shopId = (v) => v) {
+    const p = this.profile;
+    return `<div class="chips">${list.map(([v, n]) => {
+      const id = shopId(v), own = owns(p, id);
+      return `<button class="chip ${cur === v ? 'on' : ''} ${own ? '' : 'locked'}" data-set="${key}" data-v="${esc(v)}" ${own ? '' : `data-shop="${esc(id)}"`}>${esc(n)}${own ? '' : ` <small class="cr-price">${fmtCoins(ITEM[id]?.price || 0)}</small>`}</button>`;
+    }).join('')}</div>`;
+  }
   swatches(key, list, cur) {
     return `<div class="swatches">${list.map(c => { const v = Array.isArray(c) ? c[1] : c; return `<button class="sw ${String(cur).toLowerCase() === String(v).toLowerCase() ? 'on' : ''}" data-set="${key}" data-v="${v}" style="background:${v}" title="${Array.isArray(c) ? esc(c[0]) : v}"></button>`; }).join('')}</div>`;
   }
@@ -113,15 +123,18 @@ export class Creator {
     const o = this.st.g.look.outfit;
     const hatList = [['hat-none', 'No hat'], ...HATS.map(h => [h.id, h.sub])];
     const shoe = ALL_ITEMS[o.shoes.id] || SHOES[0];
-    return this.row('Top', this.chips('top', TOP_LIST().map(t => [t.id, t.sub]), o.top.id))
+    const pats = (it, key, cur) => (it?.patterns?.length > 1 ? this.row('Pattern', this.chips(key, it.patterns.map(x => [x, x[0].toUpperCase() + x.slice(1)]), cur || 'solid')) : '');
+    return this.row('Top', this.shopChips('top', TOP_LIST().map(t => [t.id, t.name.replace(/^Fairway /, '')]), o.top.id))
+      + pats(ALL_ITEMS[o.top.id], 'topPattern', o.top.pattern)
       + this.row('Top color', this.swatches('topColor', CLOTH_COLORS, o.top.color))
-      + this.row('Bottoms', this.chips('bottom', BOTTOMS.map(b => [b.id, b.sub]), o.bottom.id))
+      + this.row('Bottoms', this.shopChips('bottom', BOTTOMS.map(b => [b.id, b.name.replace(/^Fairway /, '')]), o.bottom.id))
+      + pats(ALL_ITEMS[o.bottom.id], 'bottomPattern', o.bottom.pattern)
       + this.row('Bottoms color', this.swatches('bottomColor', CLOTH_COLORS, o.bottom.color))
-      + this.row('Hat', this.chips('hat', hatList, o.hat.id))
-      + (o.hat.id !== 'hat-none' ? this.row('Hat color', this.swatches('hatColor', CLOTH_COLORS, o.hat.color)) : '')
-      + this.row('Shoes', this.chips('shoes', shoe.colorways.map((c, i) => [String(i), c.name]), String(o.shoes.colorway ?? 0)))
+      + this.row('Hat', this.shopChips('hat', hatList, o.hat.id))
+      + (o.hat.id !== 'hat-none' ? pats(ALL_ITEMS[o.hat.id], 'hatPattern', o.hat.pattern) + this.row('Hat color', this.swatches('hatColor', CLOTH_COLORS, o.hat.color)) : '')
+      + this.row('Shoes', this.shopChips('shoes', shoe.colorways.map((c, i) => [String(i), c.name]), String(o.shoes.colorway ?? 0), (v) => colorwayId(shoe.id, +v)))
       + this.row('Glove', this.swatches('glove', GLOVES[0].colors.map(c => c[1]), o.glove.color))
-      + `<div class="cr-note">Clothing is by Fairway Supply and Ridge &amp; Roll. More gear arrives with the Pro Shop.</div>`;
+      + `<div class="cr-note">Clothing is by Fairway Supply and Ridge &amp; Roll. Items with a price are in the <b>Pro Shop</b> — earn Golf Coins by finishing rounds.</div>`;
   }
   tab_skills() {
     const { g, saved, isNew } = this.st;
@@ -146,9 +159,12 @@ export class Creator {
     switch (key) {
       case 'hand': g.hand = v; break;
       case 'skin': L.skin = Math.max(0, SKIN_TONES.indexOf(v)); break;
-      case 'top': o.top = { ...o.top, id: v }; break;
+      case 'top': o.top = { ...o.top, id: v, pattern: ALL_ITEMS[v]?.patterns.includes(o.top.pattern) ? o.top.pattern : 'solid' }; break;
       case 'topColor': o.top = { ...o.top, color: v }; break;
-      case 'bottom': o.bottom = { ...o.bottom, id: v }; break;
+      case 'topPattern': o.top = { ...o.top, pattern: v }; break;
+      case 'bottomPattern': o.bottom = { ...o.bottom, pattern: v }; break;
+      case 'hatPattern': o.hat = { ...o.hat, pattern: v }; break;
+      case 'bottom': o.bottom = { ...o.bottom, id: v, pattern: ALL_ITEMS[v]?.patterns.includes(o.bottom.pattern) ? o.bottom.pattern : 'solid' }; break;
       case 'bottomColor': o.bottom = { ...o.bottom, color: v }; break;
       case 'hat': o.hat = v === 'hat-none' ? { id: 'hat-none' } : { id: v, color: o.hat.color || '#1c2a44', pattern: 'solid', logo: true, fit: 'Structured' }; break;
       case 'hatColor': o.hat = { ...o.hat, color: v }; break;
@@ -162,7 +178,10 @@ export class Creator {
   bind() {
     const root = this.menus.root, $ = (s) => root.querySelector(s);
     root.querySelectorAll('[data-crtab]').forEach(b => b.onclick = () => { audio.click(); this.st.tab = b.dataset.crtab; this.render(); });
-    root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { audio.click(); this.set(b.dataset.set, b.dataset.v); this.render(); });
+    root.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
+      if (b.dataset.shop) { audio.tick?.(false); const it = ITEM[b.dataset.shop]; this.msg(`${it?.name || 'This item'} is ${fmtCoins(it?.price || 0)} Golf Coins in the Pro Shop (you have ${fmtCoins(this.profile.coins || 0)}).`); return; }
+      audio.click(); this.set(b.dataset.set, b.dataset.v); this.render();
+    });
     root.querySelectorAll('[data-range]').forEach(r => r.oninput = () => { this.st.g.look[r.dataset.range] = +r.value; this.st.dirty = true; this.preview(); });
     const name = $('#cr-name');
     if (name) name.oninput = () => { this.st.g.name = name.value.replace(/[<>]/g, '').slice(0, 18); this.st.dirty = true; };
@@ -209,10 +228,13 @@ export class Creator {
     L.accessory = Math.random() < 0.75 ? 'none' : pick(ACCESSORIES)[0];
     L.hair = pick(HAIR_STYLES)[0]; L.hairColor = pick(HAIR_COLORS);
     L.height = +(0.94 + Math.random() * 0.12).toFixed(2); L.build = +(0.92 + Math.random() * 0.22).toFixed(2); L.shoulders = +(0.94 + Math.random() * 0.12).toFixed(2);
-    o.top = { id: pick(TOP_LIST()).id, color: pick(CLOTH_COLORS), pattern: 'solid' };
-    o.bottom = { ...o.bottom, id: pick(BOTTOMS).id, color: pick(['#141516', '#1c2a44', '#3c4046', '#a9adb2', '#d8d0bf', '#f4f4f2']) };
-    o.hat = Math.random() < 0.3 ? { id: 'hat-none' } : { id: pick(HATS).id, color: pick(CLOTH_COLORS), pattern: 'solid', logo: true, fit: 'Structured' };
-    o.shoes = { ...o.shoes, colorway: Math.floor(Math.random() * (SHOES[0].colorways.length)) };
+    // random looks only use clothes you own
+    const p = this.profile, mine = (list) => list.filter(i => owns(p, i.id));
+    o.top = { id: pick(mine(TOP_LIST())).id, color: pick(CLOTH_COLORS), pattern: 'solid' };
+    o.bottom = { ...o.bottom, id: pick(mine(BOTTOMS)).id, color: pick(['#141516', '#1c2a44', '#3c4046', '#a9adb2', '#d8d0bf', '#f4f4f2']), pattern: 'solid' };
+    o.hat = Math.random() < 0.3 || !mine(HATS).length ? { id: 'hat-none' } : { id: pick(mine(HATS)).id, color: pick(CLOTH_COLORS), pattern: 'solid', logo: true, fit: 'Structured' };
+    const cws = SHOES[0].colorways.map((c, i) => i).filter(i => ownsColorway(p, SHOES[0].id, i));
+    o.shoes = { ...o.shoes, id: SHOES[0].id, colorway: pick(cws) };
     this.st.dirty = true;
   }
 
@@ -225,10 +247,11 @@ export class Creator {
     const p = this.profile;
     p.golfer = clone(g);
     p.look = clone(g.look); // keep the older field in step for anything still reading it
+    const ach = isNew ? payCreateGolfer(p) : [];
     this.app.save();
     audio.jingle?.('unlock');
     this.st = { ...this.st, g: clone(p.golfer), saved: clone(p.golfer.attrs), isNew: false, dirty: false, fromLevel: 0 };
-    if (isNew) { this.st.tab = 'skills'; this.render(); this.msg(`${g.name} is ready. Place your points, then tee it up from the main menu.`); }
+    if (isNew) { this.st.tab = 'skills'; this.render(); this.msg(`${g.name} is ready${ach.length ? ` (+${fmtCoins(ach[0].coins)} Golf Coins)` : ''}. Place your points, then tee it up from the main menu.`); }
     else { this.render(); this.msg('Saved.'); }
   }
 }

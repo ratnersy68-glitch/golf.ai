@@ -25,63 +25,87 @@ export const CLUB_TYPES = [
   { id: 'PT', name: 'Putter', short: 'PT', cat: 'putter', loft: 3, carry: 0, launch: 0, spin: 0, accuracy: 0.95, forgiveness: 0.9 },
 ];
 
-// Fictional equipment (bible BRD-01..04, starter SKUs EQ-001..011). All brands, model names and designs are original.
-// Modifiers: dist (multiplier), acc (+/-), forg (+/-), spin (mult), launch (+deg)
+// Fictional equipment (bible BRD-01..04, Pro Shop SKUs EQ-001..011). All brands, model names and designs are original.
+// Every slot has a free "Origin" starter; shop items trade one strength for another (no straight upgrades).
+// Modifiers: dist (multiplier), acc (+/-), forg (+/-), spin (mult), launch (+deg). price: Golf Coins (0 = starter).
+// card: the ratings shown on the store card.
 export const BRANDS_EQUIP = {
   vortex: { code: 'BRD-01', name: 'Vortex Golf', specialty: 'Drivers / woods', look: 'Modern aerodynamic' },
   alder: { code: 'BRD-02', name: 'Alder Forge', specialty: 'Irons / wedges', look: 'Forged precision' },
   northline: { code: 'BRD-03', name: 'Northline', specialty: 'Putters', look: 'Minimal engineered' },
   aeropeak: { code: 'BRD-04', name: 'AeroPeak', specialty: 'Balls', look: 'Tour performance' },
 };
+const VX = { crown: '#15181d', accent: '#18c3c9', face: '#4c525a' };
 export const BRAND_MODELS = {
+  driver: [
+    { id: 'vx-origin-d', brand: 'Vortex', model: 'Origin', price: 0, dist: 1.0, acc: 0.02, forg: 0.06, spin: 1.0, launch: 0.3, look: { ...VX, crown: '#22262d', accent: '#7fd8dc' }, card: { Distance: 86, Accuracy: 86, Forgiveness: 84 }, blurb: 'A dependable all-rounder. Nothing flashy, nothing scary.' },
+    { id: 'vx-glide', brand: 'Vortex', model: 'Glide', price: 1600, dist: 0.985, acc: 0.05, forg: 0.14, spin: 1.04, launch: 0.6, look: { ...VX, crown: '#1b2733', accent: '#9fe3e6' }, card: { Distance: 82, Accuracy: 92, Forgiveness: 95 }, blurb: 'Huge stability and a high, straight flight. Gives up a few yards.' },
+    { id: 'vx-x9', sku: 'EQ-001', brand: 'Vortex', model: 'X9', price: 2500, dist: 1.03, acc: -0.01, forg: 0.03, spin: 0.97, launch: 0.2, look: VX, card: { Distance: 94, Accuracy: 82, Forgiveness: 80 }, blurb: 'Aerodynamic carbon crown built for maximum ball speed. Mishits wander.' },
+  ],
   wood: [
-    { id: 'vx-x9', sku: 'EQ-001', brand: 'Vortex', model: 'X9', dist: 1.03, acc: -0.01, forg: 0.04, spin: 0.97, launch: 0.2, unlock: 1, look: { crown: '#15181d', accent: '#18c3c9', face: '#4c525a' }, blurb: 'Aerodynamic carbon crown built for maximum ball speed. Distance 94 / Accuracy 82.' },
-    { id: 'vx-drift', sku: 'EQ-002', brand: 'Vortex', model: 'Drift', dist: 1.0, acc: 0.04, forg: 0.08, spin: 1.02, launch: 0.4, unlock: 1, look: { crown: '#1c2027', accent: '#9fe3e6', face: '#565c64' }, blurb: 'Shallow, stable head that is easy to launch from the deck. Distance 86 / Control 84.' },
+    { id: 'vx-origin-fw', brand: 'Vortex', model: 'Origin Fairway', price: 0, dist: 1.0, acc: 0.02, forg: 0.06, spin: 1.0, launch: 0.3, look: { ...VX, crown: '#22262d', accent: '#7fd8dc' }, card: { Distance: 84, Control: 82, Forgiveness: 84 }, blurb: 'Easy-launching fairway woods for any lie.' },
+    { id: 'vx-drift', sku: 'EQ-002', brand: 'Vortex', model: 'Drift', price: 1900, dist: 1.02, acc: 0.04, forg: 0.03, spin: 1.02, launch: 0.4, look: { ...VX, crown: '#1c2027', accent: '#9fe3e6' }, card: { Distance: 86, Control: 84, Forgiveness: 78 }, blurb: 'Shallow, stable head with extra carry and control. Less forgiving on thin strikes.' },
   ],
   hybrid: [
-    { id: 'vx-apex', sku: 'EQ-003', brand: 'Vortex', model: 'Apex', dist: 1.0, acc: 0.03, forg: 0.12, spin: 1.0, launch: 0.4, unlock: 1, look: { crown: '#171a20', accent: '#18c3c9', face: '#4c525a' }, blurb: 'Low, deep weighting gets the ball up from any lie. Forgiveness 90.' },
+    { id: 'vx-origin-h', brand: 'Vortex', model: 'Origin Hybrid', price: 0, dist: 1.0, acc: 0.02, forg: 0.06, spin: 1.0, launch: 0.3, look: { ...VX, crown: '#22262d', accent: '#7fd8dc' }, card: { Distance: 84, Control: 84, Forgiveness: 84 }, blurb: 'A friendly long-iron replacement.' },
+    { id: 'vx-apex', sku: 'EQ-003', brand: 'Vortex', model: 'Apex', price: 1500, dist: 0.99, acc: 0.03, forg: 0.12, spin: 1.03, launch: 0.5, look: VX, card: { Distance: 82, Control: 86, Forgiveness: 90 }, blurb: 'Low, deep weighting gets the ball up from any lie. A touch shorter.' },
   ],
   iron: [
-    { id: 'al-f7', sku: 'EQ-004', brand: 'Alder Forge', model: 'F7', dist: 1.0, acc: 0.06, forg: -0.04, spin: 1.04, launch: 0, unlock: 2, look: { finish: '#d3d6da', accent: '#b5652b', style: 'blade' }, blurb: 'Compact forged cavity for players who shape every shot. Accuracy 91 / Forgiveness 78.' },
-    { id: 'al-s2', sku: 'EQ-005', brand: 'Alder Forge', model: 'S2', dist: 1.02, acc: 0.0, forg: 0.08, spin: 0.98, launch: 0.3, unlock: 1, look: { finish: '#c6c9ce', accent: '#b5652b', style: 'cavity' }, blurb: 'Wide sole and perimeter weighting keep mishits flying. Accuracy 80 / Forgiveness 90.' },
+    { id: 'al-origin', brand: 'Alder Forge', model: 'Origin', price: 0, dist: 1.0, acc: 0.02, forg: 0.04, spin: 1.0, launch: 0.1, look: { finish: '#c9ccd1', accent: '#8a6a4a', style: 'cavity' }, card: { Accuracy: 84, Forgiveness: 84, Distance: 84 }, blurb: 'Classic cavity-back irons. A solid place to start.' },
+    { id: 'al-s2', sku: 'EQ-005', brand: 'Alder Forge', model: 'S2', price: 1800, dist: 1.02, acc: 0.0, forg: 0.1, spin: 0.98, launch: 0.3, look: { finish: '#c6c9ce', accent: '#b5652b', style: 'cavity' }, card: { Accuracy: 80, Forgiveness: 90, Distance: 88 }, blurb: 'Wide sole and perimeter weighting keep mishits flying. Harder to flight precisely.' },
+    { id: 'al-f7', sku: 'EQ-004', brand: 'Alder Forge', model: 'F7', price: 3200, dist: 1.0, acc: 0.07, forg: -0.05, spin: 1.04, launch: 0, look: { finish: '#d3d6da', accent: '#b5652b', style: 'blade' }, card: { Accuracy: 91, Forgiveness: 78, Distance: 84 }, blurb: 'Compact forged blades for pinpoint control. Punishes off-center strikes.' },
   ],
   wedge: [
-    { id: 'al-spin', sku: 'EQ-006/007', brand: 'Alder Forge', model: 'Spin', dist: 1.0, acc: 0.05, forg: 0.02, spin: 1.07, launch: 0, unlock: 1, look: { finish: '#c4c8cd', accent: '#b5652b', style: 'wedge' }, grinds: { PW: 'F', GW: 'F', SW: 'M', LW: 'L' }, blurb: 'Milled grooves for maximum bite around the greens. Spin 92 (54°) / 95 (60°).' },
+    { id: 'al-origin-w', brand: 'Alder Forge', model: 'Origin Wedges', price: 0, dist: 1.0, acc: 0.03, forg: 0.03, spin: 1.0, launch: 0, look: { finish: '#c4c8cd', accent: '#8a6a4a', style: 'wedge' }, grinds: { PW: 'F', GW: 'F', SW: 'M', LW: 'L' }, card: { Spin: 84, Control: 86, Forgiveness: 86 }, blurb: 'All-purpose wedges with a forgiving sole.' },
+    { id: 'al-spin54', sku: 'EQ-006', brand: 'Alder Forge', model: 'Spin 54', price: 900, dist: 1.0, acc: 0.04, forg: 0.03, spin: 1.05, launch: 0, look: { finish: '#c4c8cd', accent: '#b5652b', style: 'wedge' }, grinds: { PW: 'F', GW: 'F', SW: 'M', LW: 'M' }, card: { Spin: 92, Control: 88, Forgiveness: 84 }, blurb: 'Mid-bounce set built around a 54° sand wedge. Bites without being twitchy.' },
+    { id: 'al-spin60', sku: 'EQ-007', brand: 'Alder Forge', model: 'Spin 60', price: 950, dist: 1.0, acc: 0.05, forg: -0.02, spin: 1.08, launch: 0, look: { finish: '#bfc3c8', accent: '#b5652b', style: 'wedge' }, grinds: { PW: 'F', GW: 'S', SW: 'L', LW: 'L' }, card: { Spin: 95, Control: 90, Forgiveness: 76 }, blurb: 'Low-bounce, high-toe set built around a 60° lob wedge. Maximum stop, less margin.' },
   ],
   putter: [
-    { id: 'nl-axis', sku: 'EQ-008', brand: 'Northline', model: 'Axis', dist: 1.0, acc: 0.05, forg: 0.0, spin: 1, launch: 0, unlock: 1, look: { finish: '#c7cbd0', accent: '#2c7be5', style: 'blade' }, putter: { balance: 'Toe hang', toeHang: 'Moderate (arc stroke)', alignment: 'Single sight line', neck: 'Short neck' }, blurb: 'Precision-milled blade with crisp feedback. Feel 94 / Forgiveness 65.' },
-    { id: 'nl-arc', sku: 'EQ-009', brand: 'Northline', model: 'Arc', dist: 1.0, acc: 0.06, forg: 0.08, spin: 1, launch: 0, unlock: 2, look: { finish: '#2b2e33', accent: '#2c7be5', style: 'mallet' }, putter: { balance: 'Face balanced', toeHang: 'None (straight stroke)', alignment: 'Triple line', neck: 'Low bend' }, blurb: 'High-stability mallet that resists twisting. Feel 85 / Forgiveness 93.' },
+    { id: 'nl-origin', brand: 'Northline', model: 'Origin', price: 0, dist: 1.0, acc: 0.04, forg: 0.03, spin: 1, launch: 0, look: { finish: '#c7cbd0', accent: '#8aa0b8', style: 'blade' }, putt: { pace: 0, line: 0 }, putter: { balance: 'Slight toe hang', toeHang: 'Slight arc', alignment: 'Single sight line', neck: 'Short neck' }, card: { Feel: 84, Forgiveness: 80 }, blurb: 'A simple, honest blade.' },
+    { id: 'nl-axis', sku: 'EQ-008', brand: 'Northline', model: 'Axis', price: 1200, dist: 1.0, acc: 0.05, forg: 0.0, spin: 1, launch: 0, look: { finish: '#c7cbd0', accent: '#2c7be5', style: 'blade' }, putt: { pace: 0.12, line: -0.06 }, putter: { balance: 'Toe hang', toeHang: 'Moderate (arc stroke)', alignment: 'Single sight line', neck: 'Short neck' }, card: { Feel: 94, Forgiveness: 65 }, blurb: 'Milled blade with crisp feedback: a wider pace window, a stricter line.' },
+    { id: 'nl-arc', sku: 'EQ-009', brand: 'Northline', model: 'Arc', price: 1350, dist: 1.0, acc: 0.06, forg: 0.08, spin: 1, launch: 0, look: { finish: '#2b2e33', accent: '#2c7be5', style: 'mallet' }, putt: { pace: -0.04, line: 0.14 }, putter: { balance: 'Face balanced', toeHang: 'None (straight stroke)', alignment: 'Triple line', neck: 'Low bend' }, card: { Feel: 85, Forgiveness: 93 }, blurb: 'High-stability mallet: a forgiving line window, a little less touch on pace.' },
   ],
 };
 
 export const BALLS = [
-  { id: 'ap-tour', sku: 'EQ-010', brand: 'AeroPeak', model: 'Tour', dist: 1.0, spin: 1.05, unlock: 1, color: '#ffffff' },
-  { id: 'ap-flight', sku: 'EQ-011', brand: 'AeroPeak', model: 'Flight', dist: 1.015, spin: 0.94, unlock: 1, color: '#ffffff' },
+  { id: 'ap-origin', brand: 'AeroPeak', model: 'Origin', price: 0, dist: 1.0, spin: 1.0, color: '#ffffff', card: { Distance: 86, Spin: 84 }, blurb: 'A durable two-piece ball for every golfer.' },
+  { id: 'ap-tour', sku: 'EQ-010', brand: 'AeroPeak', model: 'Tour', price: 300, dist: 0.995, spin: 1.06, color: '#ffffff', card: { Distance: 82, Spin: 92 }, blurb: 'Urethane cover: stops quickly on the greens, curves more in the wind.' },
+  { id: 'ap-flight', sku: 'EQ-011', brand: 'AeroPeak', model: 'Flight', price: 200, dist: 1.015, spin: 0.92, color: '#fff7cf', card: { Distance: 94, Spin: 66 }, blurb: 'Low-spin distance ball: flies straighter and further, releases on landing.' },
+];
+
+// gameplay gloves (the glove's look/colour comes from the golfer's outfit)
+export const GLOVE_MODELS = [
+  { id: 'gl-basic', brand: 'Fairway Supply', model: 'Basic Glove', price: 0, grip: 0, card: { Grip: 80 }, blurb: 'A standard synthetic glove.' },
+  { id: 'gl-classic', sku: 'EQ-012', brand: 'Fairway Supply', model: 'Fairway Classic', price: 250, grip: 0.02, card: { Grip: 88 }, blurb: 'Cabretta leather for a slightly more secure grip: a small boost to every timing window.' },
 ];
 
 export const DEFAULT_BAG = ['DR', '3W', '5W', '3H', '5I', '6I', '7I', '8I', '9I', 'PW', 'GW', 'SW', 'LW', 'PT'];
 
 export const DEFAULT_EQUIPMENT = {
-  wood: 'vx-x9', hybrid: 'vx-apex', iron: 'al-s2', wedge: 'al-spin', putter: 'nl-axis', ball: 'ap-tour',
+  driver: 'vx-origin-d', wood: 'vx-origin-fw', hybrid: 'vx-origin-h', iron: 'al-origin', wedge: 'al-origin-w', putter: 'nl-origin', ball: 'ap-origin',
+  glove: 'gl-basic', bag: 'bag-basic', headcover: 'hc-none',
 };
+// equipment slot used by each club
+export const slotFor = (t) => (t.id === 'DR' ? 'driver' : t.cat);
 
 export function clubType(id) { return CLUB_TYPES.find(c => c.id === id); }
 
-export function modelFor(cat, equipment) {
-  const list = BRAND_MODELS[cat];
-  return list.find(m => m.id === equipment[cat]) || list[0];
+export function modelFor(slot, equipment) {
+  const list = BRAND_MODELS[slot];
+  return list.find(m => m.id === equipment[slot]) || list[0];
 }
 
 // Build the playable bag with final stats given golfer attributes.
 export function buildBag(bagIds, equipment, attrs) {
   const ball = BALLS.find(b => b.id === equipment.ball) || BALLS[0];
+  const grip = (GLOVE_MODELS.find(g => g.id === equipment.glove) || GLOVE_MODELS[0]).grip;
   const order = CLUB_TYPES.map(c => c.id);
   return bagIds
     .slice()
     .sort((a, b) => order.indexOf(a) - order.indexOf(b))
     .map(id => {
       const t = clubType(id);
-      const m = modelFor(t.cat, equipment);
+      const m = modelFor(slotFor(t), equipment);
       // power 50 -> 1.0, 100 -> ~1.14, 0 -> 0.82
       const pw = attrs.power ?? 50;
       const powerMul = 0.82 + (pw / 100) * 0.32;
@@ -94,11 +118,12 @@ export function buildBag(bagIds, equipment, attrs) {
         grind: t.cat === 'wedge' ? (m.grinds?.[id] || 'F') : null,
         putterSpec: t.cat === 'putter' ? m.putter : null,
         baseForg: t.forgiveness + m.forg,
+        putt: t.cat === 'putter' ? (m.putt || { pace: 0, line: 0 }) : null,
         carry: t.carry * m.dist * ball.dist * (t.cat === 'putter' ? 1 : powerMul),
         launch: t.launch + m.launch,
         spin: t.spin * m.spin * ball.spin,
         accuracy: Math.min(0.99, t.accuracy + m.acc + (skill - 50) / 500),
-        forgiveness: Math.min(0.99, t.forgiveness + m.forg),
+        forgiveness: Math.min(0.99, t.forgiveness + m.forg + grip),
       };
     });
 }
