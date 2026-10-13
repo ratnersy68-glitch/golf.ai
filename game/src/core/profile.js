@@ -16,8 +16,9 @@ export const DIFFICULTIES = {
 };
 
 // v2: original (fictional) courses, golfers, brands and tournament.
-// v3: Pro Shop — Golf Coins wallet + owned inventory. Older saves are migrated, never wiped.
-export const PROFILE_VERSION = 3;
+// v3: Pro Shop — Golf Coins wallet + owned inventory.
+// v4: Road to Pro career (profile.rtp). Older saves are migrated, never wiped.
+export const PROFILE_VERSION = 4;
 
 export const LEVEL_XP = (lvl) => 500 + (lvl - 1) * 300; // xp needed to go from lvl -> lvl+1
 export const MAX_LEVEL = 30;
@@ -30,6 +31,7 @@ export function newProfile() {
     closet: [], // favourited items: { cat, cfg }
     golfer: null, // the player's created golfer (see newGolfer); null until created
     masters: null, // tournament in progress (see game/masters.js)
+    rtp: null, // Road to Pro career (see game/career.js)
     mastersWins: 0, mastersHistory: [],
     level: 1, xp: 0, skillPoints: 0,
     skills: { driving: 50, approach: 50, shortGame: 50, putting: 50, recovery: 50 },
@@ -115,6 +117,10 @@ function migrate(p) {
     for (const o of [p.look?.outfit, p.golfer?.look?.outfit, ...(p.outfits || []).map(x => x.outfit)]) outfitItemIds(o).forEach(id => keep.add(id));
     for (const id of keep) grant(p, id);
     p.version = 3;
+  }
+  if (p.version < 4) {
+    p.rtp = null; // Road to Pro starts fresh; nothing older to carry over
+    p.version = 4;
   }
   return p;
 }

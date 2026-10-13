@@ -14,7 +14,7 @@ export const MAJOR = {
 export const CUT_LINE = 30; // low 30 and ties make the weekend (field of ~50)
 
 // expected scoring average for a hole of each par at a championship setup
-const AVG_OVER = { 3: 0.14, 4: 0.22, 5: -0.22 };
+export const AVG_OVER = { 3: 0.14, 4: 0.22, 5: -0.22 };
 
 // Field beyond the playable golfers: fictional players (name, country, skill 0..1)
 const FIELD_EXTRA = [
@@ -30,7 +30,7 @@ const FIELD_EXTRA = [
   ['Gordon Ames', 'USA', 0.45], ['Phil Navarro', 'USA', 0.47], ['Danny Wexford', 'ENG', 0.44], ['Pieter van Wyk', 'RSA', 0.46],
 ];
 
-function holeScore(rng, par, avg, skill, sunday) {
+export function holeScore(rng, par, avg, skill, sunday) {
   const mu = avg - par - (skill - 0.5) * 0.44 + (sunday ? 0.03 : 0); // expected strokes over par
   const e = par === 5 ? 0.02 + 0.04 * skill : par === 4 ? 0.003 : 0.001;
   const b = par === 5 ? 0.36 + 0.14 * skill : 0.12 + 0.1 * skill;

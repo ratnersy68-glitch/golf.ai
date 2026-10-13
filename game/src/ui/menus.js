@@ -10,6 +10,8 @@ import { CHAMPION_BLAZER } from '../data/apparel.js';
 import { CLUB_TYPES, buildBag } from '../data/clubs.js';
 import { CATALOG, owns } from '../data/shop.js';
 import { ProShop, BAG_SLOTS, coinHtml } from './shop.js';
+import { RoadToPro } from './roadToPro.js';
+import { teamName, seasonLabel, currentEvent } from '../game/career.js';
 import { fmtCoins, ACHIEVEMENTS } from '../core/wallet.js';
 import { DIFFICULTIES, LEVEL_XP, customAttrs, resetProfile } from '../core/profile.js';
 
@@ -53,6 +55,7 @@ export class Menus {
     this.setup = null;
     this.creator = new Creator(this);
     this.shop = new ProShop(this);
+    this.rtp = new RoadToPro(this);
   }
   get profile() { return this.app.profile; }
 
@@ -82,6 +85,7 @@ export class Menus {
       case 'career': return this.career();
       case 'bag': return this.bag();
       case 'shop': return this.shop.open();
+      case 'rtp': return this.rtp.open();
       case 'settings': return this.settings();
       case 'masters': return this.masters();
       case 'stats': return this.career();
@@ -114,6 +118,7 @@ export class Menus {
         ${this.profileBadge()}
         <div class="main-menu">
           <button class="menu-item hero" data-go="round18"><b>QUICK ROUND</b><span>18 holes on an original course</span></button>
+          <button class="menu-item rtp-item" data-go="rtp"><b>ROAD TO PRO</b><span>${p.rtp ? `${esc(teamName(p.rtp))} · ${esc(seasonLabel(p.rtp))}${currentEvent(p.rtp) ? ` · next: ${esc(currentEvent(p.rtp).name)}` : ''}` : 'High school → college → the pros → the majors'}</span></button>
           <button class="menu-item masters-item" data-go="masters"><b>${MAJOR.short}</b><span>${p.masters && !p.masters.finished ? `Round ${p.masters.round} · ${ROUND_DAYS[p.masters.round - 1].toLowerCase()} — continue your tournament` : `The major: 72 holes at ${titleCase(MAJOR.venue)} against the world's best`}</span></button>
           <button class="menu-item" data-go="round9"><b>9 HOLES</b><span>${MODES.round9.sub}</span></button>
           <button class="menu-item" data-go="coursePractice"><b>COURSE PRACTICE</b><span>${MODES.coursePractice.sub}</span></button>

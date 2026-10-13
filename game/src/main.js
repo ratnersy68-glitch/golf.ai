@@ -14,6 +14,7 @@ import { THEMES } from './data/themes.js';
 import { holeMap } from './ui/holeMap.js';
 import { loadProfile, saveProfile, awardXp, recordRound, customAttrs } from './core/profile.js';
 import { payRound, payCrownRound } from './core/wallet.js';
+import { recordRound as rtpRecordRound, currentEvent } from './game/career.js';
 import { audio } from './audio/audio.js';
 import { leaderboard, completeRound, boardHtml, projectedCut, MAJOR } from './game/masters.js';
 
@@ -219,6 +220,7 @@ class App {
 
   onRoundComplete(round, st, cfg) {
     if (cfg.masters) return this.onMastersRound(round, st, cfg);
+    if (cfg.rtp) return this.onRtpRound(round, st, cfg);
     let award = null, pay = null;
     if (cfg.mode === 'round18' || cfg.mode === 'round9') {
       award = awardXp(this.profile, st, cfg.difficulty, st.holes, !!cfg.custom);
@@ -233,6 +235,24 @@ class App {
     this.menus.show(true);
     this.menus.results(round, st, award, cfg, sc, pay);
     this.menuScene();
+  }
+
+  // Road to Pro: a played round of the current career event
+  onRtpRound(round, st, cfg) {
+    const p = this.profile;
+    const award = awardXp(p, st, cfg.difficulty, st.holes, true);
+    recordRound(p, round);
+    const pay = payRound(p, round.id, st, cfg.difficulty, st.holes);
+    const e = p.rtp && currentEvent(p.rtp);
+    const valid = e && e.id === cfg.rtp.evId && e.player.rounds.length + 1 === cfg.rtp.round;
+    const r = valid ? rtpRecordRound(p, round.cards.map(c => c.strokes), false) : null;
+    this.save();
+    this.play.stop();
+    this.mode = 'menu';
+    this.menus.show(true);
+    this.menuScene();
+    if (r) this.menus.rtp.afterRound(e, { strokes: st.strokes, toPar: st.toPar }, r, award, pay);
+    else this.menus.rtp.open();
   }
 
   onMastersRound(round, st, cfg) {
