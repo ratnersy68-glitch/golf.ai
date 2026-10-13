@@ -68,13 +68,21 @@ export function lieRangeText(surf, typeId, club, recovery) {
   return a === b ? `${a}%` : `${a}-${b}%`;
 }
 
-const catSkill = (club, attrs) => club.cat === 'wood' || club.cat === 'hybrid' ? attrs.driving : club.cat === 'wedge' ? attrs.shortGame : club.cat === 'putter' ? attrs.putting : attrs.approach;
+const SHORT_TYPES = new Set(['chip', 'pitch', 'lob', 'flop', 'bunker']);
+const catSkill = (club, attrs, typeId) => SHORT_TYPES.has(typeId) ? (attrs.chipping ?? attrs.shortGame)
+  : club.cat === 'wood' || club.cat === 'hybrid' ? attrs.driving : club.cat === 'wedge' ? attrs.shortGame : club.cat === 'putter' ? attrs.putting : attrs.approach;
+
+// Pressure (closing holes, tournament weekends): low mental shrinks the timing and putting windows.
+// mental 50 -> 80% of the window, 75 -> 90%, 100 -> unaffected.
+export function pressureMul(attrs) {
+  return attrs.pressure ? 1 - (1 - clamp((attrs.mental ?? 60) / 100, 0, 1)) * 0.4 : 1;
+}
 
 // half-width of the sweet spot on the meter (1.0 = full meter)
 export function timingWindow(club, typeId, surf, attrs, diff, power = 1) {
   const t = SHOT_TYPES[typeId] || SHOT_TYPES.normal;
-  const skill = catSkill(club, attrs);
-  let w = 0.075 * diff.window * (0.7 + skill / 100 * 0.65) * (0.75 + club.forgiveness * 0.4) * t.windowMul;
+  const skill = catSkill(club, attrs, typeId);
+  let w = pressureMul(attrs) * 0.075 * diff.window * (0.7 + skill / 100 * 0.65) * (0.75 + club.forgiveness * 0.4) * t.windowMul;
   w /= Math.sqrt(lieInfo(surf).disp);
   if (power > 1) w *= Math.max(0.35, 1 - (power - 1) * 4);
   return w;
@@ -123,10 +131,12 @@ export function computeLaunch(inp) {
   // dispersion
   const accuracy = club.accuracy;
   const overs = Math.max(0, power - 1);
-  const sigDir = (1 - accuracy) * 5.5 * diff.disp * lie.disp * (1 + overs * 5) * (typeId === 'chip' || typeId === 'pitch' ? 0.6 : 1);
+  // short shots: the chipping attribute tightens dispersion (50 -> as is, 90 -> 20% tighter)
+  const shortK = SHORT_TYPES.has(typeId) ? 1.25 - (attrs.chipping ?? attrs.shortGame ?? 50) / 200 : 1;
+  const sigDir = (1 - accuracy) * 5.5 * diff.disp * lie.disp * (1 + overs * 5) * (typeId === 'chip' || typeId === 'pitch' ? 0.6 : 1) * shortK;
   startDeg += gauss(rng) * sigDir * 0.6;
   sideRpm += gauss(rng) * sigDir * 70 * catF;
-  const sigCarry = 0.022 * diff.disp * lie.disp;
+  const sigCarry = 0.022 * diff.disp * lie.disp * shortK;
   // launch & spin
   let launch = club.launch * t.launchMul + t.launchAdd;
   let spin = club.spin * t.spinMul * lie.spin;
@@ -150,8 +160,10 @@ export function computeLaunch(inp) {
   const trajMul = inp.traj ? 0.97 : 1;
   const carry = club.carry * t.carryMul * power * lieMul * quality * trajMul * (1 + gauss(rng) * sigCarry);
   const speed = speedForCarry(Math.max(1, carry), launch, spin);
+  // left-handers: the same swing mirrored across the target line (a lefty's draw curves right)
+  const mirror = attrs.hand === 'L' ? -1 : 1;
   return {
-    speed, heading: inp.heading + startDeg * DEG, angle: launch * DEG, back: spin, side: sideRpm,
+    speed, heading: inp.heading + mirror * startDeg * DEG, angle: launch * DEG, back: spin, side: mirror * sideRpm,
     rating, quality, lieMul, targetCarry: carry, ballMph: speed / MPH, launchDeg: launch,
   };
 }

@@ -2,6 +2,7 @@
 import { DEFAULT_LOOK, normalizeLook } from '../data/look.js';
 import { DEFAULT_BAG, DEFAULT_EQUIPMENT, BRAND_MODELS, BALLS } from '../data/clubs.js';
 import { COURSES } from '../data/courses.js';
+import { ATTRS, ATTR_START, ATTR_POOL, ATTR_MAX, golferAttrs } from '../data/golfers.js';
 
 const KEY = 'golfai.profile.v1';
 
@@ -24,6 +25,7 @@ export function newProfile() {
     look: normalizeLook(DEFAULT_LOOK),
     outfits: [], // saved outfits: { id, name, outfit }
     closet: [], // favourited items: { cat, cfg }
+    golfer: null, // the player's created golfer (see newGolfer); null until created
     masters: null, // tournament in progress (see game/masters.js)
     mastersWins: 0, mastersHistory: [],
     level: 1, xp: 0, skillPoints: 0,
@@ -56,6 +58,7 @@ export function loadProfile() {
     return {
       ...base, ...p,
       look: normalizeLook(p.look || base.look),
+      golfer: p.golfer ? { ...p.golfer, look: normalizeLook(p.golfer.look), attrs: { ...newGolfer().attrs, ...p.golfer.attrs } } : null,
       outfits: Array.isArray(p.outfits) ? p.outfits : [],
       closet: Array.isArray(p.closet) ? p.closet : [],
       skills: { ...base.skills, ...p.skills },
@@ -101,14 +104,25 @@ export function resetProfile() {
   return newProfile();
 }
 
-// attributes for a custom golfer based on skills
+// a freshly created golfer: every attribute at ATTR_START with ATTR_POOL points still to place
+export function newGolfer(name = 'My Golfer', look = {}) {
+  return {
+    v: 1, created: Date.now(), name, hand: 'R',
+    look: normalizeLook({ ...look, v: 2 }),
+    attrs: Object.fromEntries(ATTRS.map(([k]) => [k, ATTR_START])),
+    pool: ATTR_POOL, // creation points not yet placed (level-up points live in p.skillPoints)
+  };
+}
+
+// attributes for playing as your own golfer
 export function customAttrs(p) {
+  if (p.golfer) return golferAttrs(p.golfer);
   const s = p.skills;
   return { power: s.driving, driving: s.driving, approach: s.approach, shortGame: s.shortGame, putting: s.putting, recovery: s.recovery };
 }
 
 // Award XP after a round; returns summary with level-ups.
-export function awardXp(p, stats, diffKey, holesPlayed) {
+export function awardXp(p, stats, diffKey, holesPlayed, asGolfer = false) {
   const d = DIFFICULTIES[diffKey] || DIFFICULTIES.normal;
   let xp = holesPlayed * 18
     + stats.pars * 10 + stats.birdies * 45 + stats.eagles * 140 + stats.aces * 600 + (stats.albatross || 0) * 800
@@ -125,14 +139,17 @@ export function awardXp(p, stats, diffKey, holesPlayed) {
     p.skillPoints += 3;
     unlocksGained.push(p.level);
   }
-  // gradual automatic improvement from practice
-  const s = p.skills;
-  const bump = (k, v) => { s[k] = Math.min(99, Math.round((s[k] + v) * 10) / 10); };
-  if (stats.fairwayChances) bump('driving', 0.4 * stats.fairways / stats.fairwayChances);
-  if (stats.girChances) bump('approach', 0.5 * stats.gir / stats.girChances);
-  if (stats.upDownChances) bump('shortGame', 0.6 * stats.upDowns / Math.max(1, stats.upDownChances));
-  if (stats.puttHoles) bump('putting', Math.max(0, 0.6 * (2.1 - stats.putts / stats.puttHoles)));
-  if (stats.sandChances || stats.recoveries) bump('recovery', 0.3);
+  // gradual improvement from play: rounds played as your own golfer sharpen the matching attributes
+  if (asGolfer && p.golfer) {
+    const a = p.golfer.attrs;
+    const bump = (k, v) => { a[k] = Math.min(ATTR_MAX, Math.round((a[k] + v) * 10) / 10); };
+    if (stats.fairwayChances) bump('accuracy', 0.4 * stats.fairways / stats.fairwayChances);
+    if (stats.girChances) bump('irons', 0.5 * stats.gir / stats.girChances);
+    if (stats.upDownChances) bump('chipping', 0.6 * stats.upDowns / Math.max(1, stats.upDownChances));
+    if (stats.puttHoles) bump('putting', Math.max(0, 0.6 * (2.1 - stats.putts / stats.puttHoles)));
+    if (stats.sandChances) bump('recovery', 0.3);
+    if (holesPlayed >= 18 && stats.toPar <= 0) bump('mental', 0.5);
+  }
   return { xp, levelUps: unlocksGained, from: before, to: p.level };
 }
 

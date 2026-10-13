@@ -777,3 +777,63 @@ body.touch .mticker { top: calc(var(--st) + 64px); left: calc(var(--sl) + 10px);
 #wind.calm { opacity: .5; }
 #wind.calm .wind-mph { font-size: 0; }
 #wind.calm .wind-mph::after { content: 'NO EFFECT ON PUTTS'; font-size: 10px; letter-spacing: .1em; }
+
+/* ================= CREATE GOLFER / MY GOLFER ================= */
+.avatar.portrait { padding: 0; overflow: hidden; background: #13241a; }
+.avatar.portrait svg { width: 100%; height: 100%; display: block; }
+.badge[data-go] { cursor: pointer; }
+.menu-item.golfer-item { border-color: rgba(61,220,132,0.45); background: linear-gradient(120deg, rgba(61,220,132,0.16), rgba(8,20,14,0.6)); }
+.menu-item.golfer-item b::before { content: '👤 '; }
+.creator-screen { pointer-events: none; }
+.creator { position: relative; min-height: 100%; padding: 18px 22px; pointer-events: none; }
+.cr-panel { pointer-events: auto; width: min(460px, 46vw); max-height: calc(var(--app-h, 100vh) - 36px); display: flex; flex-direction: column; padding: 14px 16px; border-radius: 18px; }
+.cr-head { display: flex; align-items: center; gap: 10px; }
+.cr-title { flex: 1; font-family: var(--cond); font-weight: 800; font-size: 26px; letter-spacing: .06em; line-height: 1.05; }
+.cr-title small { display: block; font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--dim); }
+.cr-ovr { text-align: center; line-height: 1; }
+.cr-ovr b { display: block; font-family: var(--cond); font-size: 32px; color: var(--accent); }
+.cr-ovr span { font-size: 9px; letter-spacing: .14em; color: var(--dim); font-weight: 700; }
+.cr-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 8px; }
+.cr-tabs .gtab { padding: 6px 12px; font-size: 13px; }
+.cr-tabs .gtab i { font-style: normal; background: #ff5a4f; color: #fff; border-radius: 9px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
+.cr-body { flex: 1; overflow-y: auto; padding-right: 4px; min-height: 120px; }
+.cr-row { margin: 10px 0; }
+.cr-row > label { display: block; font-size: 11px; letter-spacing: .14em; font-weight: 700; color: var(--dim); margin-bottom: 6px; text-transform: uppercase; }
+.cr-row .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+.sw { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); cursor: pointer; }
+.sw.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.cr-slide { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--dim); }
+.cr-slide input { flex: 1; accent-color: var(--accent); }
+.cr-name { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,0.35); color: var(--text); font-size: 18px; font-weight: 700; }
+.cr-note { font-size: 12px; color: var(--dim); line-height: 1.5; margin: 12px 0 4px; }
+.cr-points { padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); font-size: 13px; color: var(--dim); margin-bottom: 6px; }
+.cr-points.has { background: rgba(61,220,132,0.14); color: var(--text); }
+.cr-points b { font-family: var(--cond); font-size: 22px; color: var(--accent); margin-right: 4px; }
+.cr-attr { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.cr-attr-top b { font-size: 14px; }
+.cr-attr-top span { display: block; font-size: 11px; color: var(--dim); }
+.cr-attr-bar { display: grid; grid-template-columns: 30px 1fr 30px 30px; align-items: center; gap: 8px; margin-top: 5px; }
+.cr-attr-bar i { height: 7px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.cr-attr-bar i b { display: block; height: 100%; background: linear-gradient(90deg, #2a7fff, #3ddc84); }
+.cr-attr-bar em { font-style: normal; font-family: var(--cond); font-weight: 800; font-size: 18px; text-align: center; }
+.cr-attr-bar em { order: 3; }
+.cr-attr-bar button:last-child { order: 4; }
+.cr-pm { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,0.06); color: var(--text); font-size: 18px; font-weight: 800; cursor: pointer; }
+.cr-pm:disabled { opacity: .3; cursor: default; }
+.cr-foot { display: flex; gap: 8px; justify-content: space-between; margin-top: 10px; }
+.cr-foot .btn.primary { flex: 1; }
+.cr-msg { font-size: 12px; color: var(--accent); min-height: 0; margin-top: 6px; opacity: 0; transition: opacity .3s; }
+.cr-msg.show { opacity: 1; }
+.cr-hint { position: absolute; right: 26px; bottom: 22px; font-size: 11px; letter-spacing: .14em; color: rgba(255,255,255,0.6); text-transform: uppercase; }
+@media (max-height: 520px) {
+  .creator { padding: 8px 10px; }
+  .cr-panel { width: min(400px, 52vw); padding: 10px 12px; max-height: calc(var(--app-h, 100vh) - 16px); }
+  .cr-title { font-size: 20px; } .cr-tabs { margin: 6px 0 4px; } .cr-tabs .gtab { padding: 5px 9px; font-size: 12px; }
+  .sw { width: 24px; height: 24px; }
+  .cr-foot .btn { padding: 7px 12px; font-size: 14px; min-height: 0; }
+  .cr-foot { margin-top: 6px; }
+}
+.golfer-card.mine { border-color: rgba(61,220,132,0.5); background: linear-gradient(160deg, rgba(61,220,132,0.14), rgba(8,20,14,0.5)); }
+.golfer-card.mine.create { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 4px; border-style: dashed; min-height: 150px; }
+.gc-create { font-size: 38px; line-height: 1; color: var(--accent); }

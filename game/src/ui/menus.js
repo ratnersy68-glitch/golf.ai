@@ -1,8 +1,9 @@
 // Front-end menus: main menu, round setup (golfer/course/tees), career,
 // golfer customization, bag, settings, practice and results.
 import { COURSES, TEE_SETS, coursePar, courseYards, getCourse } from '../data/courses.js';
-import { PROS, GOATS, ALL_GOLFERS, golferById, overall, proAttrs, DEFAULT_LOOK } from '../data/golfers.js';
+import { PROS, GOATS, ALL_GOLFERS, golferById, overall, proAttrs, DEFAULT_LOOK, golferAttrs, golferOverall } from '../data/golfers.js';
 import { portrait } from './portrait.js';
+import { Creator } from './creator.js';
 import { normalizeLook } from '../data/look.js';
 import { newTournament, leaderboard, boardHtml, projectedCut, fmtPar, ROUND_DAYS, MAJOR } from '../game/masters.js';
 import { CHAMPION_BLAZER } from '../data/apparel.js';
@@ -11,6 +12,7 @@ import { DIFFICULTIES, LEVEL_XP, customAttrs, resetProfile } from '../core/profi
 
 const proById = golferById;
 const proLook = (pro) => normalizeLook({ ...DEFAULT_LOOK, ...pro.look, name: pro.name });
+const MY_ID = 'me';
 import { audio } from '../audio/audio.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -38,8 +40,19 @@ export class Menus {
     this.root = root;
     this.app = app;
     this.setup = null;
+    this.creator = new Creator(this);
   }
   get profile() { return this.app.profile; }
+
+  // who is playing: a tour pro / legend by id, or the player's own golfer ('me')
+  player(id) {
+    const g = this.profile.golfer;
+    if (id === MY_ID && g) {
+      return { id: MY_ID, name: g.name, custom: true, attrs: { ...golferAttrs(g), hand: g.hand }, look: normalizeLook({ ...g.look, hand: g.hand, name: g.name }) };
+    }
+    const pro = proById(id);
+    return { id: pro.id, name: pro.name, custom: false, attrs: proAttrs(pro), look: proLook(pro) };
+  }
 
   show(v) { this.root.classList.toggle('visible', v); }
 
@@ -50,8 +63,9 @@ export class Menus {
   }
 
   go(where) {
-    if (where !== 'golfer') this.app.menuScene();
+    if (where !== 'golfer' && where !== 'mygolfer') this.app.menuScene();
     switch (where) {
+      case 'mygolfer': return this.creator.open();
       case 'main': return this.main();
       case 'career': return this.career();
       case 'bag': return this.bag();
@@ -66,9 +80,10 @@ export class Menus {
   profileBadge() {
     const p = this.profile;
     const need = LEVEL_XP(p.level);
-    return `<div class="badge glass">
-      <div class="avatar" style="background:#1f6b3a">⛳</div>
-      <div><div class="b-name">Golf.ai Tour</div><div class="b-lvl">LEVEL ${p.level}</div>
+    const g = p.golfer;
+    return `<div class="badge glass" ${g ? 'data-go="mygolfer"' : ''}>
+      ${g ? `<div class="avatar portrait">${portrait({ ...g.look, hand: g.hand })}</div>` : '<div class="avatar" style="background:#1f6b3a">⛳</div>'}
+      <div><div class="b-name">${g ? esc(g.name) : 'Golf.ai Tour'}</div><div class="b-lvl">LEVEL ${p.level}${g ? ` · ${golferOverall(g)} OVR` : ''}</div>
       <div class="xpbar"><i style="width:${Math.min(100, p.xp / need * 100)}%"></i></div></div></div>`;
   }
 
@@ -89,6 +104,7 @@ export class Menus {
           <button class="menu-item" data-go="round9"><b>9 HOLES</b><span>${MODES.round9.sub}</span></button>
           <button class="menu-item" data-go="coursePractice"><b>COURSE PRACTICE</b><span>${MODES.coursePractice.sub}</span></button>
           <button class="menu-item" data-go="practice"><b>PRACTICE</b><span>${MODES.practice.sub}</span></button>
+          <button class="menu-item golfer-item" data-go="mygolfer"><b>${p.golfer ? 'MY GOLFER' : 'CREATE GOLFER'}</b><span>${p.golfer ? `${esc(p.golfer.name)} · ${golferOverall(p.golfer)} OVR${p.skillPoints ? ` · ${p.skillPoints} skill point${p.skillPoints === 1 ? '' : 's'} to place` : ''}` : 'Build your own golfer and play every mode as them'}</span></button>
           <div class="menu-split">
             <button class="menu-item small" data-go="career"><b>CAREER</b><span>Stats · unlocks</span></button>
             <button class="menu-item small" data-go="bag"><b>MY BAG</b><span>Clubs & ball</span></button>
@@ -105,7 +121,7 @@ export class Menus {
     const s = this.profile.settings;
     this.setup = {
       mode, step: 0,
-      golfer: ALL_GOLFERS.some(x => x.id === this.setup?.golfer) ? this.setup.golfer : PROS[0].id, tab: GOATS.some(x => x.id === this.setup?.golfer) ? 'goat' : 'pros',
+      golfer: (this.setup?.golfer === MY_ID && this.profile.golfer) || ALL_GOLFERS.some(x => x.id === this.setup?.golfer) ? this.setup.golfer : (this.profile.golfer ? MY_ID : PROS[0].id), tab: GOATS.some(x => x.id === this.setup?.golfer) ? 'goat' : 'pros',
       courseId: getCourse(s.lastCourse).id, teeId: s.lastTee || 'tour',
       difficulty: s.difficulty, wind: s.windSetting, pins: s.pins, nine: 'front', hole: 0, practiceKind: 'approach',
     };
@@ -136,6 +152,20 @@ export class Menus {
     this.bindSetup(stepName);
   }
 
+  // first card in the picker: your own golfer, or a prompt to create one
+  myGolferCard() {
+    const st = this.setup, g = this.profile.golfer;
+    if (!g) return `<div class="golfer-card mine create" data-go="mygolfer"><div class="gc-create">＋</div><div class="gc-name">Create your golfer</div><div class="gc-sub">Build your own player and grow them round by round</div></div>`;
+    const a = golferAttrs(g);
+    const bars = [['PWR', a.power], ['ACC', Math.round((a.driving + a.approach) / 2)], ['SHT', Math.round((a.shortGame + a.chipping) / 2)], ['PUT', a.putting]].map(([k, v]) => `<div><span>${k}</span><i><b style="width:${v}%"></b></i><em>${Math.round(v)}</em></div>`).join('');
+    return `<div class="golfer-card mine ${st.golfer === MY_ID ? 'sel' : ''}" data-golfer="${MY_ID}">
+        <div class="gc-top"><div class="gc-portrait">${portrait({ ...g.look, hand: g.hand })}</div>
+          <div class="gc-id"><div class="gc-name">${esc(g.name)}</div><div class="gc-sub">MY GOLFER · ${g.hand === 'L' ? 'Left' : 'Right'}-handed</div></div>
+          <div class="gc-ovr"><b>${golferOverall(g)}</b><span>OVR</span></div></div>
+        <div class="attr-bars">${bars}</div>
+      </div>`;
+  }
+
   golferPicker() {
     const st = this.setup;
     const goat = st.tab === 'goat';
@@ -152,7 +182,7 @@ export class Menus {
     const tab = (id, label) => `<button class="gtab ${st.tab === id ? 'on' : ''}" data-gtab="${id}">${label}</button>`;
     return `<div class="gtabs">${tab('pros', 'TOUR PROS')}${tab('goat', '★ LEGENDS')}</div>
       ${goat ? '<div class="goat-intro">Fictional all-time greats, in their prime.</div>' : ''}
-      <div class="golfer-grid">${(goat ? GOATS : PROS).map(card).join('')}</div>`;
+      <div class="golfer-grid">${goat ? '' : this.myGolferCard()}${(goat ? GOATS : PROS).map(card).join('')}</div>`;
   }
 
   coursePicker() {
@@ -229,14 +259,14 @@ export class Menus {
     p.settings.lastCourse = st.courseId; p.settings.lastTee = st.teeId;
     p.settings.difficulty = st.difficulty; p.settings.windSetting = st.wind; p.settings.pins = st.pins;
     this.app.save();
-    const pro = proById(st.golfer);
-    const attrs = proAttrs(pro), look = proLook(pro), name = pro.name;
+    const who = this.player(st.golfer);
+    const attrs = who.attrs, look = who.look, name = who.name;
     let holes = [...Array(18).keys()];
     if (st.mode === 'round9') holes = st.nine === 'front' ? holes.slice(0, 9) : holes.slice(9);
     if (st.mode === 'coursePractice' || st.mode === 'practice') holes = [st.hole];
     const cfg = {
       mode: st.mode, courseId: st.courseId, teeId: st.teeId, holes,
-      difficulty: st.difficulty, attrs, look, golferName: name, practiceKind: st.practiceKind,
+      difficulty: st.difficulty, attrs, look, golferName: name, practiceKind: st.practiceKind, custom: who.custom,
     };
     this.app.startRound(cfg);
   }
@@ -274,7 +304,7 @@ export class Menus {
       side = `${m?.finished ? `<div class="m-final ${m.result.won ? 'won' : ''}">${m.result.won ? MAJOR.champion : m.result.pos === 'MC' ? 'MISSED THE CUT' : `FINISHED ${m.result.pos}`}<small>${fmtPar(m.result.toPar)}${m.result.won ? '' : m.result.champion ? ` · Champion ${esc(m.result.champion)} ${fmtPar(m.result.winningScore)}` : ''}</small></div>` : ''}
         <div class="section-title">NEW TOURNAMENT</div>
         <div class="m-note">Four rounds at ${titleCase(MAJOR.venue)} from the championship tees against a field of ${PROS.length + 40} of the world's best. Low 30 and ties make the cut after Friday. Sunday brings the toughest pins. Win and the ${MAJOR.trophy} is yours.</div>
-        <div class="set-row"><div><b>Your pro</b></div><div class="chips">${ALL_GOLFERS.map(x => `<button class="chip ${(this.mPro || PROS[0].id) === x.id ? 'on' : ''}" data-mpro="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
+        <div class="set-row"><div><b>Your golfer</b></div><div class="chips">${[...(p.golfer ? [{ id: MY_ID, name: `${p.golfer.name} (my golfer)` }] : []), ...ALL_GOLFERS].map(x => `<button class="chip ${(this.mPro || (p.golfer ? MY_ID : PROS[0].id)) === x.id ? 'on' : ''}" data-mpro="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
         <div class="set-row"><div><b>Difficulty</b></div><div class="chips">${diffChips}</div></div>
         <button class="btn primary big m-tee" id="m-start">START THE ${MAJOR.short} ▸</button>`;
     }
@@ -298,8 +328,8 @@ export class Menus {
     if (start) start.onclick = () => {
       audio.init(); audio.click();
       const course = getCourse(MAJOR.courseId);
-      const pro = proById(this.mPro || PROS[0].id);
-      p.masters = newTournament(course, this.mDiff || p.settings.difficulty, pro.name, pro.id);
+      const who = this.player(this.mPro || (p.golfer ? MY_ID : PROS[0].id));
+      p.masters = newTournament(course, this.mDiff || p.settings.difficulty, who.name, who.id);
       this.app.save();
       this.startMastersRound();
     };
@@ -318,7 +348,7 @@ export class Menus {
     if (!m || m.finished) return;
     this.app.startRound({
       mode: 'round18', courseId: MAJOR.courseId, teeId: 'champ', holes: [...Array(18).keys()],
-      difficulty: m.difficulty, attrs: proAttrs(proById(m.proId)), look: proLook(proById(m.proId)), golferName: m.playerName,
+      difficulty: m.difficulty, attrs: this.player(m.proId).attrs, look: this.player(m.proId).look, golferName: m.playerName, custom: this.player(m.proId).custom,
       masters: { round: m.round }, pins: m.round === 4 ? 'sunday' : 'medium', wind: 'normal',
     });
   }
@@ -353,7 +383,7 @@ export class Menus {
   mastersCeremony(result, rows) {
     const p = this.profile;
     // put the champion in the blazer for the ceremony
-    const look = proLook(proById(p.masters.proId));
+    const look = this.player(p.masters.proId).look;
     look.outfit.top = { id: CHAMPION_BLAZER.id, color: CHAMPION_BLAZER.fixedColor, pattern: 'solid' };
     this.render(`
       <div class="m-ceremony">

@@ -50,10 +50,38 @@ export const DEFAULT_LOOK = {
   glove: '#ffffff', gloveModel: 'fj', accessory: 'none', beard: false, build: 1.0,
 };
 
-// Convert a pro's attributes into the internal skill model.
+// The eight golfer attributes (bible §04). Every one has a measurable effect on play.
+export const ATTRS = [
+  ['distance', 'Distance', 'Carry distance with every full-swing club'],
+  ['accuracy', 'Driving accuracy', 'Timing window and dispersion with driver, woods and hybrids'],
+  ['irons', 'Irons', 'Timing window and dispersion with irons'],
+  ['wedges', 'Wedges', 'Timing window and dispersion on full wedge shots'],
+  ['chipping', 'Chipping', 'Control on chips, pitches, lobs, flops and bunker shots'],
+  ['putting', 'Putting', 'Size of the perfect-putt window'],
+  ['recovery', 'Recovery', 'Distance kept from rough, sand and other bad lies'],
+  ['mental', 'Mental', 'Holds your timing and putting together on pressure holes'],
+];
+export const ATTR_START = 55, ATTR_POOL = 40, ATTR_CREATE_MAX = 80, ATTR_MAX = 99;
+
+// Convert a pro's ratings into the internal skill model.
 export function proAttrs(p) {
   return {
     power: p.power, driving: Math.round((p.accuracy + p.power) / 2), approach: p.accuracy,
-    shortGame: p.shortGame, putting: p.putting, recovery: p.recovery,
+    shortGame: p.shortGame, chipping: p.shortGame, putting: p.putting, recovery: p.recovery,
+    mental: p.mental ?? Math.round((p.accuracy + p.putting + p.recovery) / 3),
   };
 }
+
+// Convert a created golfer's eight attributes into the internal skill model.
+export function golferAttrs(g) {
+  const a = { ...Object.fromEntries(ATTRS.map(([k]) => [k, ATTR_START])), ...(g?.attrs || {}) };
+  return {
+    power: a.distance, driving: a.accuracy, approach: a.irons, shortGame: a.wedges,
+    chipping: a.chipping, putting: a.putting, recovery: a.recovery, mental: a.mental,
+  };
+}
+// overall rating for a created golfer, on the same scale as the pros
+export const golferOverall = (g) => {
+  const a = golferAttrs(g);
+  return Math.round(a.power * 0.2 + ((a.driving + a.approach) / 2) * 0.22 + ((a.shortGame + a.chipping) / 2) * 0.18 + a.putting * 0.2 + a.recovery * 0.1 + a.mental * 0.1);
+};

@@ -84,6 +84,14 @@ export class Golfer {
     this.setClub('iron', 0.95);
   }
 
+  // the left-handed golfer is a mirror image, so printed logos need a mirrored texture to read correctly
+  readable(tex) {
+    if (!tex || this.hand !== 'L') return tex;
+    const t = tex.clone();
+    t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; t.needsUpdate = true;
+    return t;
+  }
+
   // ---------- persistent skeleton ----------
   buildRig() {
     const m = this.model;
@@ -131,6 +139,8 @@ export class Golfer {
   apply(look, animate) {
     if (!animate) this.finishFades();
     const L = this.look = normalizeLook(look);
+    const handChanged = (L.hand || 'R') !== (this.hand || 'R');
+    this.hand = L.hand || 'R';
     const o = L.outfit;
     const fem = L.gender === 'F' ? 0.92 : 1;
     this.bodyT = { height: L.height ?? 1, build: L.build ?? 1, shoulders: (L.shoulders ?? 1) * fem, legs: L.legs ?? 1 };
@@ -143,7 +153,7 @@ export class Golfer {
     }
     const hatOn = o.hat && o.hat.id !== 'hat-none';
     const want = {
-      top: [o.top], bottom: [o.bottom], shoes: [o.shoes], hat: [o.hat], glove: [o.glove],
+      top: [o.top, this.hand], bottom: [o.bottom], shoes: [o.shoes, this.hand], hat: [o.hat, this.hand], glove: [o.glove],
       hair: [L.hair, hatOn], face: [L.faceShape, L.jaw, L.eyeShape, L.brows, L.nose, L.mouth],
       beard: [L.facialHair, L.faceShape, L.jaw], acc: [L.accessory, L.faceShape],
     };
@@ -154,6 +164,7 @@ export class Golfer {
       this.setSlot(slot, this['make_' + slot](L), animate);
     }
     this.applyPose();
+    if (handChanged && this.clubHead) this.computeAddressOffset();
   }
 
   // parts: array of [parent, group]; wraps each group so it can be faded/scaled independently
@@ -293,7 +304,7 @@ export class Golfer {
     }
     if (it.style === 'block' || t.pattern === 'block') { /* texture handles the color block */ }
     // chest logo (golfer's left = +X)
-    const lt = logoTexture(it.brand, it.logoColor || contrast(t.color));
+    const lt = this.readable(logoTexture(it.brand, it.logoColor || contrast(t.color)));
     if (lt) {
       const lg = mesh(new THREE.PlaneGeometry(0.052, 0.026), new THREE.MeshStandardMaterial({ map: lt, transparent: true, roughness: 0.7, depthWrite: false }), 0.075, 0.46, frontZ(0.46) + 0.004);
       g.add(lg);
@@ -416,7 +427,7 @@ export class Golfer {
           f.add(mesh(new THREE.CylinderGeometry(0.008, 0.006, 0.008, 8), sp, sx, -0.002, sz));
         }
       }
-      const lt = logoTexture(it.brand, cw.accent === cw.upper ? contrast(cw.upper) : cw.accent);
+      const lt = this.readable(logoTexture(it.brand, cw.accent === cw.upper ? contrast(cw.upper) : cw.accent));
       if (lt) {
         const lg = mesh(new THREE.PlaneGeometry(0.05, 0.025), new THREE.MeshStandardMaterial({ map: lt, transparent: true, depthWrite: false }), side * 0.0495, 0.07, -0.075);
         lg.rotation.y = side * Math.PI / 2; f.add(lg);
@@ -488,7 +499,7 @@ export class Golfer {
       g.add(mesh(new THREE.CylinderGeometry(0.117, 0.117, 0.026, 22, 1, true), mat('#1a1a1a', 0.6), 0, 0.058, 0));
     }
     if (logoPos && h.logo !== false) {
-      const lt = logoTexture(it.brand, contrast(h.color));
+      const lt = this.readable(logoTexture(it.brand, contrast(h.color)));
       if (lt) {
         const lg = mesh(new THREE.PlaneGeometry(0.07, 0.035), new THREE.MeshStandardMaterial({ map: lt, transparent: true, depthWrite: false }), logoPos[0], logoPos[1], logoPos[2] + 0.006);
         lg.rotation.x = logoPos[3]; g.add(lg);
@@ -724,7 +735,8 @@ export class Golfer {
   // ---------- pose ----------
   applyBody() {
     const b = this.body || { height: 1, build: 1, shoulders: 1, legs: 1 };
-    this.model.scale.setScalar(M2YD * b.height);
+    // left-handers: the whole golfer (and club) mirrored across the target line
+    this.model.scale.set(M2YD * b.height, M2YD * b.height, M2YD * b.height * (this.hand === 'L' ? -1 : 1));
     this.pelvisBody.scale.set(b.build, 1, b.build);
     this.torsoBody.scale.set(b.build * b.shoulders, 1, b.build);
     this.shoulderL.position.x = 0.2 * b.build * b.shoulders;

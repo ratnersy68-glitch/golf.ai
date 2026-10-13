@@ -20,7 +20,7 @@ export const FACIAL_HAIR = [['none', 'Clean Shaven'], ['stubble', 'Stubble'], ['
 export const ACCESSORIES = [['none', 'None'], ['sunglasses', 'Sport Sunglasses'], ['aviators', 'Aviators'], ['watch', 'Luxury Watch'], ['both', 'Sunglasses + Watch']];
 
 export const DEFAULT_LOOK = {
-  v: 2, name: 'You', gender: 'M',
+  v: 2, name: 'You', gender: 'M', hand: 'R',
   height: 1, build: 1, shoulders: 1, legs: 1,
   skin: 2, faceShape: 'oval', jaw: 'normal', eyeShape: 'almond', eyeColor: '#4a2c16', brows: 'medium', nose: 'medium', mouth: 'neutral',
   facialHair: 'none', hair: 'crew', hairColor: '#3b2a1c', accessory: 'none',
@@ -40,6 +40,7 @@ export function normalizeLook(look = {}) {
   const L = { ...DEFAULT_LOOK, outfit: JSON.parse(JSON.stringify(DEFAULT_OUTFIT)) };
   if (look.name) L.name = look.name;
   if (look.gender) L.gender = look.gender;
+  if (look.hand) L.hand = look.hand;
   if (typeof look.skin === 'number') L.skin = Math.min(SKIN_TONES.length - 1, [0, 1, 3, 5, 7, 9][look.skin] ?? 2);
   if (look.hair) L.hair = oldHair[look.hair] || (HAIR_STYLES.some(h => h[0] === look.hair) ? look.hair : 'short');
   if (look.hairColor) L.hairColor = look.hairColor;

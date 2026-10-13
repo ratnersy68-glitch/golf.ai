@@ -11,7 +11,7 @@ import { TEE_SETS, getCourse } from '../data/courses.js';
 import { DIFFICULTIES } from '../core/profile.js';
 import {
   SHOT_TYPES, availableTypes, computeLaunch, computePutt, fullCarry, lieInfo, lieRangeText,
-  pickPuttScale, PUTT_SCALES_FT, playsLike, recommendClub, timingWindow,
+  pickPuttScale, PUTT_SCALES_FT, playsLike, recommendClub, timingWindow, pressureMul,
 } from './shots.js';
 import { Golfer, clubLength } from '../render/golfer.js';
 import { P } from '../render/world.js';
@@ -56,7 +56,7 @@ export class Play {
     this.tee = TEE_SETS.find(t => t.id === cfg.teeId) || TEE_SETS[1];
     this.diffKey = cfg.difficulty || prof.settings.difficulty;
     this.diff = DIFFICULTIES[this.diffKey];
-    this.attrs = cfg.attrs;
+    this.attrs = { ...cfg.attrs }; // own copy: the round marks pressure holes on it
     this.look = cfg.look;
     this.golferName = cfg.golferName;
     this.bag = buildBag(cfg.bagIds || prof.bag, prof.equipment, this.attrs);
@@ -171,6 +171,13 @@ export class Play {
     if (this.surf === S.WATER || this.surf === S.BRUSH) this.surf = S.ROUGH;
     const onTee = this.teeShot && this.strokes === 0;
     if (onTee) this.surf = S.TEE;
+    // pressure holes: the mental attribute decides how much the timing and putting windows tighten
+    const wasPressure = this.attrs.pressure;
+    this.attrs.pressure = this.isPressure();
+    if (this.attrs.pressure && onTee && !wasPressure) {
+      const keep = Math.round(pressureMul(this.attrs) * 100);
+      this.hud.toast('PRESSURE HOLES', `Mental ${Math.round(this.attrs.mental ?? 60)} · your windows play at ${keep}%`, 'info', 2600);
+    }
     this.distPin = hole.distToPin(this.ball.x, this.ball.y);
     this.gust = 0.85 + this.rng() * 0.3;
     this.wind = this.windVec();
@@ -307,6 +314,15 @@ export class Play {
 
   isPutt() { return !!this.club && this.club.cat === 'putter'; }
 
+  // closing holes of a round, and the back nine of a tournament weekend
+  isPressure() {
+    const n = this.round?.holes?.length || 0, i = this.round?.idx ?? 0;
+    if (this.cfg?.masters) return (this.cfg.masters.round >= 3 && i >= 9) || i >= n - 3;
+    if (n >= 18) return i >= n - 3;
+    if (n >= 9) return i >= n - 2;
+    return false;
+  }
+
   // ---- putting: the solved line & pace, the perfect window and the stroke grade ----
   puttSolution() {
     const b = this.ball, key = `${b.x.toFixed(3)}|${b.y.toFixed(3)}`;
@@ -331,9 +347,10 @@ export class Play {
   puttTolerance() {
     const dk = this.diffKey;
     const k = clamp(1.3 - (this.attrs.putting ?? 80) / 250, 0.85, 1.15);
+    const pm = pressureMul(this.attrs);
     return {
-      pace: ({ easy: 0.1, normal: 0.065, hard: 0.045, realistic: 0.03 }[dk] ?? 0.065) * k,
-      line: CUP_R * ({ easy: 1.6, normal: 1.2, hard: 0.9, realistic: 0.7 }[dk] ?? 1.2) / k,
+      pace: ({ easy: 0.1, normal: 0.065, hard: 0.045, realistic: 0.03 }[dk] ?? 0.065) * k * pm,
+      line: CUP_R * ({ easy: 1.6, normal: 1.2, hard: 0.9, realistic: 0.7 }[dk] ?? 1.2) / k * pm,
     };
   }
   // lateral miss at the hole (yards, + = aimed right of the true line) for the current aim
@@ -1170,7 +1187,7 @@ export class Play {
     // camera context
     const ball = this.state === 'flight' ? this.ballNow : [this.ball.x, this.ball.y, this.ball.h];
     this.rig.update(dt, {
-      hole, ball, heading: this.heading, vel: this.ballVel, putt: this.club && this.isPutt(),
+      hole, ball, heading: this.heading, vel: this.ballVel, putt: this.club && this.isPutt(), lefty: this.attrs?.hand === 'L',
       aimDist: this.state === 'bag' ? this.bagSpan : this.isPutt() ? this.distPin : (this.aimDist || 150),
       target: this.previewLanding || hole.pin,
     });

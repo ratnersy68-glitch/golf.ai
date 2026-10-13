@@ -61,7 +61,7 @@ export class CameraRig {
           this.dLook.copy(P(lx, ly, H(lx, ly)));
         } else {
           const rx = Math.cos(yaw), ry = -Math.sin(yaw);
-          const side = putt ? 0.45 : 0.55;
+          const side = (putt ? 0.45 : 0.55) * (ctx.lefty ? -1 : 1);
           const cx = bx - sx * dist + rx * side, cy = by - sy * dist + ry * side;
           const ch = Math.max(H(cx, cy) + 0.6, bh + hgt);
           this.dPos.copy(P(cx, cy, ch));
@@ -74,8 +74,9 @@ export class CameraRig {
         break;
       }
       case 'player': {
-        // TV angle: in front of the golfer, slightly toward target
-        const rx = Math.cos(ctx.heading), ry = -Math.sin(ctx.heading);
+        // TV angle: in front of the golfer, slightly toward target (a left-hander faces the other way)
+        const lf = ctx.lefty ? -1 : 1;
+        const rx = Math.cos(ctx.heading) * lf, ry = -Math.sin(ctx.heading) * lf;
         const cx = bx + rx * 4.5 + hx * 2.2, cy = by + ry * 4.5 + hy * 2.2;
         this.dPos.copy(P(cx, cy, Math.max(H(cx, cy), bh) + 1.3));
         this.dLook.copy(P(bx - rx * 0.8, by - ry * 0.8, bh + 0.9));

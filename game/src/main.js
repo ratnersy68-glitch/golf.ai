@@ -126,6 +126,9 @@ class App {
     else g.update(look);
     g.root.visible = true;
     this.world.ball.visible = false;
+    // handedness changes which side of the ball the golfer stands on and which way they face
+    const hand = look.hand || 'R';
+    if (g.placedHand && g.placedHand !== hand) g.placed = false;
     if (first || !g.placed) {
       const dr = buildBag(this.profile.bag, this.profile.equipment, customAttrs(this.profile)).find(c => c.id === 'DR');
       g.setClub('wood', 1.15, dr || null);
@@ -136,7 +139,9 @@ class App {
       g.placeAtBall(P(tx, ty, th), h);
       g.standIdle(this.menuT);
       g.placed = true;
-      this.locker = { yaw: 0.35, zoom: 1, focus: 'full', faceYaw: Math.atan2(Math.cos(h), -Math.sin(h)), center: [g.root.position.x, -g.root.position.z, th] };
+      g.placedHand = hand;
+      const keep = this.locker && !first ? { yaw: this.locker.yaw, zoom: this.locker.zoom } : { yaw: 0.35, zoom: 1 };
+      this.locker = { ...keep, focus: 'full', faceYaw: Math.atan2(Math.cos(h), -Math.sin(h)) + (hand === 'L' ? Math.PI : 0), center: [g.root.position.x, -g.root.position.z, th] };
     }
     Object.assign(this.locker, opts);
     this.rig.set('locker', { ...this.locker, snap: first });
@@ -208,7 +213,7 @@ class App {
     if (cfg.masters) return this.onMastersRound(round, st, cfg);
     let award = null;
     if (cfg.mode === 'round18' || cfg.mode === 'round9') {
-      award = awardXp(this.profile, st, cfg.difficulty, st.holes);
+      award = awardXp(this.profile, st, cfg.difficulty, st.holes, !!cfg.custom);
       recordRound(this.profile, round);
     } else if (cfg.mode === 'round18' || cfg.mode === 'round9') {
       recordRound(this.profile, round);
@@ -224,7 +229,7 @@ class App {
 
   onMastersRound(round, st, cfg) {
     const m = this.profile.masters;
-    const award = awardXp(this.profile, st, cfg.difficulty, st.holes);
+    const award = awardXp(this.profile, st, cfg.difficulty, st.holes, !!cfg.custom);
     recordRound(this.profile, round);
     const strokes = round.cards.map(c => c.strokes);
     const playedRound = m.round;
