@@ -2,18 +2,15 @@ import * as THREE from 'three';
 import { mulberry32 } from '../core/noise.js';
 import { S } from '../core/holeGen.js';
 import { canvasTexture } from './textures.js';
+import { PROS } from '../data/golfers.js';
 
 const std = (color, rough = 0.8, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, ...extra });
 
 const BUILD_STYLE = {
-  antebellum: { wall: '#f4f2ea', roof: '#3f4a3f', trim: '#2f5d3a' },
   lodge: { wall: '#d9cdb8', roof: '#5a4b3c', trim: '#3d4a3a' },
-  mediterranean: { wall: '#efe4d0', roof: '#b0553a', trim: '#6b5a44' },
   colonial: { wall: '#f1eee6', roof: '#3a3a3a', trim: '#2a3a55' },
-  rna: { wall: '#bfae8e', roof: '#4c4c50', trim: '#3a3a3a' },
-  tudor: { wall: '#ece6d6', roof: '#4a3a30', trim: '#3a2a20' },
-  spanish: { wall: '#f3eadb', roof: '#b4553a', trim: '#5a4430' },
-};
+  granite: { wall: '#8e9096', roof: '#2a2c31', trim: '#c9ccd1' },
+}
 
 function windowsTexture(wall, trim) {
   return canvasTexture(256, 128, (ctx, w, h) => {
@@ -60,7 +57,7 @@ export function buildDecor(hole, P, info = {}) {
       group.add(m);
     }
   });
-  // St Andrews town behind the 18th / 1st
+  // seaside town behind the 18th / 1st (themes with the 'town' extra)
   if (hole.theme.extras.includes('town') && (hole.number === 18 || hole.number === 1)) {
     const G = hole.G, T = hole.gT, N = hole.gN;
     const base = hole.number === 18 ? [G[0] + T[0] * 70, G[1] + T[1] * 70] : hole.at(-60);
@@ -84,6 +81,7 @@ export function buildDecor(hole, P, info = {}) {
   const ex = hole.theme.extras;
   if (ex.includes('fescue') || ex.includes('wiregrass')) group.add(tufts(hole, P, H, rnd, ex.includes('wiregrass')));
   if (hole.oceanSide) group.add(rocks(hole, P, H, rnd));
+  if (ex.includes('granite')) group.add(outcrops(hole, P, H, rnd));
   return group;
 }
 
@@ -220,11 +218,12 @@ function crowdLine(d, P, H, rnd) {
   return g;
 }
 
-const LEADER_NAMES = ['S. SCHEFFLER', 'R. MCILROY', 'J. RAHM', 'X. SCHAUFFELE', 'C. MORIKAWA', 'L. ABERG', 'B. DECHAMBEAU', 'J. SPIETH', 'V. HOVLAND', 'J. THOMAS'];
+// on-course scoreboard: the player among the (fictional) tour field
+const LEADER_NAMES = PROS.map(p => { const [f, ...l] = p.name.split(' '); return `${f[0]}. ${l.join(' ').toUpperCase()}`; });
 function leaderboard(d, P, H, hole, info, rnd) {
   const g = new THREE.Group();
-  const augusta = hole.course.id === 'augusta';
-  const bg = augusta ? '#1d5b33' : '#15243d';
+  const major = hole.course.id === 'blackstone';
+  const bg = major ? '#26292f' : '#15243d';
   // field of pros around the player's score
   const me = (info.name || 'YOU').toUpperCase().slice(0, 14);
   const myTp = info.toPar ?? 0;
@@ -243,7 +242,7 @@ function leaderboard(d, P, H, hole, info, rnd) {
       ctx.fillText(`${i + 1}`, 30, y);
       ctx.fillText(r.n, 80, y);
       ctx.textAlign = 'right';
-      ctx.fillStyle = r.tp < 0 ? (augusta ? '#ff4d4d' : '#ff6b6b') : '#ffffff';
+      ctx.fillStyle = r.tp < 0 ? '#ff6b6b' : '#ffffff';
       ctx.fillText(r.tp === 0 ? 'E' : r.tp > 0 ? `+${r.tp}` : `${r.tp}`, w - 30, y);
       ctx.textAlign = 'left';
     });
@@ -421,6 +420,29 @@ function tufts(hole, P, H, rnd, wire) {
     k++;
   }
   mesh.count = k;
+  return mesh;
+}
+
+// quarry courses: granite boulders and outcrops scattered through the deep rough
+function outcrops(hole, P, H, rnd) {
+  const n = 140;
+  const mesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), std('#5c5f66', 0.9, { flatShading: true }), n);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+  let k = 0;
+  for (let i = 0; i < n * 4 && k < n; i++) {
+    const sPos = -20 + rnd() * (hole.L + 60);
+    const side = rnd() < 0.5 ? -1 : 1;
+    const [x, y] = hole.offset(sPos, side * (hole.fwHalf(Math.max(0, Math.min(hole.L, sPos))) + 30 + rnd() * 45));
+    const su = hole.surfAt(x, y);
+    if (su !== S.DEEP && su !== S.ROUGH && su !== S.BRUSH) continue;
+    const sc = 0.7 + rnd() * rnd() * 4;
+    q.setFromEuler(new THREE.Euler(rnd() * 3, rnd() * 3, rnd() * 3));
+    s.set(sc * (1 + rnd() * 0.6), sc * (0.5 + rnd() * 0.4), sc);
+    m.compose(P(x, y, H(x, y) - sc * 0.15), q, s);
+    mesh.setMatrixAt(k++, m);
+  }
+  mesh.count = k;
+  mesh.castShadow = true; mesh.receiveShadow = true;
   return mesh;
 }
 

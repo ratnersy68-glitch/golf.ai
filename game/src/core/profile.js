@@ -1,6 +1,7 @@
 // Save/load + progression (XP, levels, skills, unlocks, career stats).
 import { DEFAULT_LOOK, normalizeLook } from '../data/look.js';
-import { DEFAULT_BAG, DEFAULT_EQUIPMENT } from '../data/clubs.js';
+import { DEFAULT_BAG, DEFAULT_EQUIPMENT, BRAND_MODELS, BALLS } from '../data/clubs.js';
+import { COURSES } from '../data/courses.js';
 
 const KEY = 'golfai.profile.v1';
 
@@ -11,12 +12,15 @@ export const DIFFICULTIES = {
   realistic: { name: 'Realistic', window: 0.55, disp: 1.4, putt: 1.4, wind: 1.35, cupMul: 1.0, captureMul: 0.95, landing: 'none', puttPreview: 0.3, xp: 1.6, gimme: 0 },
 };
 
+// v2: original (fictional) courses, golfers, brands and tournament. Older saves are migrated, never wiped.
+export const PROFILE_VERSION = 2;
+
 export const LEVEL_XP = (lvl) => 500 + (lvl - 1) * 300; // xp needed to go from lvl -> lvl+1
 export const MAX_LEVEL = 30;
 
 export function newProfile() {
   return {
-    version: 1,
+    version: PROFILE_VERSION,
     look: normalizeLook(DEFAULT_LOOK),
     outfits: [], // saved outfits: { id, name, outfit }
     closet: [], // favourited items: { cat, cfg }
@@ -28,7 +32,7 @@ export function newProfile() {
     equipment: { ...DEFAULT_EQUIPMENT },
     settings: {
       difficulty: 'normal', puttGuide: true, landingMarker: true, tracer: true, flyover: true,
-      autoCamera: true, quality: 'auto', master: 0.8, sfx: 0.9, amb: 0.6, windSetting: 'normal', pins: 'medium', lastCourse: 'augusta', lastTee: 'tour',
+      autoCamera: true, quality: 'auto', master: 0.8, sfx: 0.9, amb: 0.6, windSetting: 'normal', pins: 'medium', lastCourse: COURSES[0].id, lastTee: 'tour',
     },
     career: {
       rounds: 0, rounds18: 0, holes: 0, strokes: 0, parSum: 0, score18Sum: 0,
@@ -46,7 +50,7 @@ export function loadProfile() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return newProfile();
-    const p = JSON.parse(raw);
+    const p = migrate(JSON.parse(raw));
     const base = newProfile();
     // shallow merge for forward compatibility
     return {
@@ -63,6 +67,29 @@ export function loadProfile() {
     console.warn('profile load failed', e);
     return newProfile();
   }
+}
+
+// Bring an older save up to date. Anything that no longer applies is moved to p.legacy, not deleted.
+function migrate(p) {
+  if (!p || typeof p !== 'object') return p;
+  if ((p.version || 1) < 2) {
+    p.legacy = { ...(p.legacy || {}), fromVersion: p.version || 1, migrated: Date.now() };
+    // tournament records from the old real-course event
+    if (p.masters || p.mastersWins || (p.mastersHistory || []).length) {
+      p.legacy.tournament = { inProgress: p.masters || null, wins: p.mastersWins || 0, history: p.mastersHistory || [] };
+    }
+    p.masters = null; p.mastersWins = 0; p.mastersHistory = [];
+    // equipment from real brands -> the fictional equivalents (old picks kept in legacy)
+    const eq = p.equipment || {};
+    const valid = (cat, id) => (cat === 'ball' ? BALLS : BRAND_MODELS[cat] || []).some(m => m.id === id);
+    const old = {};
+    for (const cat of Object.keys(DEFAULT_EQUIPMENT)) if (eq[cat] && !valid(cat, eq[cat])) { old[cat] = eq[cat]; eq[cat] = DEFAULT_EQUIPMENT[cat]; }
+    if (Object.keys(old).length) p.legacy.equipment = old;
+    p.equipment = eq;
+    if (p.settings && !COURSES.some(c => c.id === p.settings.lastCourse)) p.settings.lastCourse = COURSES[0].id;
+    p.version = 2;
+  }
+  return p;
 }
 
 export function saveProfile(p) {

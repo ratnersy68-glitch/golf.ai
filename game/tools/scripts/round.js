@@ -1,6 +1,6 @@
 import { frames, launch, swing } from './util.js';
 export default async function (page, SP, logs) {
-  const c = process.env.COURSE || 'augusta';
+  const c = process.env.COURSE || 'cedarvale';
   await launch(page, { setup: { courseId: c } });
   await page.screenshot({ path: `${SP}/r-address.png` });
   await page.keyboard.press('c'); await frames(page, 3);

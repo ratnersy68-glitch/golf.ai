@@ -359,7 +359,7 @@ export class World {
     g.add(pole);
     const flagGeo = new THREE.PlaneGeometry(0.6, 0.4, 10, 4);
     flagGeo.translate(0.3, 0, 0);
-    const flagCol = { augusta: '#f2c94c', pebble: '#c1121f', sawgrass: '#f2c94c', standrews: '#c1121f', oakmont: '#f2c94c', riviera: '#c1121f' }[hole.course.id] || '#c1121f';
+    const flagCol = { cedarvale: '#f2c94c', harborpoint: '#c1121f', blackstone: '#e8eaee' }[hole.course.id] || '#c1121f';
     const flag = new THREE.Mesh(flagGeo, new THREE.MeshStandardMaterial({ color: flagCol, side: THREE.DoubleSide, roughness: 0.8 }));
     flag.position.copy(P(x, y, h + 2.15));
     flag.castShadow = true;

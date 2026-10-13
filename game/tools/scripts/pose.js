@@ -1,6 +1,6 @@
 import { frames, launch } from './util.js';
 export default async function (page, SP, logs) {
-  await launch(page, { mode: 'coursePractice', setup: { courseId: 'augusta', hole: 1 } });
+  await launch(page, { mode: 'coursePractice', setup: { courseId: 'cedarvale', hole: 1 } });
   const poses = [['address', 'g.address()'], ['top', 'g.setBackswing(1)'], ['half', 'g.setDownswing(1, 0.4)'], ['impact', 'g.setDownswing(1, 0)'], ['finish', 'g.setFollow(1)']];
   for (const cam of ['player', 'address']) {
     await page.evaluate((cam) => { window.__app.play.setCamera(cam); window.__app.rig.snap(); }, cam);

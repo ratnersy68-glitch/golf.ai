@@ -12,7 +12,7 @@ globalThis.setTimeout = (fn) => realSetTimeout(fn, 0);
 const noop = () => {};
 const stub = () => new Proxy({}, { get: (t, k) => (k in t ? t[k] : noop) });
 
-const courseId = process.argv[2] || 'augusta';
+const courseId = process.argv[2] || 'cedarvale';
 const difficulty = process.argv[3] || 'normal';
 const rounds = +(process.argv[4] || 1);
 const proId = process.argv[5];

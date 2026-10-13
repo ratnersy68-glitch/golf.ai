@@ -1,7 +1,7 @@
 import { frames, launch } from './util.js';
 // Overhead views of a hole's water hazards (HOLE=course:index).
 export default async function (page, SP) {
-  for (const item of (process.env.HOLES || 'augusta:12').split(',')) {
+  for (const item of (process.env.HOLES || 'cedarvale:15').split(',')) {
     const [c, h] = item.split(':');
     await launch(page, { mode: 'coursePractice', setup: { courseId: c, hole: +h } });
     const info = await page.evaluate(() => {

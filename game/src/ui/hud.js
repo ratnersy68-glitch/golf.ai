@@ -1,5 +1,6 @@
 // In-round heads-up display: hole card, wind, lie/club info, shot controls,
 // swing meter, minimap, toasts, banners and scorecards.
+import { MAJOR } from '../game/masters.js';
 import { S } from '../core/holeGen.js';
 import { SHOT_TYPES } from '../game/shots.js';
 import { MPH } from '../core/physics.js';
@@ -43,7 +44,7 @@ export class Hud {
         <div class="info-row"><span>AIM</span><div class="aimbar" id="i-aimbar"><i></i><em>⚑</em></div><em id="i-aim"></em></div>
         <div class="club-card">
           <div class="club-name" id="i-club">DRIVER</div>
-          <div class="club-brand" id="i-brand">TaylorMade Qi10</div>
+          <div class="club-brand" id="i-brand"></div>
           <div class="club-carry"><span id="i-carry">255</span><small id="i-carry-unit">YDS</small></div>
           <div class="club-open">OPEN BAG <kbd>B</kbd></div>
         </div>
@@ -120,7 +121,7 @@ export class Hud {
     this.bagView = new BagView(this, this.app);
   }
 
-  // live Masters position under the hole card
+  // live tournament position under the hole card
   mastersTicker(rows, m) {
     const t = $('#mticker', this.root);
     if (!rows) { t.classList.remove('show'); return; }
@@ -128,7 +129,7 @@ export class Hud {
     const lead = rows.find(r => !r.isPlayer && !r.missed);
     const fp = (v) => (v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`);
     const cls = (v) => (v < 0 ? 'under' : v > 0 ? 'over' : 'even');
-    t.innerHTML = `<div class="mt-head">MASTERS · ${['THU', 'FRI', 'SAT', 'SUN'][m.round - 1]}</div>
+    t.innerHTML = `<div class="mt-head">${MAJOR.short} · ${['THU', 'FRI', 'SAT', 'SUN'][m.round - 1]}</div>
       <div class="mt-me"><span class="mt-pos">${me.pos}</span><b class="${cls(me.toPar)}">${fp(me.toPar)}</b><small>${me.thru === 0 ? 'TEE TIME' : me.thru === 18 ? 'F' : `THRU ${me.thru}`}</small></div>
       ${lead ? `<div class="mt-lead">${me.posN === 1 ? 'Next' : 'Leader'}: ${lead.name.split(' ').slice(-1)[0]} <b class="${cls(lead.toPar)}">${fp(lead.toPar)}</b></div>` : ''}`;
     t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');

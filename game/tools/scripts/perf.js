@@ -1,7 +1,7 @@
 import { frames, launch } from './util.js';
 // Rendering cost of a few holes: draw calls, triangles, geometries, textures and hole build time.
 export default async function (page) {
-  for (const item of (process.env.HOLES || 'augusta:0,pebble:6,sawgrass:16,standrews:17').split(',')) {
+  for (const item of (process.env.HOLES || 'cedarvale:0,harborpoint:3,blackstone:5,blackstone:17').split(',')) {
     const [c, h] = item.split(':');
     const t0 = Date.now();
     await launch(page, { mode: 'coursePractice', setup: { courseId: c, hole: +h } });

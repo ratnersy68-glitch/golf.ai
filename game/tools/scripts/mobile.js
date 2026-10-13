@@ -3,7 +3,7 @@ export default async function (page, SP, logs) {
   await frames(page, 3);
   await page.screenshot({ path: `${SP}/mob-menu.png` });
   logs.push('touch=' + await page.evaluate(() => document.body.classList.contains('touch')));
-  await launch(page, { mode: 'coursePractice', setup: { courseId: 'pebble', hole: 17 } });
+  await launch(page, { mode: 'coursePractice', setup: { courseId: 'harborpoint', hole: 17 } });
   await page.evaluate(() => window.__app.rig.snap());
   await frames(page, 2);
   await page.screenshot({ path: `${SP}/mob-play.png` });

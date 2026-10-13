@@ -1,7 +1,7 @@
 import { frames, launch } from './util.js';
 const snapAt = async (page, SP, name, n = 2) => { await page.evaluate(() => window.__app.rig.snap()); await frames(page, n); await page.screenshot({ path: `${SP}/${name}.png` }); };
 export default async function (page, SP, logs) {
-  const c = process.env.COURSE || 'augusta';
+  const c = process.env.COURSE || 'cedarvale';
   const hole = +(process.env.HOLE || 0);
   await launch(page, { mode: 'practice', setup: { courseId: c, hole, practiceKind: process.env.KIND || 'putting' } });
   await snapAt(page, SP, 'p-address');

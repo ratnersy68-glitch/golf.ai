@@ -2,61 +2,29 @@
 // Colors are sRGB hex. Terrain params drive the hole generator.
 
 export const THEMES = {
-  augusta: {
-    fairway: '#4e9a34', fairway2: '#5aa83d', rough: '#2f6e22', deep: '#2a5e1f', green: '#5fb043', fringe: '#4f9f38',
-    sand: '#f4f1ea', waste: '#e8dcc0', water: '#1f4d4a', brush: '#6d5a36', straw: '#8a5a2b', tee: '#57a53b',
-    sky: ['#4f8fd6', '#cfe4f5'], fog: '#c9dcea', fogDensity: 0.0011, sun: { elev: 48, az: 210, color: '#fff4e0', intensity: 3.1 },
-    undulation: 7, undFreq: 1 / 130, lateralRise: 0.06, trees: { types: ['pine', 'pine', 'pine', 'oak'], density: 1.0, near: 16, lines: true },
-    extras: ['azalea', 'straw'], birds: 'songbird', crowd: 0.6, roughType: 'rough', building: 'antebellum',
+  // CRS-01 Cedar Vale Municipal: friendly public parkland, oaks and maples, soft greens
+  cedarvale: {
+    fairway: '#56a03a', fairway2: '#62ad42', rough: '#3a7d2a', deep: '#336f25', green: '#63b247', fringe: '#55a33c',
+    sand: '#efe6d2', waste: '#e2d4b4', water: '#24535a', brush: '#6d5a36', straw: '#7a5a34', tee: '#5aa63e',
+    sky: ['#5596d8', '#d6e8f6'], fog: '#cfe0ed', fogDensity: 0.0011, sun: { elev: 50, az: 205, color: '#fff4e2', intensity: 3.1 },
+    undulation: 5, undFreq: 1 / 120, lateralRise: 0.04, trees: { types: ['oak', 'oak', 'maple', 'pine'], density: 0.8, near: 22, lines: true },
+    extras: [], birds: 'songbird', crowd: 0.35, roughType: 'rough', cartPath: true, building: 'colonial',
   },
-  pebble: {
-    fairway: '#6a9a3e', fairway2: '#76a646', rough: '#4d7a2e', deep: '#5a6b35', green: '#6aa446', fringe: '#5f9a3c',
-    sand: '#e9dcc0', waste: '#dccda8', water: '#1a4e6e', brush: '#7a7048', straw: '#7a6a45', tee: '#6aa040',
-    sky: ['#6f9cc9', '#e1e8ee'], fog: '#d5dfe6', fogDensity: 0.0016, sun: { elev: 38, az: 230, color: '#fff2dc', intensity: 2.9 },
-    undulation: 4, undFreq: 1 / 90, lateralRise: 0.02, trees: { types: ['cypress', 'cypress', 'pine'], density: 0.35, near: 26, lines: false },
-    extras: ['rocks'], birds: 'gull', crowd: 0.4, roughType: 'rough', cartPath: true, building: 'lodge', seaLevel: -11,
+  // CRS-02 Harbor Point Links: windy seaside dunes, fescue, gorse and pot bunkers
+  harborpoint: {
+    fairway: '#78a547', fairway2: '#85b050', rough: '#7b8b3f', deep: '#a39a5c', green: '#72ab49', fringe: '#6ca243',
+    sand: '#e9dcbb', waste: '#e3d3a9', water: '#2a6283', brush: '#7a7a3c', straw: '#7a6a45', tee: '#76a247',
+    sky: ['#6491bf', '#dfe7ed'], fog: '#d5dee5', fogDensity: 0.0013, sun: { elev: 38, az: 215, color: '#fff1dc', intensity: 2.9 },
+    undulation: 4, undFreq: 1 / 38, lateralRise: 0.0, trees: { types: [], density: 0, near: 999, lines: false },
+    extras: ['fescue'], birds: 'gull', crowd: 0.5, roughType: 'links', building: 'lodge', links: true, seaLevel: -12,
   },
-  sawgrass: {
-    fairway: '#4f9636', fairway2: '#5ca33f', rough: '#3a7a28', deep: '#2f6a22', green: '#5dab41', fringe: '#4e9c38',
-    sand: '#f1eadb', waste: '#d9c9a2', water: '#1d4f53', brush: '#6d5a36', straw: '#8a5a2b', tee: '#55a03a',
-    sky: ['#3d86d8', '#d7e8f5'], fog: '#d3e3ee', fogDensity: 0.001, sun: { elev: 55, az: 200, color: '#fff6e6', intensity: 3.3 },
-    undulation: 2.2, undFreq: 1 / 60, lateralRise: 0.035, trees: { types: ['palm', 'oak', 'pine', 'palm'], density: 0.75, near: 18, lines: true },
-    extras: ['straw'], birds: 'songbird', crowd: 0.7, roughType: 'rough', cartPath: true, building: 'mediterranean',
-  },
-  pinehurst: {
-    fairway: '#679b3c', fairway2: '#72a644', rough: '#8e8a55', deep: '#8e8a55', green: '#63a443', fringe: '#5b9a3c',
-    sand: '#efe3c7', waste: '#e2d0a6', water: '#2a4d48', brush: '#8a7a4c', straw: '#8a5a2b', tee: '#60a03c',
-    sky: ['#5b95d0', '#dbe8f2'], fog: '#d9e3ea', fogDensity: 0.0011, sun: { elev: 50, az: 205, color: '#fff3dd', intensity: 3.1 },
-    undulation: 3.2, undFreq: 1 / 90, lateralRise: 0.02, trees: { types: ['longleaf', 'longleaf', 'pine'], density: 0.6, near: 34, lines: true },
-    extras: ['wiregrass', 'straw'], birds: 'songbird', crowd: 0.5, fairwayFrom: 95, roughType: 'sandy', building: 'colonial', sandyRough: true,
-  },
-  standrews: {
-    fairway: '#7aa447', fairway2: '#88b050', rough: '#768a3c', deep: '#9a8f55', green: '#74ab48', fringe: '#6fa244',
-    sand: '#d9c9a0', waste: '#6f7a34', water: '#35505a', brush: '#6b7a30', straw: '#7a6a45', tee: '#7aa048',
-    sky: ['#7f9ab3', '#dfe5e8'], fog: '#d3dade', fogDensity: 0.0011, sun: { elev: 34, az: 200, color: '#f7f0e2', intensity: 2.8 },
-    undulation: 2.4, undFreq: 1 / 28, lateralRise: 0.0, trees: { types: [], density: 0, near: 999, lines: false },
-    extras: ['gorse', 'fescue', 'town'], birds: 'gull', crowd: 0.5, roughType: 'links', building: 'rna', links: true,
-  },
-  oakmont: {
-    fairway: '#5a9a3a', fairway2: '#65a542', rough: '#3c7a2c', deep: '#4f7a32', green: '#62ac48', fringe: '#55a03c',
-    sand: '#e3d5b5', waste: '#dccca8', water: '#2b4a45', brush: '#6d5a36', straw: '#6d4d2b', tee: '#58a03c',
-    sky: ['#6c95c4', '#dde6ee'], fog: '#d4dde6', fogDensity: 0.0012, sun: { elev: 44, az: 210, color: '#fff2de', intensity: 3.0 },
-    undulation: 6, undFreq: 1 / 110, lateralRise: 0.03, trees: { types: ['oak', 'maple'], density: 0.25, near: 45, lines: false },
-    extras: ['fescue'], birds: 'songbird', crowd: 0.6, roughType: 'thick', building: 'tudor',
-  },
-  riviera: {
-    fairway: '#679a3a', fairway2: '#72a543', rough: '#557f2c', deep: '#4d7428', green: '#5fa443', fringe: '#579a3b',
-    sand: '#efe3c8', waste: '#8a7a4c', water: '#2a5566', brush: '#8a7a4c', straw: '#7a6a45', tee: '#63a03d',
-    sky: ['#4f92d8', '#e9e6dc'], fog: '#e3e0d6', fogDensity: 0.0012, sun: { elev: 46, az: 225, color: '#fff0d6', intensity: 3.2 },
-    undulation: 4.5, undFreq: 1 / 100, lateralRise: 0.05, trees: { types: ['eucalyptus', 'eucalyptus', 'sycamore', 'palm'], density: 0.65, near: 22, lines: true },
-    extras: [], birds: 'songbird', crowd: 0.7, roughType: 'kikuyu', cartPath: true, building: 'spanish',
-  },
-  straits: {
-    fairway: '#76a345', fairway2: '#83ae4e', rough: '#7a8a3e', deep: '#a39a5c', green: '#70aa48', fringe: '#6aa042',
-    sand: '#efe3c4', waste: '#e6d6ad', water: '#2c5f7d', brush: '#7a7a3c', straw: '#7a6a45', tee: '#74a046',
-    sky: ['#5f8fbf', '#dde6ec'], fog: '#d3dde4', fogDensity: 0.0012, sun: { elev: 40, az: 215, color: '#fff2de', intensity: 3.0 },
-    undulation: 4, undFreq: 1 / 40, lateralRise: 0.0, trees: { types: [], density: 0, near: 999, lines: false },
-    extras: ['fescue'], birds: 'gull', crowd: 0.6, roughType: 'links', building: 'lodge', links: true, seaLevel: -12,
+  // CRS-08 Blackstone Ridge: championship course in an old granite quarry; dark rock, white sand, fast greens
+  blackstone: {
+    fairway: '#4e9536', fairway2: '#59a13e', rough: '#386f29', deep: '#3a5e2c', green: '#5aa943', fringe: '#4e9a39',
+    sand: '#f2efe8', waste: '#cfc8b8', water: '#1e3f45', brush: '#5e5f60', straw: '#6d4d2b', tee: '#54a03a',
+    sky: ['#4a7fbf', '#d4e0ea'], fog: '#cbd6e0', fogDensity: 0.0012, sun: { elev: 44, az: 210, color: '#fff2de', intensity: 3.1 },
+    undulation: 6.5, undFreq: 1 / 110, lateralRise: 0.05, trees: { types: ['pine', 'oak', 'pine', 'maple'], density: 0.7, near: 24, lines: true },
+    extras: ['fescue', 'granite'], birds: 'songbird', crowd: 0.8, roughType: 'thick', building: 'granite',
   },
 };
 

@@ -13,7 +13,7 @@ import { THEMES } from './data/themes.js';
 import { holeMap } from './ui/holeMap.js';
 import { loadProfile, saveProfile, awardXp, recordRound, customAttrs } from './core/profile.js';
 import { audio } from './audio/audio.js';
-import { leaderboard, completeRound, boardHtml, projectedCut } from './game/masters.js';
+import { leaderboard, completeRound, boardHtml, projectedCut, MAJOR } from './game/masters.js';
 
 const THUMB_KEY = 'golfai.thumbs.v6';
 
@@ -80,7 +80,7 @@ class App {
   }
 
   // Real course photos can be dropped in assets/courses/<id>.jpg to replace the rendered cards.
-  // List the files in assets/courses/photos.json, e.g. ["augusta.jpg", "pebble.jpg"].
+  // List the files in assets/courses/photos.json, e.g. ["cedarvale.jpg", "blackstone.jpg"].
   loadPhotoOverrides() {
     if (location.protocol === 'file:') return;
     fetch('assets/courses/photos.json').then(r => (r.ok ? r.json() : [])).then(list => {
@@ -185,7 +185,7 @@ class App {
     this.hud.mastersTicker(cfg.masters ? this.mastersRows(this.play) : null, this.profile.masters);
   }
 
-  // ---------------- the Masters ----------------
+  // ---------------- the major (Granite Crown) ----------------
   mastersRows(play) {
     const m = this.profile.masters;
     if (!m || !play?.cfg?.masters) return null;
@@ -196,7 +196,7 @@ class App {
     const rows = this.mastersRows(play);
     if (!rows) return '';
     const m = this.profile.masters;
-    return boardHtml(rows, { limit, title: `MASTERS · ${['THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'][m.round - 1]}`, cutLine: m.round <= 2 ? projectedCut(rows) : null });
+    return boardHtml(rows, { limit, title: `${MAJOR.short} · ${['THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'][m.round - 1]}`, cutLine: m.round <= 2 ? projectedCut(rows) : null });
   }
   onHoleComplete(play) {
     const rows = this.mastersRows(play);

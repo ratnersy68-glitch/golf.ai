@@ -1,7 +1,7 @@
 import { frames, launch } from './util.js';
 // Triangle/draw-call breakdown by object for one hole.
 export default async function (page) {
-  const [c, h] = (process.env.HOLE || 'sawgrass:16').split(':');
+  const [c, h] = (process.env.HOLE || 'blackstone:5').split(':');
   await launch(page, { mode: 'coursePractice', setup: { courseId: c, hole: +h } });
   console.log(await page.evaluate(() => {
     const w = window.__app.world;

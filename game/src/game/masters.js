@@ -1,27 +1,33 @@
-// The Masters: a four-round, 72-hole tournament at Augusta National against a simulated field.
+// The Granite Crown: a fictional four-round, 72-hole major at Blackstone Ridge against a simulated field.
+// (Internally still called "masters" in saves and code paths so existing saves keep working.)
 // The field's hole-by-hole scores are generated (seeded) when the tournament starts and are
 // revealed in step with the player's own progress, so the leaderboard moves as you play.
 import { mulberry32 } from '../core/noise.js';
 import { PROS } from '../data/golfers.js';
 
 export const ROUND_DAYS = ['THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+// tournament branding lives here so the event can be renamed in one place
+export const MAJOR = {
+  name: 'The Granite Crown', short: 'GRANITE CROWN', courseId: 'blackstone',
+  venue: 'BLACKSTONE RIDGE', trophy: "Champion's Blazer", champion: 'GRANITE CROWN CHAMPION',
+};
 export const CUT_LINE = 30; // low 30 and ties make the weekend (field of ~50)
 
-// Scoring average of each hole at Augusta (approximate long-term tournament averages)
-const HOLE_AVG = [4.23, 4.78, 4.08, 3.27, 4.26, 3.14, 4.15, 4.82, 4.10, 4.30, 4.30, 3.29, 4.75, 4.18, 4.78, 3.13, 4.15, 4.23];
+// expected scoring average for a hole of each par at a championship setup
+const AVG_OVER = { 3: 0.14, 4: 0.22, 5: -0.22 };
 
-// Field beyond the playable pros: name, country, skill 0..1
+// Field beyond the playable golfers: fictional players (name, country, skill 0..1)
 const FIELD_EXTRA = [
-  ['Hideki Matsuyama', 'JPN', 0.78], ['Patrick Cantlay', 'USA', 0.76], ['Tommy Fleetwood', 'ENG', 0.74], ['Shane Lowry', 'IRL', 0.7],
-  ['Tyrrell Hatton', 'ENG', 0.7], ['Brooks Koepka', 'USA', 0.75], ['Cameron Smith', 'AUS', 0.72], ['Will Zalatoris', 'USA', 0.68],
-  ['Max Homa', 'USA', 0.62], ['Sahith Theegala', 'USA', 0.62], ['Wyndham Clark', 'USA', 0.64], ['Sungjae Im', 'KOR', 0.66],
-  ['Tom Kim', 'KOR', 0.62], ['Matt Fitzpatrick', 'ENG', 0.66], ['Justin Rose', 'ENG', 0.64], ['Adam Scott', 'AUS', 0.63],
-  ['Sergio Garcia', 'ESP', 0.58], ['Dustin Johnson', 'USA', 0.6], ['Patrick Reed', 'USA', 0.6], ['Russell Henley', 'USA', 0.66],
-  ['Corey Conners', 'CAN', 0.64], ['Min Woo Lee', 'AUS', 0.62], ['Robert MacIntyre', 'SCO', 0.62], ['Keegan Bradley', 'USA', 0.6],
-  ['Sam Burns', 'USA', 0.63], ['Tony Finau', 'USA', 0.63], ['Jason Day', 'AUS', 0.62], ['Cameron Young', 'USA', 0.62],
-  ['Joaquin Niemann', 'CHI', 0.66], ['Akshay Bhatia', 'USA', 0.6], ['Sepp Straka', 'AUT', 0.6], ['Byeong Hun An', 'KOR', 0.58],
-  ['Nicolai Højgaard', 'DEN', 0.57], ['Harris English', 'USA', 0.58], ['Fred Couples', 'USA', 0.4], ['Bubba Watson', 'USA', 0.45],
-  ['Zach Johnson', 'USA', 0.45], ['Phil Mickelson', 'USA', 0.48], ['Danny Willett', 'ENG', 0.44], ['Charl Schwartzel', 'RSA', 0.46],
+  ['Tomas Lindqvist', 'SWE', 0.78], ['Hiro Takeda', 'JPN', 0.76], ['Marcus Bell', 'USA', 0.74], ['Liam Doherty', 'IRL', 0.72],
+  ['Pierre Laurent', 'FRA', 0.7], ['Jack Whitcombe', 'ENG', 0.73], ['Sam Kowalski', 'USA', 0.72], ['Diego Alvarez', 'ARG', 0.7],
+  ['Ethan Brooks', 'USA', 0.66], ['Riku Nakamura', 'JPN', 0.64], ['Connor Walsh', 'IRL', 0.65], ['Min-jun Seo', 'KOR', 0.66],
+  ['Lars Henning', 'GER', 0.62], ['Owen Fletcher', 'WAL', 0.64], ['Mason Hayes', 'USA', 0.63], ['Ben Archer', 'AUS', 0.63],
+  ['Andres Molina', 'COL', 0.6], ['Tyler Grant', 'USA', 0.6], ['Felix Wagner', 'AUT', 0.6], ['Henry Calloway', 'USA', 0.65],
+  ['Jordan Pike', 'CAN', 0.63], ['Kai Nguyen', 'AUS', 0.62], ['Ross McAllister', 'SCO', 0.62], ['Wes Harmon', 'USA', 0.6],
+  ['Nikolai Petrov', 'BUL', 0.61], ['Chase Morrow', 'USA', 0.62], ['Julian Okafor', 'NGR', 0.61], ['Brett Sinclair', 'NZL', 0.6],
+  ['Matias Rojas', 'CHI', 0.64], ['Aiden Shaw', 'USA', 0.6], ['Stefan Kral', 'CZE', 0.59], ['Dong-hyun Lim', 'KOR', 0.58],
+  ['Mikkel Dahl', 'DEN', 0.57], ['Grant Holloway', 'USA', 0.58], ['Walter Pryce', 'USA', 0.42], ['Rex Calder', 'USA', 0.45],
+  ['Gordon Ames', 'USA', 0.45], ['Phil Navarro', 'USA', 0.47], ['Danny Wexford', 'ENG', 0.44], ['Pieter van Wyk', 'RSA', 0.46],
 ];
 
 function holeScore(rng, par, avg, skill, sunday) {
@@ -47,7 +53,7 @@ export function newTournament(course, difficulty, playerName, proId = null) {
     const form = (rng() - 0.5) * 0.2; // this week's form
     const rounds = [0, 1, 2, 3].map(rd => {
       const dayForm = (rng() - 0.5) * 0.3;
-      return pars.map((par, i) => holeScore(rng, par, HOLE_AVG[i] ?? par, Math.max(0, Math.min(1, skill + form + dayForm)), rd === 3));
+      return pars.map((par, i) => holeScore(rng, par, par + (AVG_OVER[par] ?? 0.2), Math.max(0, Math.min(1, skill + form + dayForm)), rd === 3));
     });
     return { name, country, skill, rounds };
   });
@@ -134,7 +140,7 @@ export function completeRound(m, strokes) {
   return null;
 }
 
-// HTML for an Augusta-style scoreboard
+// HTML for the tournament scoreboard
 export function boardHtml(rows, { limit = 12, highlight = true, title = 'LEADERS', cutLine = null } = {}) {
   const me = rows.find(r => r.isPlayer);
   let show = rows.filter(r => !r.missed).slice(0, limit);

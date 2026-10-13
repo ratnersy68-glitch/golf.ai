@@ -1,39 +1,41 @@
-// Professional golfers (personal-use roster) and appearance options.
-// Attributes are 0..100: power, accuracy, shortGame, putting, recovery.
+// Fictional golfer roster (GLF-01..12) and legends (LEG-01..03). All names, faces and careers are original and
+// do not represent real players. Attributes are 0..100: power, accuracy, shortGame, putting, recovery.
 
 export const PROS = [
-  { id: 'scheffler', name: 'Scottie Scheffler', country: 'USA', hand: 'R', power: 91, accuracy: 94, shortGame: 91, putting: 87, recovery: 93,
-    look: { skin: 1, hair: 'short', hairColor: '#4a3322', hat: 'cap', hatColor: '#1c2a44', shirt: '#dfe7ef', shirtStyle: 'polo', pants: '#2b2f38', legs: 'trousers', shoes: '#f4f4f4', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'mcilroy', name: 'Rory McIlroy', country: 'NIR', hand: 'R', power: 97, accuracy: 85, shortGame: 86, putting: 85, recovery: 88,
-    look: { skin: 1, hair: 'curly', hairColor: '#2a1d15', hat: 'cap', hatColor: '#ffffff', shirt: '#2a2a2a', shirtStyle: 'polo', pants: '#bfc3c8', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'rahm', name: 'Jon Rahm', country: 'ESP', hand: 'R', power: 93, accuracy: 89, shortGame: 91, putting: 86, recovery: 90,
-    look: { skin: 2, hair: 'short', hairColor: '#1c1510', hat: 'cap', hatColor: '#0e1a33', shirt: '#0e1a33', shirtStyle: 'polo', pants: '#e6e2d9', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: true, glasses: false, build: 1.15 } },
-  { id: 'dechambeau', name: 'Bryson DeChambeau', country: 'USA', hand: 'R', power: 100, accuracy: 80, shortGame: 82, putting: 87, recovery: 82,
-    look: { skin: 0, hair: 'short', hairColor: '#8a6a45', hat: 'flatcap', hatColor: '#d9d4c7', shirt: '#f4f4f4', shirtStyle: 'polo', pants: '#1c1c1c', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false, build: 1.2 } },
-  { id: 'spieth', name: 'Jordan Spieth', country: 'USA', hand: 'R', power: 85, accuracy: 80, shortGame: 94, putting: 93, recovery: 96,
-    look: { skin: 0, hair: 'short', hairColor: '#4a3322', hat: 'cap', hatColor: '#ffffff', shirt: '#3a6ea5', shirtStyle: 'polo', pants: '#2b2f38', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'thomas', name: 'Justin Thomas', country: 'USA', hand: 'R', power: 89, accuracy: 87, shortGame: 92, putting: 86, recovery: 88,
-    look: { skin: 0, hair: 'short', hairColor: '#3b2a1c', hat: 'cap', hatColor: '#111111', shirt: '#111111', shirtStyle: 'polo', pants: '#9aa0a6', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'morikawa', name: 'Collin Morikawa', country: 'USA', hand: 'R', power: 86, accuracy: 97, shortGame: 86, putting: 82, recovery: 85,
-    look: { skin: 3, hair: 'short', hairColor: '#111111', hat: 'cap', hatColor: '#ffffff', shirt: '#ffffff', shirtStyle: 'polo', pants: '#1c2a44', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'schauffele', name: 'Xander Schauffele', country: 'USA', hand: 'R', power: 91, accuracy: 90, shortGame: 88, putting: 87, recovery: 89,
-    look: { skin: 2, hair: 'short', hairColor: '#1a1410', hat: 'cap', hatColor: '#ffffff', shirt: '#7b1f2b', shirtStyle: 'polo', pants: '#ffffff', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'aberg', name: 'Ludvig Åberg', country: 'SWE', hand: 'R', power: 94, accuracy: 90, shortGame: 84, putting: 84, recovery: 85,
-    look: { skin: 0, hair: 'short', hairColor: '#7a5a3a', hat: 'cap', hatColor: '#1c2a44', shirt: '#1c2a44', shirtStyle: 'quarterzip', pants: '#d4d0c5', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'adrian-vale', code: 'GLF-01', name: 'Adrian Vale', country: 'USA', hand: 'R', style: 'Power driver', power: 99, accuracy: 87, shortGame: 88, putting: 88, recovery: 91,
+    look: { skin: 1, hair: 'short', hairColor: '#5a3d26', hat: 'cap', hatColor: '#14213d', shirt: '#f4f4f2', shirtStyle: 'polo', pants: '#14213d', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false, build: 1.12 } },
+  { id: 'mateo-serrano', code: 'GLF-02', name: 'Mateo Serrano', country: 'ESP', hand: 'R', style: 'Iron precision', power: 87, accuracy: 96, shortGame: 90, putting: 88, recovery: 88,
+    look: { skin: 2, hair: 'slick', hairColor: '#1a1410', hat: 'cap', hatColor: '#ffffff', shirt: '#8c1c2c', shirtStyle: 'polo', pants: '#e9e4d8', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'kenji-mori', code: 'GLF-03', name: 'Kenji Mori', country: 'JPN', hand: 'R', style: 'Putting specialist', power: 84, accuracy: 88, shortGame: 90, putting: 97, recovery: 86,
+    look: { skin: 3, hair: 'short', hairColor: '#0e0e0e', hat: 'cap', hatColor: '#1f3b2d', shirt: '#ffffff', shirtStyle: 'mock', pants: '#1f3b2d', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'oliver-kade', code: 'GLF-04', name: 'Oliver Kade', country: 'ENG', hand: 'R', style: 'Links tactician', power: 86, accuracy: 90, shortGame: 89, putting: 88, recovery: 90,
+    look: { skin: 0, hair: 'sidepart', hairColor: '#a07448', hat: 'flatcap', hatColor: '#6b6e73', shirt: '#2d3b52', shirtStyle: 'quarterzip', pants: '#6b6e73', legs: 'trousers', shoes: '#2a1d15', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'luca-moretti', code: 'GLF-05', name: 'Luca Moretti', country: 'ITA', hand: 'R', style: 'Creative short game', power: 83, accuracy: 83, shortGame: 96, putting: 88, recovery: 89,
+    look: { skin: 2, hair: 'curly', hairColor: '#2a1d15', hat: 'none', shirt: '#1e6f8a', shirtStyle: 'polo', pants: '#f1efe8', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: true, glasses: false } },
+  { id: 'noah-mercer', code: 'GLF-06', name: 'Noah Mercer', country: 'CAN', hand: 'R', style: 'Steady all-rounder', power: 86, accuracy: 87, shortGame: 86, putting: 86, recovery: 86,
+    look: { skin: 0, hair: 'short', hairColor: '#7a5a3a', hat: 'cap', hatColor: '#b21e2b', shirt: '#e8edf2', shirtStyle: 'polo', pants: '#2b2f38', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'elias-berg', code: 'GLF-07', name: 'Elias Berg', country: 'SWE', hand: 'R', style: 'Ball striking', power: 91, accuracy: 91, shortGame: 83, putting: 82, recovery: 83,
+    look: { skin: 0, hair: 'short', hairColor: '#d9b77a', hat: 'cap', hatColor: '#0f2b4c', shirt: '#0f2b4c', shirtStyle: 'quarterzip', pants: '#d8d2c4', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'rafael-costa', code: 'GLF-08', name: 'Rafael Costa', country: 'BRA', hand: 'R', style: 'Aggressive scorer', power: 92, accuracy: 80, shortGame: 85, putting: 86, recovery: 84,
+    look: { skin: 3, hair: 'curly', hairColor: '#120d0a', hat: 'cap', hatColor: '#1d1d1d', shirt: '#f2c230', shirtStyle: 'polo', pants: '#1d1d1d', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: true, glasses: false } },
+  { id: 'jin-park', code: 'GLF-09', name: 'Jin Park', country: 'KOR', hand: 'R', style: 'Accuracy', power: 81, accuracy: 94, shortGame: 85, putting: 84, recovery: 79,
+    look: { skin: 2, hair: 'sidepart', hairColor: '#111111', hat: 'visor', hatColor: '#ffffff', shirt: '#ffffff', shirtStyle: 'polo', pants: '#24304a', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'callum-reid', code: 'GLF-10', name: 'Callum Reid', country: 'SCO', hand: 'R', style: 'Wind control', power: 84, accuracy: 88, shortGame: 84, putting: 82, recovery: 83,
+    look: { skin: 0, hair: 'short', hairColor: '#9a3a1c', hat: 'cap', hatColor: '#2f4f3a', shirt: '#3c5a46', shirtStyle: 'sweater', pants: '#3a3d42', legs: 'trousers', shoes: '#2a1d15', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'darius-cole', code: 'GLF-11', name: 'Darius Cole', country: 'USA', hand: 'R', style: 'Long hitter', power: 98, accuracy: 76, shortGame: 80, putting: 80, recovery: 80,
+    look: { skin: 5, hair: 'bald', hairColor: '#111111', hat: 'cap', hatColor: '#ffffff', shirt: '#5b2a86', shirtStyle: 'mock', pants: '#ffffff', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false, build: 1.15 } },
+  { id: 'arjun-mehta', code: 'GLF-12', name: 'Arjun Mehta', country: 'IND', hand: 'R', style: 'Recovery specialist', power: 79, accuracy: 78, shortGame: 86, putting: 80, recovery: 95,
+    look: { skin: 4, hair: 'short', hairColor: '#1a1410', hat: 'cap', hatColor: '#ff8c1a', shirt: '#24304a', shirtStyle: 'polo', pants: '#d8d2c4', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: true, glasses: false } },
 ];
 
-// 🐐 GOAT tab: all-time greats in period dress. era/majors/feat are shown on their cards.
+// LEGENDS tab: fictional all-time greats in period dress. era/majors/feat are shown on their cards.
 export const GOATS = [
-  { id: 'woods', goat: true, name: 'Tiger Woods', country: 'USA', hand: 'R', era: '1996–2019', majors: 15, feat: '"Tiger Slam" — held all four majors at once', power: 95, accuracy: 90, shortGame: 98, putting: 96, recovery: 99,
-    look: { skin: 4, hair: 'bald', hairColor: '#111', hat: 'cap', hatColor: '#111111', shirt: '#c1121f', shirtStyle: 'mock', pants: '#111111', legs: 'trousers', shoes: '#111111', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'nicklaus', goat: true, name: 'Jack Nicklaus', country: 'USA', hand: 'R', era: '1962–1986', majors: 18, feat: 'Record 18 majors, six Green Jackets', power: 94, accuracy: 93, shortGame: 88, putting: 95, recovery: 90,
-    look: { skin: 0, hair: 'sidepart', hairColor: '#d9b77a', hat: 'none', shirt: '#f1d34a', shirtStyle: 'polo', pants: '#3a5a8a', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false, build: 1.1 } },
-  { id: 'hogan', goat: true, name: 'Ben Hogan', country: 'USA', hand: 'R', era: '1946–1959', majors: 9, feat: 'Won 3 majors in 1953 — the "Hogan Slam"', power: 86, accuracy: 99, shortGame: 88, putting: 84, recovery: 92,
-    look: { skin: 1, hair: 'slick', hairColor: '#2a1d15', hat: 'flatcap', hatColor: '#f2f0ea', shirt: '#f2f0ea', shirtStyle: 'polo', pants: '#6b6e73', legs: 'trousers', shoes: '#2a1d15', glove: '#ffffff', beard: false, glasses: false, build: 0.92 } },
-  { id: 'palmer', goat: true, name: 'Arnold Palmer', country: 'USA', hand: 'R', era: '1955–1973', majors: 7, feat: 'The King — four Masters titles', power: 91, accuracy: 85, shortGame: 89, putting: 90, recovery: 96,
-    look: { skin: 1, hair: 'sidepart', hairColor: '#4a3322', hat: 'none', shirt: '#eef2f6', shirtStyle: 'polo', pants: '#2b2f38', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
-  { id: 'seve', goat: true, name: 'Seve Ballesteros', country: 'ESP', hand: 'R', era: '1976–1995', majors: 5, feat: 'Short-game magician, 3 Open Championships', power: 88, accuracy: 80, shortGame: 99, putting: 91, recovery: 100,
-    look: { skin: 2, hair: 'short', hairColor: '#111111', hat: 'none', shirt: '#1c2a44', shirtStyle: 'sweater', pants: '#1c2a44', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'victor-hale', code: 'LEG-01', goat: true, name: 'Victor Hale', country: 'USA', hand: 'R', style: 'Legend: precision', era: '1968–1990', majors: 12, feat: 'Won four straight championship titles; never missed a fairway in a final round', power: 95, accuracy: 100, shortGame: 96, putting: 95, recovery: 97,
+    look: { skin: 1, hair: 'slick', hairColor: '#3b2a1c', hat: 'flatcap', hatColor: '#e9e4d8', shirt: '#e9e4d8', shirtStyle: 'polo', pants: '#5d6066', legs: 'trousers', shoes: '#2a1d15', glove: '#ffffff', beard: false, glasses: false, build: 0.95 } },
+  { id: 'soren-black', code: 'LEG-02', goat: true, name: 'Soren Black', country: 'DEN', hand: 'R', style: 'Legend: putting', era: '1975–1996', majors: 10, feat: 'Holed more putts over 20 feet than any player of his era', power: 92, accuracy: 95, shortGame: 96, putting: 100, recovery: 94,
+    look: { skin: 0, hair: 'sidepart', hairColor: '#e8cf98', hat: 'none', shirt: '#1c2a44', shirtStyle: 'sweater', pants: '#1c2a44', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: false, glasses: false } },
+  { id: 'emilio-cruz', code: 'LEG-03', goat: true, name: 'Emilio Cruz', country: 'MEX', hand: 'R', style: 'Legend: creativity', era: '1982–2004', majors: 9, feat: 'Famous for impossible recovery shots from trees, sand and water', power: 93, accuracy: 90, shortGame: 100, putting: 94, recovery: 100,
+    look: { skin: 3, hair: 'short', hairColor: '#111111', hat: 'none', shirt: '#ffffff', shirtStyle: 'polo', pants: '#2b2f38', legs: 'trousers', shoes: '#ffffff', glove: '#ffffff', beard: true, glasses: false } },
 ];
 
 export const ALL_GOLFERS = [...PROS, ...GOATS];

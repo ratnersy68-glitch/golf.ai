@@ -1,7 +1,7 @@
 import { frames, launch } from './util.js';
 // Club info cards for a spread of the bag (driver → putter): checks the club models.
 export default async function (page, SP) {
-  await launch(page, { mode: 'round18', setup: { courseId: 'augusta', hole: 0 } });
+  await launch(page, { mode: 'round18', setup: { courseId: 'cedarvale', hole: 0 } });
   await page.waitForFunction(() => window.__app.play.state === 'aim', null, { timeout: 60000 });
   await page.evaluate(() => window.__app.play.openBag());
   await page.waitForTimeout(800);

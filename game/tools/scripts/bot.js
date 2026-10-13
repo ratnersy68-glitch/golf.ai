@@ -7,7 +7,7 @@ export default async function (page, SP, logs) {
     app.profile.settings.flyover = false;
     app.profile.settings.quality = 'low'; app.world.setQuality('low');
     app.menus.startSetup(mode);
-    app.menus.setup.courseId = new URLSearchParams(location.search).get('c') || window.__course || 'augusta';
+    app.menus.setup.courseId = new URLSearchParams(location.search).get('c') || window.__course || 'cedarvale';
     app.menus.launch();
   }, mode);
   let lastHole = -1, shots = 0;

@@ -1,15 +1,16 @@
 # Golf.ai Championship
 
-A single-player 3D golf game that runs in the browser. Pick a golfer, grab your clubs, choose a famous course and play a full round.
+A 3D golf game that runs in the browser. Pick a golfer, grab your clubs, choose a course and play a full round.
 
-![Augusta National, 12th hole](docs/augusta-12.jpg)
+![Cedar Vale Municipal, 16th hole](docs/cedarvale-16.jpg)
 
 | | |
 | --- | --- |
-| ![Island green at TPC Sawgrass](docs/sawgrass-17.jpg) | ![Drive in flight](docs/drive.jpg) |
-| ![Putting with the break guide](docs/putting.jpg) | ![Main menu](docs/menu.jpg) |
+| ![Harbor Point Links, 4th hole](docs/harborpoint-4.jpg) | ![Blackstone Ridge, 6th hole](docs/blackstone-6.jpg) |
 
-> Personal-use project. Course layouts are recreations of the real courses: real hole order, pars, yardages, doglegs, elevation and signature hazards. They are not survey-accurate.
+![Main menu](docs/menu.jpg)
+
+> All courses, golfers, equipment brands and tournaments are original and fictional. None of them reproduces a real course, player, brand or event.
 
 ## Play it
 
@@ -59,14 +60,17 @@ npm run test:physics
 | Tab / Esc | Scorecard / pause menu |
 | Space or Enter during flight | Fast-forward |
 
-Putting uses a single press: hold to set power and release to stroke. The flag on the meter marks a flat-green estimate of the hole distance. Uphill putts, downhill putts and green speed are yours to judge. On Easy the marker already accounts for slope.
+Putting uses a single press: hold to set power and release to stroke. The game solves the true line and pace for every putt. The dotted line on the green shows the real roll and turns green when you're aimed on the read. Release inside the gold band on the meter while on line and the putt always drops. Wind never affects a putt. On Realistic there is no band and only a short line.
 
 ## Features
 
-- **15 real courses, 270 holes, all free to play from the start:** Augusta National, Pebble Beach, TPC Sawgrass, Torrey Pines South, Bethpage Black, Pinehurst No. 2, St Andrews Old Course, Valhalla, Oakmont, Riviera, Whistling Straits, Kiawah Island Ocean Course, Carnoustie, Royal Portrush and Muirfield Village. Each has its own look: trees (loblolly pines, Monterey cypress, palms, eucalyptus, gorse), grass colors, sky, wind, green speed, firmness, water and buildings. Signature holes include Amen Corner with Rae's Creek, Pebble's 7th and 18th along the ocean, the Sawgrass Island Green, Oakmont's Church Pews, Riviera's bunker in the middle of the 6th green, St Andrews' Road Hole, the Swilcan Bridge and the Valley of Sin, and Pinehurst's turtle-back greens.
+- **3 original courses, all free to play from the start:**
+  - **Cedar Vale Municipal** (CRS-01, easy): public parkland with broad fairways, old oaks, a creek and a lake-carry par 3.
+  - **Harbor Point Links** (CRS-02, medium): windswept seaside links with dunes, fescue, pot bunkers and clifftop par 3s.
+  - **Blackstone Ridge** (CRS-08, expert): championship course in an old granite quarry with rock ravines, deep bunkers and fast greens.
 - **Tees:** Championship, Tournament, Member and Forward.
 - **Ball physics:** drag and Magnus lift from real ball speed, launch and spin, plus wind that strengthens with height. Balls bounce off sloped terrain and bite or roll out based on spin and surface. Rolling responds to green speed, slope, lie, firmness, water, sand, trees (leaves and trunks), the flagstick and lip-outs.
-- **Golf bag:** 19 club types from real brands, including TaylorMade, Callaway, Titleist, Ping, Cobra, Mizuno, Srixon, Cleveland, Bettinardi, Scotty Cameron and Odyssey. Each club has its own carry, launch, spin, accuracy and forgiveness. You build your own 14-club bag and choose your ball.
+- **Golf bag:** 19 club types from fictional brands: Vortex Golf (drivers, woods, hybrids), Alder Forge (irons, wedges), Northline (putters) and AeroPeak (balls). Each club has its own carry, launch, spin, accuracy and forgiveness. You build your own 14-club bag and choose your ball.
 - **Club selection:** tap the club in hand to open the bag. The camera rises smoothly into a bird's-eye tactical view that shows:
   - the hole's fairway, rough, bunkers, water and trees
   - your position, the flag and your aim line
@@ -80,9 +84,9 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
   - a comparison with the club in your hands, with ▲▼ differences
 
   SELECT CLUB closes the card and lowers the camera behind the golfer. The new club cross-fades into the golfer's hands and the HUD and aim update.
-- **Tour pros:** play as real tour pros, including Scheffler, McIlroy, Rahm, DeChambeau, Spieth, Thomas, Morikawa, Hovland, Schauffele, Åberg, Korda and Woods. Each has their own power, accuracy, short game, putting and recovery ratings.
-- **The Masters:** pick a pro and play a four-round, 72-hole tournament at Augusta National from the championship tees against the rest of the field. A live leaderboard and position ticker move as you play each hole. The low 30 and ties make the cut after Friday, Sunday brings the toughest pins, and the winner gets a green-jacket ceremony. Tournaments save between rounds.
-- **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots) and a Driving Range with launch-monitor data.
+- **Golfers:** 12 fictional tour pros (GLF-01 to GLF-12) and 3 fictional legends (LEG-01 to LEG-03), each with power, accuracy, short game, putting and recovery ratings.
+- **The Granite Crown:** a fictional major. Pick a golfer and play four rounds, 72 holes, at Blackstone Ridge from the championship tees against a field of fictional players. A live leaderboard and position ticker move as you play each hole. The low 30 and ties make the cut after Friday, Sunday brings the toughest pins, and the winner gets the Champion's Blazer. Tournaments save between rounds.
+- **Game modes:** Quick Round (18 holes), 9 Holes, Course Practice (replay any hole), Practice drills (approach, chipping, bunker, putting, tee shots).
 - **Career:** earn XP and level up to unlock equipment and balls.
 - **Scoring and stats:** a full scorecard with out/in/total and birdie/bogey markers. Per-round and career stats include fairways, greens in regulation, putts, driving distance, longest drive and putt, sand saves, up-and-downs and scoring average.
 - **Difficulty:**
@@ -95,9 +99,9 @@ Putting uses a single press: hold to set power and release to stroke. The flag o
   - shot tracer, swing animation and a putting slope grid
   - procedural audio: birds, gulls, surf, wind, crowd reactions, club strikes, the cup rattle and splashes
 
-### Using real course photos on the course cards
+### Using artwork on the course cards
 
-Course cards show a live render of each course's signature hole. To use a real photo instead, add it to `assets/courses/` named by course id (`augusta`, `pebble`, `sawgrass`, `torrey`, `bethpage`, `pinehurst`, `standrews`, `valhalla`, `oakmont`, `riviera`), then list it in `assets/courses/photos.json`, e.g. `["augusta.jpg", "pebble.jpg"]`. The manifest is only read when the page is served over http.
+Course cards show a top-down map of each course's signature hole. To use approved artwork instead, add it to `assets/courses/` named by course id (`cedarvale`, `harborpoint`, `blackstone`), then list it in `assets/courses/photos.json`, e.g. `["cedarvale.jpg"]`. The manifest is only read when the page is served over http.
 
 ## Code layout
 
