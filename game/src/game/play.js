@@ -2,7 +2,7 @@
 // shot playback, penalties, scoring and statistics.
 import * as THREE from 'three';
 import { Hole, S } from '../core/holeGen.js';
-import { simulate, MPH, greenRollDecel, CUP_R } from '../core/physics.js';
+import { simulate, rollToCup, MPH, greenRollDecel, CUP_R } from '../core/physics.js';
 import { solvePutt, rollProbe } from './puttSolver.js';
 import { mulberry32, clamp } from '../core/noise.js';
 import { buildBag, BALLS } from '../data/clubs.js';
@@ -754,7 +754,8 @@ export class Play {
     this.lastLaunch = launch;
     this.lastTiming = e;
     const startSurf = this.surf;
-    const result = simulate(hole, { ...this.ball }, launch, this.env(putt), { putt }); // wind never moves a putt
+    const fromTee = putt && this.teeShot && this.strokes === 0;
+    const result = fromTee ? rollToCup(hole, this.ball) : simulate(hole, { ...this.ball }, launch, this.env(putt), { putt }); // wind never moves a putt
     this.shot = { launch, result, t: 0, startBall: { ...this.ball }, startSurf, club: this.club, typeId: this.typeId, evIdx: 0, landingCamSet: false, power: m.power, rolling: false };
     this.strokes++;
     this.prevBall = { ...this.ball };
@@ -766,7 +767,7 @@ export class Play {
     this.hud.meterUpdate(m.power, putt ? 0 : m.marker, 'hit', launch.rating);
     this.hud.meterShow(false);
     audio.impact(this.club.cat, launch.quality, putt ? m.power * 0.5 : m.power);
-    this.hud.toast(launch.rating, launch.sub || '', putt ? (launch.perfect ? 'great' : launch.rating === 'GOOD PACE' ? 'good' : 'bad') : ratingKind(launch.rating), putt ? 1600 : 1100);
+    if (!fromTee) this.hud.toast(launch.rating, launch.sub || '', putt ? (launch.perfect ? 'great' : launch.rating === 'GOOD PACE' ? 'good' : 'bad') : ratingKind(launch.rating), putt ? 1600 : 1100);
     this.followT = 0;
     // camera choice
     const auto = this.app.profile.settings.autoCamera;

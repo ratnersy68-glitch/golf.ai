@@ -374,3 +374,31 @@ export function speedForCarry(carry, angleDeg, backRpm) {
   speedCache.set(key, v);
   return v;
 }
+
+// A rolled ball that follows the hole's centreline all the way to the cup and drops.
+export function rollToCup(hole, start) {
+  const pin = hole.pin;
+  const pts = [[start.x, start.y]];
+  const s0 = hole.nearest(start.x, start.y)[0] + 12, s1 = hole.nearest(pin[0], pin[1])[0] - 10;
+  for (let s = s0; s < s1; s += 8) { const c = hole.at(s); pts.push([c.x, c.y]); }
+  pts.push([pin[0], pin[1]]);
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const len = cum[cum.length - 1];
+  const T = clamp(len / 30, 2.5, 11);
+  const ground = (x, y) => { const w = hole.waterLevelAt(x, y); return Math.max(hole.heightAt(x, y), w ?? -1e9); };
+  const frames = [];
+  let j = 0;
+  for (let i = 0; i <= Math.ceil(T * 60); i++) {
+    const t = Math.min(T, i / 60);
+    const d = len * (1 - Math.pow(1 - t / T, 2.2)); // quick off the face, dying into the cup
+    while (j < cum.length - 2 && cum[j + 1] < d) j++;
+    const f = (d - cum[j]) / Math.max(1e-6, cum[j + 1] - cum[j]);
+    const x = pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f, y = pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f;
+    frames.push({ t, x, y, h: ground(x, y), mode: 'roll' });
+  }
+  const end = { x: pin[0], y: pin[1], h: hole.pinH - 0.08 };
+  frames.push({ t: T + 0.05, ...end, mode: 'roll' });
+  const events = [{ t: T, type: 'cup', x: pin[0], y: pin[1], h: hole.pinH }, { t: T + 0.05, type: 'rest', ...end }];
+  return { frames, events, duration: T + 0.05, end, surf: hole.surfAt(pin[0], pin[1]), carry: len, apex: 0, total: Math.hypot(pin[0] - start.x, pin[1] - start.y), holed: true, water: false, ob: false, penalty: false };
+}
