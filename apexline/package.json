@@ -16,7 +16,8 @@
     "test": "npm run typecheck && npm run test:sim",
     "bench": "tsx tools/bench.ts",
     "e2e": "node tools/e2e.cjs",
-    "test:keyboard": "tsx tools/keyboard-bot.ts"
+    "test:keyboard": "tsx tools/keyboard-bot.ts",
+    "build:single": "tsx tools/build-single.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",

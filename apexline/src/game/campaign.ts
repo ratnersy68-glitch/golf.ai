@@ -11,6 +11,8 @@ const trackCache = new Map<number, Track>();
 
 export async function loadCampaign(): Promise<CampaignFile> {
   if (file) return file;
+  const inline = (window as any).__APEX_CAMPAIGN as CampaignFile | undefined; // single-file build embeds the campaign
+  if (inline) { file = inline; return file; }
   loading ??= fetch(`${BASE}data/campaign.json`).then(r => { if (!r.ok) throw new Error('campaign.json missing - run npm run campaign:build'); return r.json(); }).then((f: CampaignFile) => { file = f; return f; });
   return loading;
 }
