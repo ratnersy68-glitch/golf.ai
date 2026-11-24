@@ -69,5 +69,6 @@ export class SkidMarks {
       this.last[wheel] = cur;
     } else if (!prev || prev.distanceTo(cur) >= 6) this.last[wheel] = cur;
   }
+  dispose() { this.geo.dispose(); (this.mesh.material as THREE.Material).dispose(); }
   clear() { this.alpha.fill(0); this.last = [null, null, null, null]; (this.geo.getAttribute('alpha') as THREE.BufferAttribute).needsUpdate = true; }
 }

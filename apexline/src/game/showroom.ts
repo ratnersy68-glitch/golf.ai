@@ -74,7 +74,8 @@ export class Showroom {
   exit() {
     this.gfx.scene.remove(this.group); this.car && this.gfx.scene.remove(this.car.group); this.car?.dispose(); this.car = undefined; this.entered = false;
     this.canvas.removeEventListener('pointerdown', this.onDown); window.removeEventListener('pointermove', this.onMove); window.removeEventListener('pointerup', this.onUp); this.canvas.removeEventListener('wheel', this.onWheel);
-    this.group.traverse(o => { const m = o as THREE.Mesh; m.geometry?.dispose(); }); this.reflector?.dispose();
+    const free = (o: THREE.Object3D) => { const m = o as THREE.Mesh; m.geometry?.dispose(); const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : []; for (const mt of mats) { (mt as any).map?.dispose(); mt.dispose(); } };
+    this.group.traverse(free); this.platform.traverse(free); this.reflector?.dispose();
     this.gfx.applySettings(this.gfx.settings);
   }
 

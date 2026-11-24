@@ -125,10 +125,20 @@ export class Gfx {
     this.renderer.setSize(this.w, this.h, false); this.composer?.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * this.settings.resScale * f); this.composer?.setSize(this.w, this.h);
   }
 
+  private composerKey = '';
+  private disposeComposer() {
+    const c = this.composer; if (!c) return;
+    for (const p of c.passes as any[]) p.dispose?.();
+    c.renderTarget1?.dispose(); c.renderTarget2?.dispose(); c.dispose(); this.composer = undefined;
+  }
+
   private rebuildComposer() {
-    this.composer?.dispose(); this.composer = undefined; this.bloom = undefined; this.blur = undefined; this.gtao = undefined;
-    if (!this.usePost) return;
     const s = this.settings;
+    const key = `${this.usePost}|${s.bloom}|${s.motionBlur && !s.reducedMotion}|${s.ssao && !!GTAOCls}|${s.antialias}`;
+    if (key === this.composerKey && (this.composer || !this.usePost)) return; // nothing that affects the pass chain changed: keep it (rebuilding leaked ~12 render targets each time)
+    this.composerKey = key;
+    this.disposeComposer(); this.bloom = undefined; this.blur = undefined; this.gtao = undefined;
+    if (!this.usePost) return;
     const size = this.renderer.getSize(new THREE.Vector2());
     const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: s.antialias ? 4 : 0 });
     const c = new EffectComposer(this.renderer, rt);
@@ -192,5 +202,5 @@ export class Gfx {
     if (this.composer) this.composer.render(); else this.renderer.render(this.scene, this.camera);
   }
 
-  dispose() { this.composer?.dispose(); this.envCache.forEach(r => r.dispose()); this.envCache.clear(); this.renderer.dispose(); }
+  dispose() { this.disposeComposer(); this.envCache.forEach(r => r.dispose()); this.envCache.clear(); this.renderer.dispose(); }
 }

@@ -129,7 +129,7 @@ export class RaceSession {
     this.running = false; cancelAnimationFrame(this.raf);
     const s = this.gfx.scene;
     for (const o of [this.world?.group, this.car?.group, this.ghostCar?.group, this.smoke?.points, this.glow?.points, this.skid?.mesh]) if (o) s.remove(o);
-    this.world?.dispose(); this.car?.dispose(); this.ghostCar?.dispose(); this.smoke?.dispose(); this.glow?.dispose();
+    this.world?.dispose(); this.car?.dispose(); this.ghostCar?.dispose(); this.smoke?.dispose(); this.glow?.dispose(); this.skid?.dispose();
     audio.stopEngine(); audio.stopMusic();
     this.init.input.handlers = {};
   }

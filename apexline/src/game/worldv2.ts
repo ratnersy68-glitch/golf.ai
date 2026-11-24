@@ -101,7 +101,7 @@ export class World {
     const far = this.q.far, ld = this.q.lodDist; let vis = 0;
     for (const c of this.chunks) { const d = c.center.distanceTo(cam) - c.radius; const want = d > far ? -1 : d > ld ? 1 : 0; if (want !== c.shown) { c.lod.forEach((g, i) => g.visible = i === want); c.shown = want; } if (want >= 0) vis++; }
     this.visibleChunks = vis;
-    for (const c of this.cells) { const d = c.center.distanceTo(cam) - c.radius; const want = d > c.cutoff ? -1 : d > ld * 1.4 ? 1 : 0; if (want !== c.shown) { c.lod.forEach((m, i) => m.visible = i === want); c.shown = want; } }
+    for (const c of this.cells) { const d = c.center.distanceTo(cam) - c.radius; const want = d > c.cutoff ? -1 : d > ld ? 1 : 0; if (want !== c.shown) { c.lod.forEach((m, i) => m.visible = i === want); c.shown = want; } }
     for (const t of this.tiles) { const d = t.center.distanceTo(cam) - t.radius; const want = d > far * 1.15 ? -1 : d > far * 0.45 ? 1 : 0; if (want !== t.shown) { t.lod.forEach((m, i) => m.visible = i === want); t.shown = want; } }
   }
   dispose() { for (const d of this.own) d.dispose(); this.own.length = 0; this.chunks.length = this.cells.length = this.tiles.length = 0; }
@@ -246,13 +246,13 @@ function mergeColored(parts: { g: THREE.BufferGeometry; c: string; m?: THREE.Mat
 const T = (x: number, y: number, z: number) => new THREE.Matrix4().makeTranslation(x, y, z);
 const protoCache = new Map<string, THREE.BufferGeometry[]>();
 /** Shared prop geometries [lod0, lod1]; built once per page load. Kit props come from the supplied GLB, the rest are procedural. */
-function proto(name: string): THREE.BufferGeometry[] {
-  const hit = protoCache.get(name); if (hit) return hit;
+function proto(name: string, tier = 2): THREE.BufferGeometry[] {
+  const ck = `${name}:${tier}`; const hit = protoCache.get(ck); if (hit) return hit;
   const cone = (r: number, h: number, seg = 7) => new THREE.ConeGeometry(r, h, seg), cyl = (r1: number, r2: number, h: number, seg = 7) => new THREE.CylinderGeometry(r1, r2, h, seg), ico = (r: number, d = 1) => new THREE.IcosahedronGeometry(r, d), box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d);
   const rockG = ico(1, 1); { const p = rockG.getAttribute('position'); for (let i = 0; i < p.count; i++) { const k = 1 + 0.25 * Math.sin(p.getX(i) * 5.1 + p.getY(i) * 3.3) * Math.cos(p.getZ(i) * 4.2); p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.75, p.getZ(i) * k); } }
   const kitName = name.startsWith('kit:') ? name.slice(4).split('#') : null;
   let out: THREE.BufferGeometry[];
-  if (kitName) { const a = kitGeo(kitName[0], +(kitName[1] ?? 0), 0), b = kitGeo(kitName[0], +(kitName[1] ?? 0), 2) ?? a; out = a ? [a, b!] : []; }
+  if (kitName) { const a = kitGeo(kitName[0], +(kitName[1] ?? 0), tier >= 2 ? 0 : 1), b = kitGeo(kitName[0], +(kitName[1] ?? 0), 2) ?? a; out = a ? [a, b!] : []; }
   else {
     const P: Record<string, () => THREE.BufferGeometry[]> = {
       pine: () => [mergeColored([{ g: cyl(0.25, 0.35, 2), c: '#5a3c26', m: T(0, 1, 0) }, { g: cone(2.2, 3.4), c: '#2f6b3a', m: T(0, 3.2, 0) }, { g: cone(1.7, 3), c: '#378045', m: T(0, 5, 0) }, { g: cone(1.1, 2.6), c: '#3f9150', m: T(0, 6.8, 0) }]), mergeColored([{ g: cone(2.2, 7.5, 5), c: '#378045', m: T(0, 4.4, 0) }])],
@@ -273,7 +273,7 @@ function proto(name: string): THREE.BufferGeometry[] {
     };
     out = P[name]?.() ?? [];
   }
-  protoCache.set(name, out); return out;
+  protoCache.set(ck, out); return out;
 }
 
 function buildProps(W: World, env: string, tr: Track, rng: Rng, hAt: (x: number, z: number) => number, distAt: (x: number, z: number) => number, ground: number, haze: string, own: <T extends { dispose(): void }>(o: T) => T) {
@@ -340,7 +340,7 @@ function buildProps(W: World, env: string, tr: Track, rng: Rng, hAt: (x: number,
 
   const rad = new THREE.Sphere();
   for (const b of buckets.values()) {
-    const protos = proto(b.geo); if (!protos.length) continue; const count = b.mats.length; const lods: THREE.InstancedMesh[] = [];
+    const protos = proto(b.geo, q.tier); if (!protos.length) continue; const count = b.mats.length; const lods: THREE.InstancedMesh[] = [];
     const first = new THREE.InstancedMesh(protos[0], b.mat, count); b.mats.forEach((m, k) => first.setMatrixAt(k, m)); if (b.colors) b.colors.forEach((c, k) => first.setColorAt(k, c)); first.instanceMatrix.needsUpdate = true; first.computeBoundingSphere(); first.castShadow = q.tier > 0 || true; first.receiveShadow = true; lods.push(first); W.group.add(first);
     if (protos[1]) { const second = new THREE.InstancedMesh(protos[1], b.mat, count); second.instanceMatrix = first.instanceMatrix; if (first.instanceColor) second.instanceColor = first.instanceColor; second.count = count; second.computeBoundingSphere(); second.castShadow = false; second.visible = false; lods.push(second); W.group.add(second); }
     own(first); rad.copy(first.boundingSphere!); const pr = protos[0].boundingSphere ?? (protos[0].computeBoundingSphere(), protos[0].boundingSphere!); const avgS = Math.cbrt(Math.abs(b.mats[0].determinant())); W.cells.push({ lod: lods, center: rad.center.clone(), radius: rad.radius, shown: 0, cutoff: Math.min(q.propFar, 120 + 85 * pr.radius * avgS) });
