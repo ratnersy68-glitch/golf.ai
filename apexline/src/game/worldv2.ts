@@ -340,7 +340,7 @@ function buildProps(W: World, env: string, tr: Track, rng: Rng, hAt: (x: number,
 
   const rad = new THREE.Sphere();
   for (const b of buckets.values()) {
-    const protos = proto(b.geo, q.tier); if (!protos.length) continue; const count = b.mats.length; const lods: THREE.InstancedMesh[] = [];
+    const protos = proto(b.geo, q.far >= 1500 ? 2 : 1); if (!protos.length) continue; const count = b.mats.length; const lods: THREE.InstancedMesh[] = [];
     const first = new THREE.InstancedMesh(protos[0], b.mat, count); b.mats.forEach((m, k) => first.setMatrixAt(k, m)); if (b.colors) b.colors.forEach((c, k) => first.setColorAt(k, c)); first.instanceMatrix.needsUpdate = true; first.computeBoundingSphere(); first.castShadow = q.tier > 0 || true; first.receiveShadow = true; lods.push(first); W.group.add(first);
     if (protos[1]) { const second = new THREE.InstancedMesh(protos[1], b.mat, count); second.instanceMatrix = first.instanceMatrix; if (first.instanceColor) second.instanceColor = first.instanceColor; second.count = count; second.computeBoundingSphere(); second.castShadow = false; second.visible = false; lods.push(second); W.group.add(second); }
     own(first); rad.copy(first.boundingSphere!); const pr = protos[0].boundingSphere ?? (protos[0].computeBoundingSphere(), protos[0].boundingSphere!); const avgS = Math.cbrt(Math.abs(b.mats[0].determinant())); W.cells.push({ lod: lods, center: rad.center.clone(), radius: rad.radius, shown: 0, cutoff: Math.min(q.propFar, 120 + 85 * pr.radius * avgS) });

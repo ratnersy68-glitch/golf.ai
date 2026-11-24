@@ -8,6 +8,9 @@ import { makeMarble } from '../ui/marble';
 
 /** Luxury showroom: polished white marble floor with real reflections, white architecture, soft studio lighting and a rotating display platform. */
 let floorTex: THREE.CanvasTexture | null = null;
+const sharedTex: Record<string, THREE.CanvasTexture> = {};
+/** One repeat-variant of the marble per use, created once for the page's lifetime (not per showroom visit). */
+function sharedMarble(key: string, rep: number): THREE.CanvasTexture { if (!sharedTex[key]) { const t = marbleTexture().clone(); t.needsUpdate = true; t.repeat.set(rep, rep); sharedTex[key] = t; } return sharedTex[key]; }
 function marbleTexture(): THREE.CanvasTexture {
   if (!floorTex) { floorTex = new THREE.CanvasTexture(makeMarble({ size: 1024, seed: 5, veinStrength: 1 })); floorTex.colorSpace = THREE.SRGBColorSpace; floorTex.wrapS = floorTex.wrapT = THREE.MirroredRepeatWrapping; floorTex.anisotropy = 8; }
   return floorTex;
@@ -39,11 +42,11 @@ export class Showroom {
       this.reflector = new Reflector(new THREE.CircleGeometry(60, 64), { color: new THREE.Color(0x9a9ea4), textureWidth: Math.round(1024 * Math.min(1, gfx.settings.resScale)), textureHeight: Math.round(1024 * Math.min(1, gfx.settings.resScale)) });
       this.reflector.rotation.x = -Math.PI / 2; this.reflector.position.y = -0.03; this.group.add(this.reflector);
     }
-    const tex = marbleTexture().clone(); tex.needsUpdate = true; tex.repeat.set(6, 6);
+    const tex = sharedMarble('floor', 6);
     this.floorOverlay = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.14, metalness: 0.05, transparent: refl, opacity: refl ? 0.78 : 1, envMapIntensity: 0.9 });
     const floor = new THREE.Mesh(new THREE.CircleGeometry(60, 64), this.floorOverlay); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.02; floor.receiveShadow = true; this.group.add(floor);
     // ---- display platform: raised marble disc with a brushed-silver rim
-    const platTex = marbleTexture().clone(); platTex.needsUpdate = true; platTex.repeat.set(1.2, 1.2);
+    const platTex = sharedMarble('plat', 1.2);
     const plat = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.6, 0.16, 72), new THREE.MeshStandardMaterial({ map: platTex, roughness: 0.12, metalness: 0.05 })); plat.position.y = 0.0; plat.receiveShadow = true; this.platform.add(plat);
     this.ringMat = new THREE.MeshStandardMaterial({ color: '#D8DCE0', metalness: 1, roughness: 0.28 });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(3.56, 0.035, 10, 120), this.ringMat); ring.rotation.x = Math.PI / 2; ring.position.y = 0.085; this.platform.add(ring);
@@ -74,8 +77,8 @@ export class Showroom {
   exit() {
     this.gfx.scene.remove(this.group); this.car && this.gfx.scene.remove(this.car.group); this.car?.dispose(); this.car = undefined; this.entered = false;
     this.canvas.removeEventListener('pointerdown', this.onDown); window.removeEventListener('pointermove', this.onMove); window.removeEventListener('pointerup', this.onUp); this.canvas.removeEventListener('wheel', this.onWheel);
-    const free = (o: THREE.Object3D) => { const m = o as THREE.Mesh; m.geometry?.dispose(); const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : []; for (const mt of mats) { (mt as any).map?.dispose(); mt.dispose(); } };
-    this.group.traverse(free); this.platform.traverse(free); this.reflector?.dispose();
+    const free = (o: THREE.Object3D) => { const m = o as THREE.Mesh; m.geometry?.dispose(); const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : []; for (const mt of mats) mt.dispose(); };
+    this.group.traverse(free); this.platform.traverse(free); this.reflector?.dispose(); for (const l of this.lights) { (l as any).shadow?.dispose(); l.dispose?.(); } this.lights.length = 0;
     this.gfx.applySettings(this.gfx.settings);
   }
 
