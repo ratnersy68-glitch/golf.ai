@@ -11,6 +11,7 @@ import type { TrackMeta } from '../sim/campaign-types';
 import { MEDAL_NAMES, defaultSetup, sanitiseSetup, MEDAL_COLORS } from '../game/progress';
 import { Btn, Icon, MedalChip, Modal, Slider, Currency } from './kit';
 import { audio } from '../audio/audio';
+import { ACHIEVEMENTS } from '../data/achievements';
 import { VEHICLE_MAP, paramsFor } from '../data/vehicles';
 import { STANDARD } from '../sim/vehicle';
 import { Leaderboard } from './Leaderboards';
@@ -76,7 +77,16 @@ export function RaceScreen({ replay }: { replay?: { trackId: number; log: InputL
         ref.current = s; setSess(s); (window as any).__apx = { ...(window as any).__apx, race: s };
       } catch (e: any) { console.error(e); setError(String(e?.message ?? e)); }
     })();
-    return () => { dead = true; s?.exit(); ref.current = null; };
+    // free-camera controls (replay viewer) and H = cinematic HUD toggle
+    const cv = (() => { try { return getGfx().canvas; } catch { return null; } })();
+    let drag = false;
+    const pd = (e: PointerEvent) => { drag = true; };
+    const pm = (e: PointerEvent) => { const r = ref.current; if (!drag || !r || r.rig.mode !== 7) return; r.rig.orbit.yaw -= e.movementX * 0.008; r.rig.orbit.pitch = Math.max(-0.2, Math.min(1.4, r.rig.orbit.pitch + e.movementY * 0.006)); };
+    const pu = () => { drag = false; };
+    const wh = (e: WheelEvent) => { const r = ref.current; if (r && r.rig.mode === 7) r.rig.orbit.dist = Math.max(3, Math.min(30, r.rig.orbit.dist + e.deltaY * 0.01)); };
+    const hk = (e: KeyboardEvent) => { if (e.code === 'KeyH' && !e.repeat) useStore.getState().patchSettings(x => { x.hud.scale = x.hud.scale === 0 ? 1 : 0; }); };
+    cv?.addEventListener('pointerdown', pd); window.addEventListener('pointermove', pm); window.addEventListener('pointerup', pu); cv?.addEventListener('wheel', wh, { passive: true }); window.addEventListener('keydown', hk);
+    return () => { dead = true; s?.exit(); ref.current = null; cv?.removeEventListener('pointerdown', pd); window.removeEventListener('pointermove', pm); window.removeEventListener('pointerup', pu); cv?.removeEventListener('wheel', wh); window.removeEventListener('keydown', hk); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec, replay]);
 
@@ -96,7 +106,6 @@ export function RaceScreen({ replay }: { replay?: { trackId: number; log: InputL
     if (outcome.reward.pb && info.replay && standard && !practice && (!prev || info.ms < prev.bestMs)) saveReplay(`pb:${meta.id}`, info.replay);
     if (outcome.achievements.length) audio.unlock();
     setResult({ info, outcome, meta });
-    if (outcome.reward.beatBench) st.toast({ kind: 'achievement', title: 'Benchmark Breaker', body: `You beat the simulated benchmark on ${meta.name}.`, rarity: 'mythic' });
   };
 
   const leave = () => { useStore.getState().go(replay ? 'campaign' : (useStore.getState().prevScreen === 'race' ? 'menu' : useStore.getState().prevScreen)); };
@@ -175,7 +184,7 @@ function Hud({ sess, paused, replay, label }: { sess: RaceSession; paused: boole
       {hud.minimap && <canvas ref={mini} className="minimap" width={180} height={180} />}
       <div className="hud-bl"><span>{h.camera}</span>{h.ghostName && <span className="gtag"><Icon name="ghost" size={13} />{h.ghostName}</span>}{h.respawns > 0 && <span>RESETS {h.respawns}</span>}</div>
       {settings.showFps && <div className="fps">{h.fps} FPS</div>}
-      {!replay && h.phase !== 'finished' && <div className="hint">R Restart · Backspace Checkpoint · C Camera · G Ghost · Tab Leaderboard · Esc Pause</div>}
+      {!replay && h.phase !== 'finished' && <div className="hint">R Restart · Backspace Checkpoint · C Camera · G Ghost · Tab Leaderboard · H Hide HUD · Esc Pause</div>}
       {replay && <div className="rp-tag">REPLAY · {label}</div>}
     </div>
   );
@@ -263,6 +272,8 @@ function Results({ r, spec, onRetry, onLeave, sess }: { r: { info: FinishInfo; o
               {outcome.reward.breakdown.map((b, i) => <li key={i}><span>{b.label}</span><span><Currency credits={b.credits} tokens={b.tokens} />{b.xp ? <em className="xp">+{b.xp} XP</em> : null}</span></li>)}
               <li className="tot"><span>Total</span><span><Currency credits={outcome.reward.credits} tokens={outcome.reward.tokens || undefined} /><em className="xp">+{outcome.reward.xp} XP</em></span></li>
             </ul>
+            {outcome.levelUps.length > 0 && <p className="bb"><Icon name="up" /> Level up! You are now level {outcome.levelUps[outcome.levelUps.length - 1]}.</p>}
+            {outcome.achievements.length > 0 && <ul className="rewards">{outcome.achievements.map(id => { const a = ACHIEVEMENTS.find(x => x.id === id)!; return <li key={id}><span><Icon name="trophy" size={13} /> <b>{a.name}</b> <em className="muted">{a.desc}</em></span><span><Currency credits={a.credits} tokens={a.tokens || undefined} /></span></li>; })}</ul>}
             {outcome.rankedDelta && <p className="rk">Offline ranked rating {outcome.rankedDelta.before} → <b>{outcome.rankedDelta.after}</b></p>}
             {outcome.reward.firstBench && <p className="bb"><Icon name="trophy" /> Benchmark Breaker — you beat the calculated simulation time.</p>}
           </>

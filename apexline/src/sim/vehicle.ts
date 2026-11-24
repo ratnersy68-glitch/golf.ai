@@ -183,7 +183,8 @@ export class Sim {
     const uF = clamp(FxF, -capF, capF), uR = clamp(FxR, -capR, capR);
     const latF = Math.sqrt(Math.max(capF * capF - uF * uF, 0));
     const latR = Math.sqrt(Math.max(capR * capR - uR * uR, 0));
-    const den = vx >= 0 ? Math.max(vx, 2.5) : Math.min(vx, -2.5);
+    // slip angles use |vx| so lateral tyre force always opposes sliding, also when the car moves backwards
+    const den = Math.max(aV, 2.5);
     const alF = (vy + P.a * this.w) / den - dl * dirV;
     const alR = (vy - P.b * this.w) / den;
     const xf = P.stiff * alF, xr = P.stiff * alR;

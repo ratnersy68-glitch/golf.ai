@@ -25,7 +25,7 @@ import type { CampaignTrack, CampaignFile, Medals } from '../src/sim/campaign-ty
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'public', 'data');
 const CACHE = path.join(ROOT, 'tools', 'cache', 'genes.json');
-export const PHYSICS_VERSION = 'apexline-sim-1';
+export const PHYSICS_VERSION = 'apexline-sim-2';
 
 interface Job { id: number; budget: number; passes: number; prevGenes?: number[]; startAttempt: number }
 interface JobResult { id: number; track?: CampaignTrack; replay?: ReplayMeta; ghosts?: Record<string, ReplayMeta>; genes?: number[]; error?: string; ms: number }

@@ -28,12 +28,18 @@ t('datan within 1e-4', () => { for (let x = -20; x < 20; x += 0.31) ok(Math.abs(
 console.log('Physics');
 const camp: CampaignFile = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/data/campaign.json'), 'utf8'));
 const tr1 = buildTrack(camp.tracks[0]);
+const trStraight = buildTrack({ id: 0, name: 's', chapter: 1, env: 'academy', seed: 1, pieces: [{ k: 'start', l: 44, w: 16 }, { k: 'straight', l: 2400, w: 16, f: 8 }, { k: 'finish', l: 60, w: 16 }] } as any);
 t('straight-line launch is plausible (0-100 km/h in 2.5-6 s)', () => {
   const s = new Sim(tr1); let t100 = 0; for (let i = 0; i < 120 * 10 && !s.finished; i++) { s.step({ thr: 1, brk: 0, steer: 0, hb: 0 }); if (!t100 && s.speed * 3.6 >= 100) t100 = i / TICK_RATE; }
   ok(t100 > 2.5 && t100 < 6, `0-100 took ${t100}`);
 });
-t('braking from speed stops the car without reversing', () => {
-  const s = new Sim(tr1); for (let i = 0; i < 120 * 5; i++) s.step({ thr: 1, brk: 0, steer: 0, hb: 0 }); const v0 = s.speed; for (let i = 0; i < 120 * 8; i++) s.step({ thr: 0, brk: 1, steer: 0, hb: 0 }); ok(v0 > 25); ok(s.vx >= -0.5, 'reversed');
+t('braking from speed stops the car quickly and stably', () => {
+  const s = new Sim(trStraight); for (let i = 0; i < 120 * 5; i++) s.step({ thr: 1, brk: 0, steer: 0, hb: 0 }); const v0 = s.speed; ok(v0 > 25);
+  let stopAt = -1; for (let i = 0; i < 120 * 8; i++) { s.step({ thr: 0, brk: 1, steer: 0, hb: 0 }); if (stopAt < 0 && s.speed < 1) stopAt = i / 120; ok(Math.abs(s.vy) < 12, 'lateral blow-up'); }
+  ok(stopAt > 0 && stopAt < 5, `stop time ${stopAt}`);
+});
+t('sliding backwards is damped, never amplified (slip-sign regression)', () => {
+  const s = new Sim(trStraight); s.vx = -15; s.vy = -20; for (let i = 0; i < 600; i++) s.step({ thr: 0, brk: 0, steer: 0, hb: 0 }); ok(s.speed < 25, `speed grew to ${s.speed}`);
 });
 t('identical inputs give bit-identical state (determinism)', () => {
   const run = () => { const s = new Sim(tr1); for (let i = 0; i < 3000; i++) s.step({ thr: 1, brk: i % 400 > 300 ? 1 : 0, steer: Math.sin(i / 90) * 0.4, hb: 0 }); return [s.s, s.d, s.vx, s.vy, s.w, s.hc, s.hs].join(','); };

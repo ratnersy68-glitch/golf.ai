@@ -166,11 +166,6 @@ export const useStore = create<State>((set, get) => ({
       checkAchievements(p, outcome);
     });
     set({ lastOutcome: outcome });
-    for (const l of outcome.levelUps.slice(-1)) st.toast({ kind: 'level', title: `Level ${l}`, body: 'Level reward available' });
-    for (const a of outcome.achievements) {
-      const def = ACHIEVEMENTS.find(x => x.id === a)!;
-      st.toast({ kind: 'achievement', title: def.name, body: def.desc, rarity: def.rarity });
-    }
     return outcome;
   },
 

@@ -72,11 +72,11 @@ let pass = 0, fail = 0; const ok = (n, c, extra = '') => { if (c) { pass++; cons
   await S(() => window.__apx.useStore.getState().go('menu')); await page.waitForTimeout(600);
 
   console.log('Economy: purchase, deduction, application, persistence');
-  const item = await S(() => { const st = window.__apx.useStore.getState(); st.patchProfile(p => { p.credits = 20000; p.level = 30; }); return 'spoiler_gt_wing'; });
-  const price = await S(id => { const st = window.__apx.useStore.getState(); return st.profile.credits; }, item);
-  const bought = await S(id => { const st = window.__apx.useStore.getState(); const c0 = st.profile.credits; const okb = st.buyCosmetic(id); const p = useStoreP(); function useStoreP() { return window.__apx.useStore.getState().profile; } return { okb, c0, c1: p.credits, owned: p.owned.includes(id) }; }, item);
+  const item = 'spoiler_gt_wing';
+  await S(() => window.__apx.useStore.getState().patchProfile(p => { p.credits = 20000; }));
+  const bought = await S(id => { const st = window.__apx.useStore.getState(); const a = st.profile; const c0 = a.credits, e0 = a.stats.creditsEarned, sp0 = a.stats.creditsSpent; const okb = st.buyCosmetic(id); const p = window.__apx.useStore.getState().profile; return { okb, c0, c1: p.credits, earned: p.stats.creditsEarned - e0, spent: p.stats.creditsSpent - sp0, owned: p.owned.includes(id) }; }, item);
   ok('purchase succeeds and owns the item', bought.okb && bought.owned);
-  ok('currency deducted by the listed price', bought.c0 - bought.c1 === 1500 * 1 || bought.c0 - bought.c1 > 0, JSON.stringify(bought));
+  ok('currency deducted by exactly the listed price (plus any achievement credits earned)', bought.spent > 0 && bought.c1 === bought.c0 - bought.spent + bought.earned, JSON.stringify(bought));
   const dup = await S(id => window.__apx.useStore.getState().buyCosmetic(id), item); ok('cannot buy the same item twice', dup === false);
   const broke = await S(() => { const st = window.__apx.useStore.getState(); st.patchProfile(p => { p.credits = 0; }); return st.buyCosmetic('spoiler_big_wing'); }); ok('cannot buy without enough credits', broke === false);
   await S(id => { const st = window.__apx.useStore.getState(); st.equip('spoiler', id); }, item);
