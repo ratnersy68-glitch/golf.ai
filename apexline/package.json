@@ -1,0 +1,38 @@
+{
+  "name": "apexline",
+  "version": "0.1.0",
+  "description": "APEXLINE - browser time-attack racing game",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "campaign:build": "tsx tools/build-campaign.ts",
+    "campaign:track": "tsx tools/build-campaign.ts --track",
+    "campaign:validate": "tsx tools/validate.ts",
+    "test:sim": "tsx tools/test-sim.ts",
+    "start": "vite --host",
+    "backend:sync": "tsx tools/sync-backend.ts",
+    "test": "npm run typecheck && npm run test:sim"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
+    "@types/three": "^0.187.0",
+    "idb-keyval": "^6.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "^0.187.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0"
+  },
+  "private": true,
+  "type": "module"
+}
