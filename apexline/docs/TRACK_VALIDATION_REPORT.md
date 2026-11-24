@@ -1,6 +1,6 @@
 # APEXLINE track validation report
 
-Generated 2026-11-24T20:27:15.053Z by `npm run campaign:validate` (physics `apexline-sim-3`).
+Generated 2026-11-24T22:04:00.201Z by `npm run campaign:validate` (physics `apexline-sim-3`).
 
 **275 / 275 tracks pass all checks** (geometry, completion, benchmark replay re-simulation, medal-ghost re-simulation, determinism, checkpoint order).
 
