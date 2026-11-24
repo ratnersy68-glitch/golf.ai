@@ -11,6 +11,7 @@ import type { TrackMeta } from '../sim/campaign-types';
 import { MEDAL_NAMES, defaultSetup, sanitiseSetup, MEDAL_COLORS } from '../game/progress';
 import { Btn, Icon, MedalChip, Modal, Slider, Currency } from './kit';
 import { audio } from '../audio/audio';
+import { perf as perfStats } from '../game/perf';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { VEHICLE_MAP, paramsFor } from '../data/vehicles';
 import { STANDARD } from '../sim/vehicle';
@@ -21,7 +22,6 @@ const STANDARD_MODES = new Set(['campaign', 'ranked', 'daily', 'weekly', 'ghost'
 
 export function RaceScreen({ replay }: { replay?: { trackId: number; log: InputLog; ms: number; vehicle: string; label: string; compare?: string } }) {
   const spec = useStore(s => s.race)!;
-  const store = useStore();
   const settings = useStore(s => s.settings);
   const profile = useStore(s => s.profile);
   const [sess, setSess] = useState<RaceSession | null>(null);
@@ -84,7 +84,7 @@ export function RaceScreen({ replay }: { replay?: { trackId: number; log: InputL
     const pm = (e: PointerEvent) => { const r = ref.current; if (!drag || !r || r.rig.mode !== 7) return; r.rig.orbit.yaw -= e.movementX * 0.008; r.rig.orbit.pitch = Math.max(-0.2, Math.min(1.4, r.rig.orbit.pitch + e.movementY * 0.006)); };
     const pu = () => { drag = false; };
     const wh = (e: WheelEvent) => { const r = ref.current; if (r && r.rig.mode === 7) r.rig.orbit.dist = Math.max(3, Math.min(30, r.rig.orbit.dist + e.deltaY * 0.01)); };
-    const hk = (e: KeyboardEvent) => { if (e.code === 'KeyH' && !e.repeat) useStore.getState().patchSettings(x => { x.hud.scale = x.hud.scale === 0 ? 1 : 0; }); };
+    const hk = (e: KeyboardEvent) => { if (e.code === 'F3' && !e.repeat) { e.preventDefault(); useStore.getState().patchSettings(x => { x.perfOverlay = !x.perfOverlay; }); } if (e.code === 'KeyH' && !e.repeat) useStore.getState().patchSettings(x => { x.hud.scale = x.hud.scale === 0 ? 1 : 0; }); };
     cv?.addEventListener('pointerdown', pd); window.addEventListener('pointermove', pm); window.addEventListener('pointerup', pu); cv?.addEventListener('wheel', wh, { passive: true }); window.addEventListener('keydown', hk);
     return () => { dead = true; s?.exit(); ref.current = null; cv?.removeEventListener('pointerdown', pd); window.removeEventListener('pointermove', pm); window.removeEventListener('pointerup', pu); cv?.removeEventListener('wheel', wh); window.removeEventListener('keydown', hk); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +126,47 @@ export function RaceScreen({ replay }: { replay?: { trackId: number; log: InputL
 }
 
 // ------------------------------------------------------------------------------------------------ HUD
+/** Mini-map: static track layer is drawn once into an offscreen canvas; live dots/progress are drawn from a store subscription (no React re-render). */
+function Minimap({ sess }: { sess: RaceSession }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return; const x = c.getContext('2d')!; const tr = sess.track; const W = c.width, H = c.height;
+    const b = sess.miniB; const w = b.maxX - b.minX || 1, hh = b.maxZ - b.minZ || 1; const sc = Math.max(w, hh); const pad = 8;
+    const P = (px: number, pz: number): [number, number] => [pad + ((px - b.minX) / sc + (1 - w / sc) / 2) * (W - pad * 2), pad + ((pz - b.minZ) / sc + (1 - hh / sc) / 2) * (H - pad * 2)];
+    const base = document.createElement('canvas'); base.width = W; base.height = H; const bx = base.getContext('2d')!;
+    bx.strokeStyle = 'rgba(37,40,45,.28)'; bx.lineWidth = 4; bx.lineJoin = 'round'; bx.beginPath();
+    for (let i = 0; i < tr.n; i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? bx.lineTo(px, pz) : bx.moveTo(px, pz); } bx.stroke();
+    tr.cps.forEach(ci => { const [px, pz] = P(tr.px[ci], tr.pz[ci]); bx.fillStyle = '#25282D'; bx.fillRect(px - 2, pz - 2, 4, 4); });
+    let last = 0;
+    const draw = () => {
+      const h = useHud.getState(); x.clearRect(0, 0, W, H); x.drawImage(base, 0, 0);
+      x.strokeStyle = '#25282D'; x.lineWidth = 2.5; x.beginPath(); const upto = Math.floor(h.progress * tr.n); for (let i = 0; i < upto; i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.stroke();
+      if (h.mini) { if (h.mini.gx !== undefined) { x.fillStyle = 'rgba(37,40,45,.45)'; x.beginPath(); x.arc(pad + h.mini.gx * (W - pad * 2), pad + (h.mini.gy ?? 0) * (H - pad * 2), 3.5, 0, 7); x.fill(); } x.fillStyle = '#25282D'; x.beginPath(); x.arc(pad + h.mini.x * (W - pad * 2), pad + h.mini.y * (H - pad * 2), 5, 0, 7); x.fill(); x.strokeStyle = '#FFFFFF'; x.lineWidth = 2; x.stroke(); }
+    };
+    draw();
+    return useHud.subscribe(() => { const t = performance.now(); if (t - last < 66) return; last = t; draw(); }); // ~15 Hz
+  }, [sess]);
+  return <canvas ref={ref} className="minimap" width={180} height={180} />;
+}
+
+/** RPM bar: only re-renders when the number of lit segments changes. */
+const RpmBar = React.memo(function RpmBar({ seg }: { seg: number }) {
+  const lit = useHud(h => Math.round(h.rpm * seg));
+  return <div className="rpm">{Array.from({ length: seg }).map((_, i) => <i key={i} className={i < lit ? (i > seg * 0.84 ? 'red on' : 'on') : ''} />)}</div>;
+});
+
+/** Optional performance overlay. Reads the shared perf object ~4x per second and writes straight to the DOM (no React state). */
+function PerfOverlay() {
+  const ref = useRef<HTMLPreElement>(null);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const el = ref.current; if (!el) return; const p = perfStats; const g = (performance as any).memory;
+      el.textContent = `FPS ${p.fps.toFixed(0)}   frame ${p.frameMs.toFixed(1)} ms (max ${p.frameMax.toFixed(0)})\nphysics ${p.simMs.toFixed(2)} ms   render-submit ${p.renderMs.toFixed(2)} ms   JS ${p.jsMs.toFixed(2)} ms\ndraw calls ${p.calls}   triangles ${(p.tris / 1000).toFixed(1)}k   geo ${p.geos}  tex ${p.textures}\nchunks ${p.chunksVisible}/${p.chunksTotal}   render scale ${p.resScale.toFixed(2)}${g ? `\nheap ${(g.usedJSHeapSize / 1048576).toFixed(0)} MB` : ''}`;
+    }, 250); return () => clearInterval(id);
+  }, []);
+  return <pre ref={ref} className="perfov" />;
+}
+
 function Hud({ sess, paused, replay, label }: { sess: RaceSession; paused: boolean; replay: boolean; label?: string }) {
   const h = useHud();
   const settings = useStore(s => s.settings);
@@ -136,20 +177,8 @@ function Hud({ sess, paused, replay, label }: { sess: RaceSession; paused: boole
   const good = cb === 'off' ? 'var(--good)' : '#4DA6FF', bad = cb === 'off' ? 'var(--bad)' : '#FF9A1F';
   const hidden = settings.hud.scale === 0;
   if (hidden) return null;
-  const mini = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = mini.current; if (!c || !hud.minimap) return; const x = c.getContext('2d')!; const tr = sess.track; const W = c.width, H = c.height;
-    x.clearRect(0, 0, W, H);
-    const b = sess.miniB; const w = b.maxX - b.minX || 1, hh = b.maxZ - b.minZ || 1; const s = Math.max(w, hh); const pad = 8;
-    const P = (px: number, pz: number) => [pad + ((px - b.minX) / s + (1 - w / s) / 2) * (W - pad * 2), pad + ((pz - b.minZ) / s + (1 - hh / s) / 2) * (H - pad * 2)];
-    x.strokeStyle = 'rgba(37,40,45,.28)'; x.lineWidth = 4; x.lineJoin = 'round'; x.beginPath();
-    for (let i = 0; i < tr.n; i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.stroke();
-    x.strokeStyle = '#25282D'; x.lineWidth = 2.5; x.beginPath(); for (let i = 0; i < Math.floor(h.progress * tr.n); i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.stroke();
-    tr.cps.forEach((ci) => { const [px, pz] = P(tr.px[ci], tr.pz[ci]); x.fillStyle = '#25282D'; x.fillRect(px - 2, pz - 2, 4, 4); });
-    if (h.mini) { if (h.mini.gx !== undefined) { x.fillStyle = 'rgba(37,40,45,.45)'; x.beginPath(); x.arc(pad + h.mini.gx * (W - pad * 2), pad + (h.mini.gy ?? 0) * (H - pad * 2), 3.5, 0, 7); x.fill(); } x.fillStyle = '#25282D'; x.beginPath(); x.arc(pad + h.mini.x * (W - pad * 2), pad + h.mini.y * (H - pad * 2), 5, 0, 7); x.fill(); x.strokeStyle = '#FFFFFF'; x.lineWidth = 2; x.stroke(); }
-  });
   const showTimer = !h.free;
-  const seg = 24; const lit = Math.round(h.rpm * seg);
+  const seg = 24;
   return (
     <div className="hud" style={{ ['--hs' as any]: settings.hud.scale }}>
       {h.phase === 'countdown' && !replay && <div className="countdown" key={h.countdown}>{h.countdown > 0 ? h.countdown : 'GO'}</div>}
@@ -176,14 +205,15 @@ function Hud({ sess, paused, replay, label }: { sess: RaceSession; paused: boole
       {h.endless && <div className="stunt"><small>DISTANCE</small><b>{h.endless.dist.toLocaleString()} m</b><span>{3 - h.crashes} lives</span></div>}
       {hud.speed && (
         <div className="speedo">
-          <div className="rpm">{Array.from({ length: seg }).map((_, i) => <i key={i} className={i < lit ? (i > seg * 0.84 ? 'red on' : 'on') : ''} />)}</div>
+          <RpmBar seg={seg} />
           <div className="spd"><b>{spd}</b><small>{unit}</small><em>{h.gear}</em></div>
           <div className="pedals"><i className="g" style={{ height: `${h.thr * 100}%` }} /><i className="r" style={{ height: `${h.brk * 100}%` }} /></div>
         </div>
       )}
-      {hud.minimap && <canvas ref={mini} className="minimap" width={180} height={180} />}
+      {hud.minimap && <Minimap sess={sess} />}
       <div className="hud-bl"><span>{h.camera}</span>{h.ghostName && <span className="gtag"><Icon name="ghost" size={13} />{h.ghostName}</span>}{h.respawns > 0 && <span>RESETS {h.respawns}</span>}</div>
-      {settings.showFps && <div className="fps">{h.fps} FPS</div>}
+      {settings.showFps && !settings.perfOverlay && <div className="fps">{h.fps} FPS</div>}
+      {settings.perfOverlay && <PerfOverlay />}
       {!replay && h.phase !== 'finished' && <div className="hint">R Restart · Backspace Checkpoint · C Camera · G Ghost · Tab Leaderboard · H Hide HUD · Esc Pause</div>}
       {replay && <div className="rp-tag">REPLAY · {label}</div>}
     </div>

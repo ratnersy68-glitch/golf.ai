@@ -253,7 +253,27 @@ export class CarModel {
     if (ug) { this.glowColor.set(ug); this.glowMat = this.mat(new THREE.MeshBasicMaterial({ map: glowTexture(), color: ug, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.9 })); const gm = new THREE.Mesh(this.geom(new THREE.PlaneGeometry(Wx * 2.6, (rearZ - frontZ) * 1.45)), this.glowMat); gm.rotation.x = -Math.PI / 2; gm.position.y = 0.04; gm.renderOrder = 3; this.group.add(gm); this.glow = gm; }
 
     this.length = rearZ - frontZ + 0.6; this.width = (kit.wheelF.x * Wx + kit.wheelF.w) * 2; this.height = cockSecs[4].yT + (useBox ? 0.2 : 0.1);
+    this.mergeStatic();
     g.traverse(o => { if ((o as THREE.Mesh).isMesh) o.castShadow = !this.ghost; });
+  }
+
+  /** Draw-call reduction: all body-fixed meshes that share a material are merged into one geometry (wheels and the glow quad stay separate because they animate). */
+  private mergeStatic() {
+    const g = this.inner; const groups = new Map<THREE.Material, THREE.Mesh[]>();
+    for (const o of g.children) { const m = o as THREE.Mesh; if (!m.isMesh || m === this.glow || Array.isArray(m.material)) continue; const k = m.material as THREE.Material; (groups.get(k) ?? groups.set(k, []).get(k)!).push(m); }
+    for (const [material, meshes] of groups) {
+      if (meshes.length < 2) continue;
+      const pos: number[] = [], nor: number[] = [], uv: number[] = [];
+      for (const m of meshes) {
+        m.updateMatrix(); const ng = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()); ng.applyMatrix4(m.matrix);
+        if (!ng.getAttribute('normal')) ng.computeVertexNormals();
+        const P = ng.getAttribute('position'), N = ng.getAttribute('normal'), U = ng.getAttribute('uv');
+        for (let i = 0; i < P.count; i++) { pos.push(P.getX(i), P.getY(i), P.getZ(i)); nor.push(N.getX(i), N.getY(i), N.getZ(i)); if (U) uv.push(U.getX(i), U.getY(i)); else uv.push(0, 0); }
+        ng.dispose(); g.remove(m);
+      }
+      const geo = this.geom(new THREE.BufferGeometry()); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.computeBoundingSphere(); g.add(new THREE.Mesh(geo, material));
+    }
   }
 
   update(dt: number, d: CarDynamics, lean: { roll: number; pitch: number; heave: number }) {

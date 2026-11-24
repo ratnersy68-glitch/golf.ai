@@ -5,10 +5,13 @@ import { Sim, DT, TICK_RATE, EV_CP, EV_FINISH, EV_LAND, EV_WALL, EV_CRASH, EV_RE
 import { InputLog, quantise, toInput, packReplay, ReplayMeta, validateReplay, QInput } from '../sim/replay';
 import type { TrackMeta } from '../sim/campaign-types';
 import { CarModel } from './car';
-import { buildWorld, World } from './world';
+import { buildWorld, World } from './worldv2';
+import { qualityFor } from './quality';
+import { AdaptiveRes } from './adaptive';
 import { CameraRig, CAMERA_NAMES } from './cameras';
 import { ParticlePool, SkidMarks } from './fx';
 import { Gfx } from './gfx';
+import { perf, now as pnow, heapMB } from './perf';
 import { InputManager } from './input';
 import { audio } from '../audio/audio';
 import { VEHICLE_MAP, paramsFor } from '../data/vehicles';
@@ -55,6 +58,7 @@ export class RaceSession {
   sim!: Sim; params: VehicleParams; log = new InputLog(); rig = new CameraRig();
   smoke!: ParticlePool; glow!: ParticlePool; skid!: SkidMarks;
   phase: HudState['phase'] = 'countdown'; countdown = 3.2; acc = 0; time = 0; prev = mkPose(); cur = mkPose(); gprev = mkPose(); gcur = mkPose();
+  adapt = new AdaptiveRes(); _F = new THREE.Vector3(); _U = new THREE.Vector3(); _P = new THREE.Vector3(); _gP = new THREE.Vector3(); _gF = new THREE.Vector3(); _gU = new THREE.Vector3();
   raf = 0; lastNow = 0; fps = 60; hudAcc = 0; running = false; pausedAt = 0;
   init: RaceInit; setup: CarSetup;
   lastLog: InputLog | null = null; // previous attempt (for "previous attempt" ghost)
@@ -82,10 +86,11 @@ export class RaceSession {
   }
 
   enter() {
+    const tEnter = pnow();
     const { gfx, init, settings } = this as any as { gfx: Gfx; init: RaceInit; settings: Settings }; const st = init.settings;
     this.cleanupScene();
-    gfx.setEnv(this.track.def.env);
-    this.world = buildWorld(this.track, this.track.def.env, { particles: st.particles, distance: st.drawDistance });
+    gfx.setEnv(this.track.def.env); this.adapt.reset(); gfx.setDynamicScale(1);
+    const tW = pnow(); this.world = buildWorld(this.track, this.track.def.env, qualityFor(st)); perf.worldBuildMs = pnow() - tW;
     gfx.scene.add(this.world.group);
     const setup = init.replay ? init.replay.setup : init.setup; this.setup = setup;
     this.car = new CarModel(setup); gfx.scene.add(this.car.group);
@@ -109,8 +114,12 @@ export class RaceSession {
     };
     this.ghostOn = st.ghost; this.pickGhost(init.ghostKind);
     if (init.replay) { this.setupReplay(); } else this.reset(true);
-    this.entered = true; this.running = true; this.lastNow = performance.now();
-    const loop = (now: number) => { if (!this.running) return; this.raf = requestAnimationFrame(loop); this.frame(now); };
+    this.entered = true; this.running = true; this.lastNow = performance.now(); perf.enterMs = pnow() - tEnter; gfx.renderer.info.autoReset = false;
+    const loop = (now: number) => {
+      if (!this.running) return; this.raf = requestAnimationFrame(loop);
+      const lim = this.init.settings.fpsLimit; if (lim > 0 && now - this.lastNow < 1000 / lim - 1.5) return; // FPS limiter: skip the frame, dt keeps accumulating
+      this.frame(now);
+    };
     this.raf = requestAnimationFrame(loop);
   }
 
@@ -164,12 +173,14 @@ export class RaceSession {
   lastBeep = -1;
 
   restart(note = false) {
+    const tR = pnow();
     if (this.rp) { this.rp.tick = 0; this.sim = new Sim(this.track, this.params); this.ghostSim?.reset(); this.skid.clear(); return; }
     if (note) this.init.onRestart?.();
     if (this.log.length > 600 && this.phase !== 'finished') { this.lastLog = this.log; const pg = this.ghostList.find(k => k.kind === 'prev'); if (pg) { pg.log = this.log; pg.ms = this.log.length * DT * 1000; if (this.ghostList[this.ghostIdx]?.kind === 'prev') this.pickGhost('prev'); } }
     this.attempts++;
     this.reset();
     audio.respawn();
+    perf.restartMs = pnow() - tR;
   }
   requestRespawn() { if (this.phase === 'racing' && !this.rp) this.pendingRespawn = true; }
   pendingRespawn = false;
@@ -190,12 +201,13 @@ export class RaceSession {
 
   // ------------------------------------------------------------------------------------------------------ main loop
   frame(now: number) {
+    const tF0 = pnow();
     let dt = Math.min(0.1, (now - this.lastNow) / 1000); this.lastNow = now;
     if (dt <= 0) return;
     const inp = this.init.input; inp.poll(dt);
     this.fps += (1 / dt - this.fps) * 0.05;
     const st = this.init.settings;
-    if (st.fpsLimit > 0 && dt < 1 / st.fpsLimit - 0.0008) { /* simple soft limiter: skip render */ }
+    { const ns = this.adapt.update(dt * 1000, st.fpsLimit > 0 ? Math.min(st.fpsLimit, 60) : 60, st.adaptive && this.phase !== 'paused'); if (ns !== null) { this.gfx.setDynamicScale(ns); perf.resScale = ns; } }
     if (this.rp) { this.frameReplay(dt); }
     else if (this.phase === 'paused') { /* frozen */ }
     else {
@@ -207,7 +219,7 @@ export class RaceSession {
         this.world.update(0);
       }
       this.fixedAcc += dt;
-      let steps = 0;
+      let steps = 0; const tS = pnow();
       while (this.fixedAcc >= DT && steps < 12) {
         this.fixedAcc -= DT; steps++;
         Object.assign(this.prev, this.cur); Object.assign(this.gprev, this.gcur);
@@ -215,10 +227,17 @@ export class RaceSession {
         this.writePose(this.sim, this.cur);
         if (this.ghostSim && this.ghostLog) { const gt = this.sim.tick; this.stepGhost(gt); this.writePose(this.ghostSim, this.gcur); }
       }
+      perf.simMs += (pnow() - tS - perf.simMs) * 0.1;
       if (steps === 12) this.fixedAcc = 0;
       if (this.phase === 'finished') { this.finishT += dt; this.victoryT += dt; }
     }
     this.render(dt);
+    this.recordFrame(dt, pnow() - tF0);
+  }
+  private recordFrame(dt: number, jsMs: number) {
+    perf.frames++; perf.jsMs += (jsMs - perf.jsMs) * 0.1; perf.frameMs += (dt * 1000 - perf.frameMs) * 0.1; perf.fps = 1000 / Math.max(0.1, perf.frameMs); if (dt * 1000 > 40) perf.longFrames++;
+    perf.frameMax = Math.max(dt * 1000, perf.frameMax * 0.995);
+    if ((perf.frames & 15) === 0) { const info = this.gfx.renderer.info; perf.geos = info.memory.geometries; perf.textures = info.memory.textures; perf.heapMB = heapMB(); }
   }
 
   private stepGhost(tick: number) {
@@ -409,16 +428,16 @@ export class RaceSession {
     const x = a.x + (b.x - a.x) * alpha, y = a.y + (b.y - a.y) * alpha, z = a.z + (b.z - a.z) * alpha;
     const fx = a.fx + (b.fx - a.fx) * alpha, fy = a.fy + (b.fy - a.fy) * alpha, fz = a.fz + (b.fz - a.fz) * alpha;
     const ux = a.ux + (b.ux - a.ux) * alpha, uy = a.uy + (b.uy - a.uy) * alpha, uz = a.uz + (b.uz - a.uz) * alpha;
-    const F = new THREE.Vector3(fx, fy, fz).normalize(); const U = new THREE.Vector3(ux, uy, uz); U.addScaledVector(F, -U.dot(F)).normalize();
-    let pos = new THREE.Vector3(x, y, z);
-    if (post) { pos = post.pos; F.copy(post.f); U.copy(post.u); }
+    const F = this._F.set(fx, fy, fz).normalize(); const U = this._U.set(ux, uy, uz); U.addScaledVector(F, -U.dot(F)).normalize();
+    const pos = this._P.set(x, y, z);
+    if (post) { pos.copy(post.pos); F.copy(post.f); U.copy(post.u); }
     this.placeCar(this.car, pos, F, U, dt, sim);
     // ghost
     if (this.ghostCar && this.ghostSim) {
       const ga = this.gprev, gb = this.gcur;
-      const gp = new THREE.Vector3(ga.x + (gb.x - ga.x) * alpha, ga.y + (gb.y - ga.y) * alpha, ga.z + (gb.z - ga.z) * alpha);
-      const gF = new THREE.Vector3(ga.fx + (gb.fx - ga.fx) * alpha, ga.fy + (gb.fy - ga.fy) * alpha, ga.fz + (gb.fz - ga.fz) * alpha).normalize();
-      const gU = new THREE.Vector3(ga.ux + (gb.ux - ga.ux) * alpha, ga.uy + (gb.uy - ga.uy) * alpha, ga.uz + (gb.uz - ga.uz) * alpha); gU.addScaledVector(gF, -gU.dot(gF)).normalize();
+      const gp = this._gP.set(ga.x + (gb.x - ga.x) * alpha, ga.y + (gb.y - ga.y) * alpha, ga.z + (gb.z - ga.z) * alpha);
+      const gF = this._gF.set(ga.fx + (gb.fx - ga.fx) * alpha, ga.fy + (gb.fy - ga.fy) * alpha, ga.fz + (gb.fz - ga.fz) * alpha).normalize();
+      const gU = this._gU.set(ga.ux + (gb.ux - ga.ux) * alpha, ga.uy + (gb.uy - ga.uy) * alpha, ga.uz + (gb.uz - ga.uz) * alpha); gU.addScaledVector(gF, -gU.dot(gF)).normalize();
       this.placeCar(this.ghostCar, gp, gF, gU, dt, this.ghostSim);
     }
     // spawn effect
@@ -427,11 +446,11 @@ export class RaceSession {
     this.world.update(sim.tick * DT);
     const hint = sim.air ? sim.hint : sim.s / DS;
     this.rig.update(gfx.camera, dt, { p: pos, f: F, u: U }, sim.speed, this.track, hint, sim.air && this.phase !== 'finished');
-    gfx.applySun(pos);
+    gfx.applySun(pos); this.world.cull(gfx.camera.position); perf.chunksVisible = this.world.visibleChunks; perf.chunksTotal = this.world.chunks.length;
     audio.resume();
     const eng = audio.updateEngine(sim.speed, this.phase === 'racing' ? this.thrVis : 0, sim.slipR, this.track.surf[Math.min(this.track.n - 1, Math.floor(sim.s / DS))], sim.air, dt);
     this.lastGear = eng.gear;
-    gfx.render(st.motionBlur ? Math.min(0.12, sim.speed * 0.0014) : 0);
+    const tRn = pnow(); gfx.renderer.info.reset(); gfx.render(st.motionBlur ? Math.min(0.12, sim.speed * 0.0014) : 0); perf.renderMs += (pnow() - tRn - perf.renderMs) * 0.1; perf.calls = gfx.renderer.info.render.calls; perf.tris = gfx.renderer.info.render.triangles;
     // HUD at ~30 Hz
     this.hudAcc += dt;
     if (this.hudAcc > 0.033) { this.hudAcc = 0; this.pushHud(eng); }

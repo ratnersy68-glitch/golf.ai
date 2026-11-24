@@ -19,13 +19,21 @@ export async function loadCampaign(): Promise<CampaignFile> {
 export function campaignSync(): CampaignFile | null { return file; }
 export function trackMeta(id: number): TrackMeta | undefined { return file?.tracks[id - 1]?.meta; }
 export function trackDef(id: number): CampaignTrack | undefined { return file?.tracks[id - 1]; }
-export function getTrack(id: number): Track { let t = trackCache.get(id); if (!t) { t = buildTrack(file!.tracks[id - 1]); trackCache.set(id, t); } return t; }
+/** Built tracks are cached in a small LRU (only the current track + a few recents stay in memory; the other ~270 are rebuilt on demand in a few ms). */
+const TRACK_LRU = 6;
+export function getTrack(id: number): Track {
+  let t = trackCache.get(id);
+  if (t) { trackCache.delete(id); trackCache.set(id, t); return t; } // refresh recency
+  t = buildTrack(file!.tracks[id - 1]); trackCache.set(id, t);
+  while (trackCache.size > TRACK_LRU) trackCache.delete(trackCache.keys().next().value as number);
+  return t;
+}
 
 export interface GhostFile { bench: ReplayMeta; ghosts?: Partial<Record<'platinum' | 'gold' | 'silver' | 'bronze', ReplayMeta>> }
 const ghostCache = new Map<number, GhostFile>();
 export async function loadGhostFile(id: number): Promise<GhostFile | null> {
   if (ghostCache.has(id)) return ghostCache.get(id)!;
-  try { const r = await fetch(`${BASE}data/replays/${String(id).padStart(3, '0')}.json`); if (!r.ok) return null; let j = await r.json(); if (j.data) j = { bench: j }; ghostCache.set(id, j); return j; } catch { return null; }
+  try { const r = await fetch(`${BASE}data/replays/${String(id).padStart(3, '0')}.json`); if (!r.ok) return null; let j = await r.json(); if (j.data) j = { bench: j }; ghostCache.set(id, j); while (ghostCache.size > 8) ghostCache.delete(ghostCache.keys().next().value as number); return j; } catch { return null; }
 }
 
 /** Synthetic meta for modes that are not part of the campaign (no medals, benchmarks or records). */

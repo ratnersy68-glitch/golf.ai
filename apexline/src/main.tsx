@@ -6,5 +6,6 @@ installMarbleCss();
 import { useStore } from './game/store';
 import { unpackReplay } from './sim/replay';
 import { checkCars } from './game/carcheck';
-(window as any).__apx = { useStore, unpackReplay, checkCars };
+import { perf } from './game/perf';
+(window as any).__apx = { useStore, unpackReplay, checkCars, perf };
 createRoot(document.getElementById('root')!).render(<App />);

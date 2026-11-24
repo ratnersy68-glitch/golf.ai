@@ -47,7 +47,7 @@ let pass = 0, fail = 0; const ok = (n, c, extra = '') => { if (c) { pass++; cons
   await page.setViewportSize({ width: 960, height: 540 });
 
   console.log('Race: benchmark replay through the real browser pipeline');
-  await S(() => { const s = window.__apx.useStore.getState(); s.applyPreset('potato'); s.patchSettings(x => { x.showFps = true; x.ghost = false; }); s.go('menu'); });
+  await S(() => { const s = window.__apx.useStore.getState(); s.applyPreset('performance'); s.patchSettings(x => { x.showFps = true; x.ghost = false; }); s.go('menu'); });
   await page.waitForTimeout(500);
   const before = await S(() => { const p = window.__apx.useStore.getState().profile; return { credits: p.credits, races: p.stats.races }; });
   await S(() => window.__apx.useStore.getState().startRace({ mode: 'campaign', trackId: 1 }));

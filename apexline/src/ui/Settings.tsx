@@ -8,10 +8,13 @@ import { backendConfigured, signIn, currentUser, signOut, cloudPush, cloudPull }
 import { CAMERA_NAMES } from '../game/cameras';
 import { input } from './runtime';
 import { toggleFullscreen } from './App';
+import { recommendSettings } from '../game/recommend';
+import { FPS_LIMITS } from '../game/quality';
 
 const ACTIONS: [string, string][] = [['accel', 'Accelerate'], ['brake', 'Brake / Reverse'], ['left', 'Steer left'], ['right', 'Steer right'], ['handbrake', 'Handbrake'], ['restart', 'Restart track'], ['checkpoint', 'Restart from checkpoint'], ['camera', 'Change camera'], ['pause', 'Pause'], ['leaderboard', 'Leaderboard'], ['ghost', 'Toggle ghost']];
 const codeName = (c: string) => c.replace('Key', '').replace('Arrow', '↔ ').replace('Digit', '');
 const LV = ['Off', 'Low', 'Medium', 'High', 'Ultra'];
+const DIST = ['Very short', 'Short', 'Medium', 'Long', 'Extreme'];
 
 export function SettingsScreen() {
   const st = useStore(); const s = st.settings; const patch = st.patchSettings;
@@ -25,7 +28,9 @@ export function SettingsScreen() {
     window.addEventListener('keydown', h, true); return () => window.removeEventListener('keydown', h, true);
   }, [listen, patch]);
   const vol = (k: keyof typeof s.vol, label: string) => <Slider label={label} value={s.vol[k]} min={0} max={1} onChange={v => { patch(x => { x.vol[k] = v; }); }} fmt={v => Math.round(v * 100) + '%'} />;
-  const lvl = (k: 'shadows' | 'reflections' | 'particles' | 'drawDistance', label: string) => <Slider label={label} value={s[k]} min={0} max={3} step={1} onChange={v => patch(x => { x[k] = v; x.preset = 'high'; })} fmt={v => LV[v]} />;
+  const lvl = (k: 'shadows' | 'reflections' | 'particles' | 'drawDistance', label: string, max = 3, names = LV) => <Slider label={label} value={s[k]} min={0} max={max} step={1} onChange={v => patch(x => { x[k] = v; })} fmt={v => names[v]} />;
+  const [tuning, setTuning] = useState(false); const [tuneMsg, setTuneMsg] = useState('');
+  const shown = (Object.keys(PRESETS) as (keyof typeof PRESETS)[]).find(k => (Object.keys(PRESETS[k]) as (keyof typeof s)[]).every(f => (s as any)[f] === (PRESETS[k] as any)[f])) ?? ('custom' as const);
   return (
     <div className="screen">
       <Back title="Settings" />
@@ -34,14 +39,19 @@ export function SettingsScreen() {
         {tab === 'gfx' && (
           <>
             <div className="sub"><span>Preset</span></div>
-            <Segmented value={s.preset} onChange={v => st.applyPreset(v)} options={(['potato', 'low', 'medium', 'high', 'ultra', 'cinematic'] as const).map(v => ({ v, label: v }))} />
+            <Segmented value={shown as any} onChange={v => st.applyPreset(v as any)} options={(['performance', 'low', 'medium', 'high', 'ultra'] as const).map(v => ({ v, label: v }))} />
             <Slider label="Resolution scale" value={s.resScale} min={0.4} max={1.5} step={0.05} onChange={v => patch(x => { x.resScale = v; })} fmt={v => Math.round(v * 100) + '%'} />
-            {lvl('shadows', 'Shadow quality')}{lvl('reflections', 'Reflections')}{lvl('particles', 'Particles')}{lvl('drawDistance', 'Draw distance')}
-            <Slider label="FPS limit" value={s.fpsLimit} min={0} max={240} step={30} onChange={v => patch(x => { x.fpsLimit = v; })} fmt={v => v === 0 ? 'Unlimited' : String(v)} />
+            {shown === 'custom' && <p className="muted" style={{ fontSize: 12 }}>Custom settings (no preset matches).</p>}
+            <div className="row"><Btn small disabled={tuning} onClick={async () => { setTuning(true); setTuneMsg('Measuring…'); const r = await recommendSettings(); st.applyPreset(r.preset); patch(x => { x.autoTuned = true; }); setTuneMsg(`Applied “${r.preset}” — ${r.reason}`); setTuning(false); }}>Detect best settings</Btn><span className="muted" style={{ fontSize: 12 }}>{tuneMsg || 'Runs a short benchmark on this device and picks a preset.'}</span></div>
+            {lvl('shadows', 'Shadow quality')}{lvl('reflections', 'Reflections')}{lvl('particles', 'Particles')}{lvl('drawDistance', 'Render distance', 4, DIST)}
+            <div className="sub"><span>FPS limit (unlimited = your display's refresh rate)</span></div>
+            <Segmented value={s.fpsLimit} onChange={v => patch(x => { x.fpsLimit = v; })} options={FPS_LIMITS.map(v => ({ v, label: v === 0 ? 'Unlimited' : String(v) }))} />
+            <Toggle label="Adaptive resolution (lowers render scale automatically if the frame rate drops below 60)" value={s.adaptive} onChange={v => patch(x => { x.adaptive = v; })} />
             <Toggle label="Bloom" value={s.bloom} onChange={v => patch(x => { x.bloom = v; })} /><Toggle label="Ambient occlusion (GTAO)" value={s.ssao} onChange={v => patch(x => { x.ssao = v; })} />
             <Toggle label="Motion blur" value={s.motionBlur} onChange={v => patch(x => { x.motionBlur = v; })} /><Toggle label="Anti-aliasing (MSAA)" value={s.antialias} onChange={v => patch(x => { x.antialias = v; })} />
             <Btn onClick={() => toggleFullscreen()}>Toggle fullscreen (F)</Btn>
             <Toggle label="Show FPS counter" value={s.showFps} onChange={v => patch(x => { x.showFps = v; })} />
+            <Toggle label="Performance overlay (FPS, frame time, draw calls, triangles, memory, physics time) — F3 in a race" value={s.perfOverlay} onChange={v => patch(x => { x.perfOverlay = v; })} />
           </>
         )}
         {tab === 'audio' && <>{vol('master', 'Master')}{vol('music', 'Music')}{vol('engine', 'Engine')}{vol('env', 'Environment')}{vol('ui', 'Interface')}<Btn onClick={() => audio.checkpoint()}>Test sound</Btn></>}

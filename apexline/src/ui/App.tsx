@@ -3,6 +3,8 @@ import { useStore, Screen } from '../game/store';
 import { initGfx, getGfx } from '../game/host';
 import { Showroom } from '../game/showroom';
 import { loadKit } from '../game/kit';
+import { loadTrackKit } from '../game/trackkit';
+import { recommendSettings } from '../game/recommend';
 import { loadCampaign, campaignSync, dailyTrackId } from '../game/campaign';
 import { input } from './runtime';
 import { audio } from '../audio/audio';
@@ -10,20 +12,23 @@ import { defaultSetup, sanitiseSetup, levelFromXp, divisionOf, PRESTIGE_NAMES, d
 import { Btn, Icon, Currency, Modal, MedalChip } from './kit';
 import { RaceScreen } from './RaceScreen';
 import { CampaignScreen } from './Campaign';
-import { GarageScreen } from './Garage';
-import { ShopScreen } from './Shop';
-import { ProfileScreen } from './Profile';
-import { SettingsScreen } from './Settings';
-import { RankedScreen } from './Ranked';
-import { LeaderboardsScreen } from './Leaderboards';
-import { ModesScreen } from './Modes';
-import { EditorScreen } from './Editor';
-import { AchievementsScreen } from './Achievements';
 import { fmtTime } from '../sim/replay';
 import { COSMETIC_MAP } from '../data/cosmetics';
 import { VEHICLE_MAP } from '../data/vehicles';
 import { Toasts } from './Toasts';
 import { CHAPTERS_INFO } from '../data/chapters';
+
+// Secondary screens are code-split: they are fetched the first time they are opened (and prefetched when the browser is idle).
+const GarageScreen = React.lazy(() => import('./Garage').then(x => ({ default: x.GarageScreen })));
+const ShopScreen = React.lazy(() => import('./Shop').then(x => ({ default: x.ShopScreen })));
+const ProfileScreen = React.lazy(() => import('./Profile').then(x => ({ default: x.ProfileScreen })));
+const SettingsScreen = React.lazy(() => import('./Settings').then(x => ({ default: x.SettingsScreen })));
+const RankedScreen = React.lazy(() => import('./Ranked').then(x => ({ default: x.RankedScreen })));
+const LeaderboardsScreen = React.lazy(() => import('./Leaderboards').then(x => ({ default: x.LeaderboardsScreen })));
+const ModesScreen = React.lazy(() => import('./Modes').then(x => ({ default: x.ModesScreen })));
+const EditorScreen = React.lazy(() => import('./Editor').then(x => ({ default: x.EditorScreen })));
+const AchievementsScreen = React.lazy(() => import('./Achievements').then(x => ({ default: x.AchievementsScreen })));
+const prefetchScreens = () => { for (const m of [() => import('./Garage'), () => import('./Shop'), () => import('./Settings'), () => import('./Profile')]) m().catch(() => {}); };
 
 export function App() {
   const ready = useStore(s => s.ready); const screen = useStore(s => s.screen);
@@ -33,7 +38,13 @@ export function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gfxReady, setGfxReady] = useState(false);
 
-  useEffect(() => { init(); Promise.all([loadCampaign(), loadKit()]).then(() => setLoaded(true)).catch(e => setErr(String(e.message ?? e))); }, [init]);
+  useEffect(() => { init(); Promise.all([loadCampaign(), loadKit(), loadTrackKit().catch(() => null)]).then(() => { setLoaded(true); ((window as any).requestIdleCallback ?? setTimeout)(prefetchScreens, 1500); }).catch(e => setErr(String(e.message ?? e))); }, [init]);
+  // first launch only: measure this device and pick a graphics preset (skipped under automation; can be re-run from Settings)
+  useEffect(() => {
+    if (!gfxReady || !loaded || settings.autoTuned || (navigator as any).webdriver) return;
+    const id = setTimeout(async () => { const r = await recommendSettings(); const st = useStore.getState(); st.applyPreset(r.preset); st.patchSettings(x => { x.autoTuned = true; }); st.toast({ kind: 'info', title: 'Graphics tuned', body: `Preset “${r.preset}” chosen from a quick benchmark (${r.msPerFrame} ms). Change it in Settings.` }); }, 2500);
+    return () => clearTimeout(id);
+  }, [gfxReady, loaded, settings.autoTuned]);
   useEffect(() => {
     if (!ready || !canvasRef.current) return;
     try { const g = initGfx(canvasRef.current, useStore.getState().settings); audio.init(useStore.getState().settings); setGfxReady(true); void g; }
@@ -53,6 +64,7 @@ export function App() {
       {!err && (!ready || !loaded || !gfxReady) && <div className="boot"><div className="boot-card"><h1>APEXLINE</h1><p className="muted">Loading track data…</p><div className="loadbar"><i /></div></div></div>}
       {!err && ready && loaded && gfxReady && (
         <>
+          <React.Suspense fallback={null}>
           {screen === 'menu' && <MenuScreen />}
           {screen === 'campaign' && <CampaignScreen />}
           {screen === 'garage' && <GarageScreen />}
@@ -66,6 +78,7 @@ export function App() {
           {screen === 'editor' && <EditorScreen />}
           {screen === 'race' && <RaceScreen />}
           {screen === 'replay' && <ReplayHost />}
+          </React.Suspense>
         </>
       )}
       <FullscreenButton />

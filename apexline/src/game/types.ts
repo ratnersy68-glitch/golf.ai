@@ -32,7 +32,7 @@ export interface TrackRecord {
 }
 
 export interface Settings {
-  preset: 'potato' | 'low' | 'medium' | 'high' | 'ultra' | 'cinematic';
+  preset: 'performance' | 'low' | 'medium' | 'high' | 'ultra';
   resScale: number; shadows: number; reflections: number; particles: number; drawDistance: number; fpsLimit: number;
   bloom: boolean; motionBlur: boolean; ssao: boolean; antialias: boolean;
   reducedMotion: boolean; cameraShake: number; colorblind: 'off' | 'deuter' | 'protan' | 'tritan'; units: 'kmh' | 'mph';
@@ -41,6 +41,7 @@ export interface Settings {
   deadzone: number; steerSens: number; vibration: boolean; touchScale: number; touchOpacity: number; touchLeft: boolean;
   hud: { speed: boolean; minimap: boolean; delta: boolean; progress: boolean; keys: boolean; scale: number };
   camera: number; ghost: boolean; instantRestart: boolean; showFps: boolean; ghostKind: string;
+  adaptive: boolean; perfOverlay: boolean; autoTuned: boolean;
 }
 
 export interface Challenge {

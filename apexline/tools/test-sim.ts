@@ -14,6 +14,9 @@ import { VEHICLES, paramsFor } from '../src/data/vehicles';
 import { ACHIEVEMENTS } from '../src/data/achievements';
 import { computeReward, levelFromXp, xpForLevel, migrateSave, defaultProfile, sanitiseSetup, defaultSetup, updateRanked, defaultRanked, perfRating, divisionOf, rollChallenges, MAX_LEVEL } from '../src/game/progress';
 import { dailyPicks, weeklyCollection } from '../src/ui/shopLogic';
+import { qualityFor, FPS_LIMITS, DRAW_DISTANCES } from '../src/game/quality';
+import { AdaptiveRes } from '../src/game/adaptive';
+import { PRESETS, defaultSettings } from '../src/game/progress';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let pass = 0, fail = 0;
@@ -116,5 +119,20 @@ t('shop rotation is deterministic per day and week', () => { eq(dailyPicks('2026
 console.log('Saves');
 t('migration from an empty / old save keeps defaults', () => { const m = migrateSave({ version: 1, profile: { credits: 777, owned: [] }, settings: {} }); eq(m.profile.credits, 777); ok(m.profile.owned.length >= DEFAULT_OWNED.length); ok(m.profile.ranked && m.settings.vol); });
 t('setups never reference cosmetics the player does not own', () => { const p = defaultProfile(); const s = defaultSetup('pulse'); s.body.spoiler = 'spoiler_big_wing'; s.paint.finish = 'finish_chrome'; const c = sanitiseSetup(p, s); eq(c.body.spoiler, 'spoiler_none'); eq(c.paint.finish, 'finish_gloss'); });
+console.log('Graphics / performance');
+t('save migration renames potato/cinematic presets and keeps player choice', () => { eq(migrateSave({ version: 3, profile: {}, settings: { preset: 'potato' } }).settings.preset, 'performance'); eq(migrateSave({ version: 3, profile: {}, settings: { preset: 'cinematic' } }).settings.preset, 'ultra'); eq(migrateSave({ version: 3, profile: {}, settings: { preset: 'low' } }).settings.autoTuned, true); eq(migrateSave(null).settings.autoTuned, false); });
+t('five presets exist and every preset produces strictly non-decreasing quality knobs', () => {
+  const names = ['performance', 'low', 'medium', 'high', 'ultra'] as const; eq(Object.keys(PRESETS).length, 5);
+  let prev: ReturnType<typeof qualityFor> | null = null;
+  for (const n of names) { const st = { ...defaultSettings(), ...PRESETS[n], preset: n }; const q = qualityFor(st); if (prev) { ok(q.far >= prev.far && q.propDensity >= prev.propDensity && q.tier >= prev.tier && q.texSize >= prev.texSize, n + ' regressed'); } prev = q; }
+});
+t('render-distance steps map to increasing distances; FPS limit list is complete', () => { for (let i = 1; i < DRAW_DISTANCES.length; i++) ok(DRAW_DISTANCES[i] > DRAW_DISTANCES[i - 1]); eq(FPS_LIMITS.join(), '30,60,120,144,165,240,0'); });
+t('adaptive resolution drops under sustained load, recovers with headroom, never leaves [0.55, 1] and is inert when disabled', () => {
+  const a = new AdaptiveRes(); let s = 1; for (let i = 0; i < 2000; i++) { const r = a.update(30, 60, true); if (r !== null) s = r; } ok(s < 1 && s >= 0.55, 'did not downscale: ' + s);
+  for (let i = 0; i < 6000; i++) { const r = a.update(5, 60, true); if (r !== null) s = r; } eq(s, 1, 'did not recover');
+  const b = new AdaptiveRes(); let changed = 0; for (let i = 0; i < 2000; i++) if (b.update(40, 60, false) !== null) changed++; eq(changed, 0);
+});
+t('adaptive resolution does not oscillate on a steady on-budget frame time', () => { const a = new AdaptiveRes(); let ch = 0; for (let i = 0; i < 5000; i++) if (a.update(15.5 + (i % 3) * 0.3, 60, true) !== null) ch++; eq(ch, 0); });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -4,8 +4,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import type { GTAOPass as GTAOPassT } from 'three/addons/postprocessing/GTAOPass.js';
 import type { Settings } from './types';
+import { DRAW_DISTANCES } from './quality';
+
+// GTAO is only needed on ultra: loaded on demand so it stays out of the start-up bundle
+let GTAOCls: typeof GTAOPassT | null = null;
 
 export interface EnvStyle {
   sky: [string, string, string]; // zenith, horizon, ground haze
@@ -66,11 +70,12 @@ export class Gfx {
   composer?: EffectComposer;
   bloom?: UnrealBloomPass;
   blur?: ShaderPass;
-  gtao?: GTAOPass;
+  gtao?: GTAOPassT;
   settings!: Settings;
   style: EnvStyle = ENV_STYLES.academy;
   envName = 'academy';
-  envRT?: THREE.WebGLRenderTarget;
+  envCache = new Map<string, THREE.WebGLRenderTarget>();
+  dynScale = 1;
   w = 1; h = 1;
   shadowSpan = 90;
   fps = 60; frameMs: number[] = [];
@@ -99,7 +104,7 @@ export class Gfx {
 
   applySettings(s: Settings) {
     this.settings = s;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2) * s.resScale;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * s.resScale * this.dynScale;
     this.renderer.setPixelRatio(dpr);
     const sm = [0, 1024, 2048, 4096][Math.min(3, s.shadows)] || 0;
     this.renderer.shadowMap.enabled = sm > 0;
@@ -109,8 +114,15 @@ export class Gfx {
     this.usePost = s.bloom || s.motionBlur || s.ssao;
     this.rebuildComposer();
     this.resize(this.w, this.h, true);
-    this.camera.far = [600, 1200, 2200, 4000][Math.min(3, s.drawDistance)];
+    this.camera.far = DRAW_DISTANCES[Math.max(0, Math.min(4, s.drawDistance))] * 1.15;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Adaptive resolution: multiplies the user's resolution scale without touching their settings. */
+  setDynamicScale(f: number) {
+    if (Math.abs(f - this.dynScale) < 0.001) return;
+    this.dynScale = f; this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * this.settings.resScale * f);
+    this.renderer.setSize(this.w, this.h, false); this.composer?.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * this.settings.resScale * f); this.composer?.setSize(this.w, this.h);
   }
 
   private rebuildComposer() {
@@ -121,7 +133,8 @@ export class Gfx {
     const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: s.antialias ? 4 : 0 });
     const c = new EffectComposer(this.renderer, rt);
     c.addPass(new RenderPass(this.scene, this.camera));
-    if (s.ssao) { try { this.gtao = new GTAOPass(this.scene, this.camera, size.x, size.y); this.gtao.output = GTAOPass.OUTPUT.Default; this.gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1, thickness: 1, scale: 1, samples: 8 }); c.addPass(this.gtao); } catch { /* unsupported */ } }
+    if (s.ssao && !GTAOCls) import('three/addons/postprocessing/GTAOPass.js').then(m => { GTAOCls = m.GTAOPass; if (this.settings.ssao) { this.rebuildComposer(); this.composer?.setSize(this.w, this.h); } }).catch(() => {});
+    if (s.ssao && GTAOCls) { try { this.gtao = new GTAOCls(this.scene, this.camera, size.x, size.y); this.gtao.output = GTAOCls.OUTPUT.Default; this.gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1, thickness: 1, scale: 1, samples: 8 }); c.addPass(this.gtao); } catch { /* unsupported */ } }
     if (s.bloom) { this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), this.style.bloom, 0.6, 0.85); c.addPass(this.bloom); }
     if (s.motionBlur && !s.reducedMotion) { this.blur = new ShaderPass(MotionBlurShader); c.addPass(this.blur); }
     c.addPass(new OutputPass());
@@ -140,16 +153,17 @@ export class Gfx {
     const dd = [1.5, 1.15, 1, 0.8][Math.min(3, this.settings.drawDistance)];
     this.scene.fog = st.fogDensity > 0 ? new THREE.FogExp2(st.fog, st.fogDensity * dd) : null;
     if (this.bloom) this.bloom.strength = st.bloom;
-    // environment reflections from the sky
+    // environment reflections from the sky (generated once per environment and cached)
+    const hit = this.envCache.get(name);
+    if (hit) { this.scene.environment = this.settings.reflections > 0 ? hit.texture : null; this.scene.environmentIntensity = this.settings.reflections === 0 ? 0 : (name === 'garage' ? 0.55 : 0.9); this.applySun(new THREE.Vector3()); return; }
     const pm = new THREE.PMREMGenerator(this.renderer);
     const es = new THREE.Scene();
     const skyClone = new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), this.skyMat.clone());
     (skyClone.material as THREE.ShaderMaterial).depthTest = true;
     es.add(skyClone);
     // add soft ground bounce so lower hemisphere is not black
-    this.envRT?.dispose();
-    this.envRT = pm.fromScene(es, 0.02);
-    this.scene.environment = this.settings.reflections > 0 ? this.envRT.texture : null;
+    const envRT = pm.fromScene(es, 0.02); this.envCache.set(name, envRT);
+    this.scene.environment = this.settings.reflections > 0 ? envRT.texture : null;
     this.scene.environmentIntensity = this.settings.reflections === 0 ? 0 : (name === 'garage' ? 0.55 : 0.9);
     pm.dispose(); (skyClone.material as THREE.Material).dispose(); skyClone.geometry.dispose();
     this.applySun(new THREE.Vector3());
@@ -178,5 +192,5 @@ export class Gfx {
     if (this.composer) this.composer.render(); else this.renderer.render(this.scene, this.camera);
   }
 
-  dispose() { this.composer?.dispose(); this.envRT?.dispose(); this.renderer.dispose(); }
+  dispose() { this.composer?.dispose(); this.envCache.forEach(r => r.dispose()); this.envCache.clear(); this.renderer.dispose(); }
 }

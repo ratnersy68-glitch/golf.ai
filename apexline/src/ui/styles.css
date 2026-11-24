@@ -315,3 +315,5 @@ input[type=range] { accent-color: var(--charcoal); }
 @media (max-width: 700px) { .screen-top h1 { font-size: 22px; letter-spacing: .12em; } .btn { letter-spacing: .08em; } .tabs button { padding: 8px 9px; font-size: 13px; letter-spacing: .08em; } .brand b { letter-spacing: .2em; } .panel-h h3 { letter-spacing: .08em; } }
 .garage, .shop, .editor, .screen.menu { backdrop-filter: none !important; }
 .res-card { background: linear-gradient(rgba(255,255,255,.97), rgba(255,255,255,.95)), var(--marble-soft) center/cover; }
+
+.perfov { position: absolute; left: 14px; top: 56px; margin: 0; padding: 8px 10px; font: 11px/1.45 var(--font-m, monospace); color: #25282D; background: rgba(255,255,255,.88); border-radius: 6px; pointer-events: none; white-space: pre; z-index: 5; }

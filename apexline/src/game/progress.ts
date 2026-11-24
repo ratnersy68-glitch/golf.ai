@@ -4,7 +4,7 @@ import { COSMETIC_MAP, DEFAULT_OWNED, COSMETICS_BY_CAT } from '../data/cosmetics
 import type { Medals, TrackMeta } from '../sim/campaign-types';
 import { Rng, hashStr } from '../sim/dmath';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const PHYSICS_VERSION = 'apexline-sim-3';
 export const MAX_LEVEL = 250;
 export const PRESTIGE_NAMES = ['None', 'Rookie', 'Challenger', 'Specialist', 'Expert', 'Elite', 'Champion', 'Legend', 'Apex'];
@@ -72,17 +72,16 @@ export function defaultSettings(): Settings {
     preset: 'high', resScale: 1, shadows: 2, reflections: 2, particles: 2, drawDistance: 2, fpsLimit: 0, bloom: true, motionBlur: false, ssao: false, antialias: true,
     reducedMotion: false, cameraShake: 1, colorblind: 'off', units: 'kmh', vol: { master: 0.8, music: 0.5, engine: 0.8, env: 0.7, ui: 0.8 },
     keys: JSON.parse(JSON.stringify(KEYS_DEFAULT)), deadzone: 0.12, steerSens: 1, vibration: true, touchScale: 1, touchOpacity: 0.7, touchLeft: false,
-    hud: { speed: true, minimap: true, delta: true, progress: true, keys: false, scale: 1 }, camera: 0, ghost: true, instantRestart: true, showFps: false, ghostKind: 'pb',
+    hud: { speed: true, minimap: true, delta: true, progress: true, keys: false, scale: 1 }, camera: 0, ghost: true, instantRestart: true, showFps: false, ghostKind: 'pb', adaptive: true, perfOverlay: false, autoTuned: false,
   };
 }
 
 export const PRESETS: Record<Settings['preset'], Partial<Settings>> = {
-  potato: { resScale: 0.5, shadows: 0, reflections: 0, particles: 0, drawDistance: 0, bloom: false, motionBlur: false, ssao: false, antialias: false },
+  performance: { resScale: 0.5, shadows: 0, reflections: 0, particles: 0, drawDistance: 0, bloom: false, motionBlur: false, ssao: false, antialias: false },
   low: { resScale: 0.75, shadows: 0, reflections: 0, particles: 1, drawDistance: 1, bloom: false, motionBlur: false, ssao: false, antialias: false },
   medium: { resScale: 1, shadows: 1, reflections: 1, particles: 1, drawDistance: 1, bloom: true, motionBlur: false, ssao: false, antialias: true },
   high: { resScale: 1, shadows: 2, reflections: 2, particles: 2, drawDistance: 2, bloom: true, motionBlur: false, ssao: false, antialias: true },
-  ultra: { resScale: 1, shadows: 3, reflections: 3, particles: 3, drawDistance: 3, bloom: true, motionBlur: false, ssao: true, antialias: true },
-  cinematic: { resScale: 1.25, shadows: 3, reflections: 3, particles: 3, drawDistance: 3, bloom: true, motionBlur: true, ssao: true, antialias: true },
+  ultra: { resScale: 1, shadows: 3, reflections: 3, particles: 3, drawDistance: 4, bloom: true, motionBlur: true, ssao: true, antialias: true },
 };
 
 /** Versioned save migrations: each function lifts version n -> n+1. Unknown fields are kept, missing fields get defaults. */
@@ -102,6 +101,11 @@ export function migrateSave(raw: any): { profile: Profile; settings: Settings } 
       p.unlockMedals = Math.max(p.unlockMedals ?? 0, Object.values<any>(old).filter(r => r.medal > 0).length);
       p.records = {};
     }
+  }
+  if (v < 4) {
+    // v3 -> v4: graphics presets renamed (potato -> performance, cinematic -> ultra); adaptive resolution + overlay settings added
+    if (s.preset === 'potato') s.preset = 'performance'; if (s.preset === 'cinematic') s.preset = 'ultra';
+    if (raw?.settings) s.autoTuned = true; // existing players keep the graphics they chose; only brand-new saves are auto-tuned
   }
   const profile: Profile = { ...base, ...p, stats: { ...base.stats, ...(p.stats ?? {}) }, ranked: { ...base.ranked, ...(p.ranked ?? {}) } };
   const settings: Settings = { ...baseS, ...s, vol: { ...baseS.vol, ...(s.vol ?? {}) }, hud: { ...baseS.hud, ...(s.hud ?? {}) }, keys: { ...baseS.keys, ...(s.keys ?? {}) } };
