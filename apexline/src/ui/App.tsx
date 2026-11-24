@@ -67,6 +67,7 @@ export function App() {
           {screen === 'replay' && <ReplayHost />}
         </>
       )}
+      <FullscreenButton />
       <Toasts />
     </div>
   );
@@ -160,3 +161,22 @@ function MenuScreen() {
 }
 
 export { MEDAL_NAMES, COSMETIC_MAP, Modal };
+
+export function toggleFullscreen() {
+  const d = document as any, el = document.documentElement as any;
+  if (document.fullscreenElement || d.webkitFullscreenElement) (document.exitFullscreen ?? d.webkitExitFullscreen)?.call(document);
+  else (el.requestFullscreen ?? el.webkitRequestFullscreen)?.call(el)?.catch?.(() => {});
+}
+
+/** Always-visible fullscreen toggle (also bound to the F key). Works inside an iframe when the embed has allowfullscreen. */
+function FullscreenButton() {
+  const [fs, setFs] = useState(false);
+  useEffect(() => {
+    const on = () => setFs(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+    const key = (e: KeyboardEvent) => { const t = e.target as HTMLElement; if (e.code === 'KeyF' && !e.repeat && !e.ctrlKey && !e.metaKey && t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA') toggleFullscreen(); };
+    document.addEventListener('fullscreenchange', on); document.addEventListener('webkitfullscreenchange', on); window.addEventListener('keydown', key);
+    return () => { document.removeEventListener('fullscreenchange', on); document.removeEventListener('webkitfullscreenchange', on); window.removeEventListener('keydown', key); };
+  }, []);
+  return <button className="fsbtn" onClick={() => { audio.click(); toggleFullscreen(); }} title="Fullscreen (F)" aria-label={fs ? 'Exit fullscreen' : 'Enter fullscreen'}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{fs ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}</svg></button>;
+}

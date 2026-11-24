@@ -203,3 +203,6 @@ input[type=range] { accent-color: var(--lime); width: 100%; }
   .garage, .editor { grid-template-columns: 1fr; } .slider { grid-template-columns: 90px 1fr 46px; }
 }
 @media (max-height: 520px) { .hint { display: none; } .timer span { font-size: 34px; } .delta { top: 70px; font-size: 20px; } .countdown { font-size: 80px; } .speedo { transform: scale(.7); } }
+
+.fsbtn { position: absolute; right: 10px; bottom: 10px; z-index: 70; width: 38px; height: 38px; display: grid; place-items: center; background: rgba(16,18,22,.72); border: 1px solid var(--line); color: var(--silver); opacity: .75; } .fsbtn:hover { opacity: 1; color: var(--ice); border-color: var(--lime); }
+.race-root ~ .fsbtn { bottom: auto; top: 10px; right: 64px; }

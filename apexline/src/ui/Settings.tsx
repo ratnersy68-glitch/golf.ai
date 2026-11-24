@@ -7,6 +7,7 @@ import { audio } from '../audio/audio';
 import { backendConfigured, signIn, currentUser, signOut, cloudPush, cloudPull } from '../net/backend';
 import { CAMERA_NAMES } from '../game/cameras';
 import { input } from './runtime';
+import { toggleFullscreen } from './App';
 
 const ACTIONS: [string, string][] = [['accel', 'Accelerate'], ['brake', 'Brake / Reverse'], ['left', 'Steer left'], ['right', 'Steer right'], ['handbrake', 'Handbrake'], ['restart', 'Restart track'], ['checkpoint', 'Restart from checkpoint'], ['camera', 'Change camera'], ['pause', 'Pause'], ['leaderboard', 'Leaderboard'], ['ghost', 'Toggle ghost']];
 const codeName = (c: string) => c.replace('Key', '').replace('Arrow', '↔ ').replace('Digit', '');
@@ -39,6 +40,7 @@ export function SettingsScreen() {
             <Slider label="FPS limit" value={s.fpsLimit} min={0} max={240} step={30} onChange={v => patch(x => { x.fpsLimit = v; })} fmt={v => v === 0 ? 'Unlimited' : String(v)} />
             <Toggle label="Bloom" value={s.bloom} onChange={v => patch(x => { x.bloom = v; })} /><Toggle label="Ambient occlusion (GTAO)" value={s.ssao} onChange={v => patch(x => { x.ssao = v; })} />
             <Toggle label="Motion blur" value={s.motionBlur} onChange={v => patch(x => { x.motionBlur = v; })} /><Toggle label="Anti-aliasing (MSAA)" value={s.antialias} onChange={v => patch(x => { x.antialias = v; })} />
+            <Btn onClick={() => toggleFullscreen()}>Toggle fullscreen (F)</Btn>
             <Toggle label="Show FPS counter" value={s.showFps} onChange={v => patch(x => { x.showFps = v; })} />
           </>
         )}
