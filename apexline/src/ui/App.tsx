@@ -38,7 +38,7 @@ export function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gfxReady, setGfxReady] = useState(false);
 
-  useEffect(() => { init(); Promise.all([loadCampaign(), loadKit(), loadTrackKit().catch(() => null)]).then(() => { setLoaded(true); ((window as any).requestIdleCallback ?? setTimeout)(prefetchScreens, 1500); }).catch(e => setErr(String(e.message ?? e))); }, [init]);
+  useEffect(() => { init(); Promise.all([loadCampaign(), loadKit(), loadTrackKit().catch(() => null)]).then(() => { setLoaded(true); setTimeout(() => { const w = window as any; if (w.requestIdleCallback) w.requestIdleCallback(prefetchScreens); else prefetchScreens(); }, 1500); }).catch(e => setErr(String(e.message ?? e))); }, [init]);
   // first launch only: measure this device and pick a graphics preset (skipped under automation; can be re-run from Settings)
   useEffect(() => {
     if (!gfxReady || !loaded || settings.autoTuned || (navigator as any).webdriver) return;
