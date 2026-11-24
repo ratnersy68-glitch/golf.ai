@@ -10,6 +10,7 @@ const camp = fs.readFileSync(path.join(ROOT, 'public/data/campaign.json'), 'utf8
 html = html.replace(/<script type="module"[^>]*src="\.\/(assets\/[^"]+\.js)"[^>]*><\/script>/, '');
 html = html.replace(/<link rel="modulepreload"[^>]*>/g, '');
 const js = esc(fs.readFileSync(path.join(dist, html.match(/assets\/index-[^"]+\.js/)?.[0] ?? (fs.readdirSync(path.join(dist, 'assets')).map(f => 'assets/' + f).find(f => /index-.*\.js$/.test(f))!)), 'utf8'));
-html = html.replace('</body>', () => `<script>window.__APEX_CAMPAIGN=${esc(camp)};</script>\n<script type="module">${js}</script>\n</body>`);
+const glb = fs.readFileSync(path.join(ROOT, 'public/models/apexline_base_car.glb')).toString('base64');
+html = html.replace('</body>', () => `<script>window.__APEX_CAMPAIGN=${esc(camp)};window.__APEX_GLB="${glb}";</script>\n<script type="module">${js}</script>\n</body>`);
 const out = path.join(ROOT, 'dist-single'); fs.mkdirSync(out, { recursive: true }); fs.writeFileSync(path.join(out, 'apexline.html'), html);
 console.log(`dist-single/apexline.html ${(html.length / 1048576).toFixed(2)} MB`);

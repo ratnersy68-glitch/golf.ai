@@ -26,14 +26,14 @@ export function thumbFor(tr: Track, accent: string, w = 320, h = 180): string {
     if (tr.flags[i] & F_GAP) { x.strokeStyle = 'rgba(245,247,250,.25)'; x.setLineDash([2, 4]); x.lineWidth = 2; }
     else {
       x.setLineDash([]); x.lineWidth = 4.2;
-      const s2 = tr.surf[i]; x.strokeStyle = tr.flags[i] & F_BOOST ? '#C6FF00' : s2 === SURF_ICE ? '#9FD6FF' : s2 === SURF_DIRT ? '#a37a4e' : s2 === SURF_GRASS ? '#5da24a' : s2 === SURF_SAND ? '#d9bd80' : `hsl(${210 - t * 20},${10 + t * 8}%,${44 + t * 34}%)`;
+      const s2 = tr.surf[i]; x.strokeStyle = tr.flags[i] & F_BOOST ? '#6E7FA0' : s2 === SURF_ICE ? '#9FD6FF' : s2 === SURF_DIRT ? '#a37a4e' : s2 === SURF_GRASS ? '#5da24a' : s2 === SURF_SAND ? '#d9bd80' : `hsl(${210 - t * 20},${10 + t * 8}%,${44 + t * 34}%)`;
     }
     x.beginPath(); x.moveTo(a, b); x.lineTo(c2, d); x.stroke();
   }
   x.setLineDash([]);
   const [sx, sz] = P(2); x.fillStyle = accent; x.beginPath(); x.arc(sx, sz, 4.2, 0, 7); x.fill();
-  const [fx, fz] = P(tr.finish); x.fillStyle = '#F5F7FA'; x.fillRect(fx - 3.5, fz - 3.5, 7, 7);
-  x.fillStyle = '#101216'; x.fillRect(fx - 1.5, fz - 1.5, 3, 3);
+  const [fx, fz] = P(tr.finish); x.fillStyle = '#25282D'; x.fillRect(fx - 3.5, fz - 3.5, 7, 7);
+  x.fillStyle = '#FFFFFF'; x.fillRect(fx - 1.5, fz - 1.5, 3, 3);
   const url = cv.toDataURL('image/png'); thumbCache.set(key, url); return url;
 }
 
@@ -61,7 +61,7 @@ export function TrackPreview3D({ id }: { id: number }) {
     const wv = 2.4;
     for (let i = 0; i < tr.n; i++) {
       const w = Math.max(tr.w[i] * 0.5, 5) * wv * 0.5; const t = (tr.py[i] - minY) / (maxY - minY || 1);
-      c.setHSL(0.25 - t * 0.1, 0.1 + t * 0.6, 0.4 + t * 0.25); if (tr.flags[i] & F_BOOST) c.set('#C6FF00');
+      c.setHSL(0.25 - t * 0.1, 0.1 + t * 0.6, 0.4 + t * 0.25); if (tr.flags[i] & F_BOOST) c.set('#6E7FA0');
       if (tr.surf[i] === SURF_ICE) c.set('#9FD6FF'); if (tr.flags[i] & F_GAP) c.set('#222831');
       for (const sd of [-1, 1]) { pos.push(tr.px[i] - cx + tr.rx[i] * sd * w, tr.py[i] - cy + tr.ry[i] * sd * w, tr.pz[i] - cz + tr.rz[i] * sd * w); col.push(c.r, c.g, c.b); }
       if (i < tr.n - 1 && !(tr.flags[i] & F_GAP) && !(tr.flags[i + 1] & F_GAP)) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }

@@ -80,6 +80,9 @@ export interface Profile {
   rewardsClaimed: Record<string, boolean>;
   cloud?: { userId: string };
   lastRun?: { trackId: number; ms: number; at: number };
+  /** Records made under an older physics version. Kept for reference; incompatible with current replays/benchmarks. */
+  archive?: { physics: string; at: number; records: Record<number, TrackRecord>; replaysMoved?: boolean }[];
+  unlockMedals?: number; // high-water mark of medalled tracks, so a physics reset never re-locks chapters
 }
 
 export interface Stats {

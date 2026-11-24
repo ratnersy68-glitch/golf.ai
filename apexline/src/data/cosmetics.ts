@@ -125,7 +125,7 @@ const SPOILERS: [string, string, number, number, number][] = [
   ['Dual Plane', 'dual', 0.46, 1, 0.38], ['Big Wing', 'big', 0.54, 1.05, 0.46], ['Carbon Blade', 'gt', 0.3, 1.05, 0.22], ['Swan Neck', 'wing', 0.4, 1, 0.3], ['Triple Deck', 'dual', 0.5, 1.04, 0.34],
   ['Rally Ladder', 'ladder', 0.6, 1, 0.5], ['Endplate GT', 'gt', 0.38, 1.08, 0.36], ['Apex Spec', 'big', 0.5, 1.08, 0.5],
 ];
-SPOILERS.forEach(([n, kind, h, span, chord], i) => add('spoiler', n.toLowerCase().replace(/ /g, '_'), n, i < 2 ? 'common' : rarityByIndex(i, SPOILERS.length), { kind, h, span, chord }, { def: i === 0 }));
+SPOILERS.forEach(([n, kind, h, span, chord], i) => add('spoiler', n.toLowerCase().replace(/ /g, '_'), n === 'None' ? 'Stock Wing' : n, i < 2 ? 'common' : rarityByIndex(i, SPOILERS.length), { kind, h, span, chord }, { def: i === 0 }));
 const SPLIT: [string, number, number][] = [['None', 0, 0], ['Street Lip', 0.05, 0.1], ['Racing Splitter', 0.09, 0.22], ['Carbon Splitter', 0.1, 0.28], ['Dive Planes', 0.13, 0.3], ['Wide Splitter', 0.12, 0.34], ['Rally Guard', 0.16, 0.18], ['Apex Splitter', 0.14, 0.4]];
 SPLIT.forEach(([n, h, d], i) => add('splitter', n.toLowerCase().replace(/ /g, '_'), n, i < 2 ? 'common' : rarityByIndex(i, SPLIT.length), { h, d }, { def: i === 0 }));
 const SKIRT: [string, number, number][] = [['None', 0, 0], ['Street Skirts', 0.06, 0.05], ['Sport Skirts', 0.1, 0.07], ['Blade Skirts', 0.14, 0.04], ['Carbon Sills', 0.12, 0.09], ['Aero Skirts', 0.18, 0.1], ['Rally Rails', 0.16, 0.12], ['Apex Sills', 0.2, 0.14]];
@@ -191,9 +191,9 @@ VICT.forEach(([n, kind], i) => add('victory', kind, n, i === 0 ? 'common' : rari
 
 // ---------------------------------------------------------------------------------------------------------- garage + profile
 const GAR: [string, string, string, string][] = [
-  ['Carbon Studio', '#101216', '#272C34', '#C6FF00'], ['Pit Lane', '#1B222B', '#3A4452', '#FFC400'], ['Neon Loft', '#0E0A1F', '#2A1B5C', '#FF2DCB'], ['Alpine Hangar', '#18212C', '#8FA6BF', '#9FD6FF'],
+  ['Marble Atelier', '#F5F5F3', '#FFFFFF', '#B8BDC4'], ['Pit Lane', '#1B222B', '#3A4452', '#FFC400'], ['Neon Loft', '#0E0A1F', '#2A1B5C', '#FF2DCB'], ['Alpine Hangar', '#18212C', '#8FA6BF', '#9FD6FF'],
   ['Desert Bay', '#2A1D12', '#C28A4B', '#FF8A00'], ['Coastal Dock', '#0C1D2B', '#2B7BA6', '#00E5FF'], ['Forest Shed', '#0F1A12', '#2F5A38', '#4CFFA0'], ['Skyport', '#0B1530', '#4F7BE0', '#F5F7FF'],
-  ['Industrial Floor', '#1A1A1A', '#5A5F66', '#FF7A1F'], ['Formula Garage', '#0C0D10', '#8A0F25', '#F5F7FA'], ['Hyper Vault', '#05060A', '#1D2A44', '#C6FF00'], ['Apex Showroom', '#F0F2F5', '#C9CED6', '#101216'],
+  ['Industrial Floor', '#1A1A1A', '#5A5F66', '#FF7A1F'], ['Formula Garage', '#0C0D10', '#8A0F25', '#F5F7FA'], ['Hyper Vault', '#05060A', '#1D2A44', '#C6FF00'], ['Apex Showroom', '#E8EAED', '#FFFFFF', '#25282D'],
 ];
 GAR.forEach(([n, bg, floor, accent], i) => add('garage', n.toLowerCase().replace(/ /g, '_'), n, i === 0 ? 'common' : rarityByIndex(i, GAR.length), { bg, floor, accent }, { def: i === 0, mult: 1.6 }));
 const BAN_COL: [string, string, string][] = [['Carbon', '#101216', '#272C34'], ['Lime Line', '#101216', '#C6FF00'], ['Sunset', '#FF7A1F', '#E0123C'], ['Ocean', '#0C3B66', '#00E5FF'], ['Dune', '#C28A4B', '#FFD24D'], ['Glacier', '#9FD6FF', '#F5F7FA'], ['Neon', '#2A1B5C', '#FF2DCB'], ['Forest', '#0F2A1A', '#4CFFA0']];

@@ -74,6 +74,11 @@ export const useStore = create<State>((set, get) => ({
     if (!raw) { try { const l = localStorage.getItem(SAVE_KEY); if (l) raw = JSON.parse(l); } catch { /* ignore */ } }
     const { profile, settings } = migrateSave(raw);
     rollIfNeeded(profile);
+    // move personal-best replays recorded under the old physics out of the live namespace (async, best effort)
+    try {
+      const arch = profile.archive?.find(a => !a.replaysMoved);
+      if (arch) { for (const k of await idbKeys()) { const ks = String(k); if (ks.startsWith('replay:pb:')) { const v = await idbGet(k as any); await idbSet('archive:' + arch.physics + ':' + ks, v); await idbDel(k as any); } } arch.replaysMoved = true; }
+    } catch { /* storage unavailable */ }
     set({ profile, settings, ready: true });
     get().patchProfile(() => { /* persist migrated + rolled data */ });
   },
@@ -118,6 +123,7 @@ export const useStore = create<State>((set, get) => ({
       p.records[r.meta.id] = rec;
       // stats
       const s = p.stats;
+      p.unlockMedals = Math.max(p.unlockMedals ?? 0, Object.values(p.records).filter(r => r.medal > 0).length);
       s.races++; s.finishes++; s.driveMs += r.driveMs; s.distanceM += r.distanceM; s.topMps = Math.max(s.topMps, r.topMps);
       s.longestJump = Math.max(s.longestJump, r.longestJump); s.crashes += r.crashes; s.airMs += r.airMs;
       if (reward.pb && prev) { s.pbs++; if (prev.bestMs - r.ms < 10) s.milliWins++; }

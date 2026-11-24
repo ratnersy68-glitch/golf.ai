@@ -26,6 +26,14 @@ let pass = 0, fail = 0; const ok = (n, c, extra = '') => { if (c) { pass++; cons
   }
   ok('no runtime errors while browsing screens', errors.length === 0, errors.join(' | '));
 
+  console.log('Vehicles (GLB kit): geometry sanity for all 24 cars and all cosmetics');
+  const cc = await S(() => window.__apx.checkCars());
+  ok('all 24 vehicles assemble from the GLB kit', cc.rows.length === 24 && cc.errors.length === 0, cc.errors.join('; '));
+  ok('every car sits on the track (wheel bottoms at road level) and faces forward (-Z)', cc.rows.every(r => Math.abs(r.wheelBottom) < 0.01 && r.facesNegZ && r.wheels === 4), JSON.stringify(cc.rows.filter(r => !(Math.abs(r.wheelBottom) < 0.01 && r.facesNegZ))));
+  ok('car footprints match the collision body (width 1.9-2.5 m, length 3.0-4.6 m)', cc.rows.every(r => r.wid > 1.9 && r.wid < 2.5 && r.len > 3.0 && r.len < 4.6), JSON.stringify(cc.rows.map(r => [r.id, r.wid, r.len]).filter(x => !(x[1] > 1.9 && x[1] < 2.5 && x[2] > 3 && x[2] < 4.6))));
+  ok('every vehicle has a distinct silhouette', new Set(cc.rows.map(r => `${r.len}|${r.wid}|${r.hgt}`)).size === 24);
+  ok(`all ${cc.total} cosmetics apply to a car without error`, cc.applied === cc.total && cc.errors.length === 0, cc.errors.slice(0, 3).join('; '));
+
   console.log('Responsive layouts (no horizontal overflow)');
   for (const [w, h] of [[390, 844], [768, 1024], [1024, 600], [1920, 1080]]) {
     await page.setViewportSize({ width: w, height: h });

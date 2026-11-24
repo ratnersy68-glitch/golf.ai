@@ -19,23 +19,26 @@ export class CameraRig {
   tmpFrame = { px: 0, py: 0, pz: 0, tx: 0, ty: 0, tz: 0, ux: 0, uy: 0, uz: 0, rx: 0, ry: 0, rz: 0 };
 
   reset() { this.init = false; this.cineIdx = -1; this.shake = 0; }
-  impact(a: number) { this.shake = Math.min(1.2, this.shake + a * 0.04 * this.shakeScale); }
+  impact(a: number) { this.shake = Math.min(0.5, this.shake + a * 0.014 * this.shakeScale); }
 
   update(cam: THREE.PerspectiveCamera, dt: number, pose: CamPose, speed: number, track: Track | null, hintIdx: number, airborne: boolean) {
-    const kf = 1 - Math.exp(-dt * (airborne ? 2.4 : 7)), ku = 1 - Math.exp(-dt * 2.8);
+    const kf = 1 - Math.exp(-dt * (airborne ? 2.6 : 9)), ku = 1 - Math.exp(-dt * (airborne ? 1.4 : 3.6));
     if (!this.init) { this.sf.copy(pose.f); this.su.copy(pose.u); this.init = true; this.pos.copy(pose.p); }
     this.sf.lerp(pose.f, kf).normalize();
-    this.su.lerp(pose.u, ku); this.su.addScaledVector(this.sf, -this.su.dot(this.sf)).normalize();
+    const upT = airborne && this.mode <= 2 ? v3.copy(pose.u).lerp(v2.set(0, 1, 0), 0.5).normalize() : pose.u;
+    this.su.lerp(upT, ku); this.su.addScaledVector(this.sf, -this.su.dot(this.sf)).normalize();
     const mode = this.mode;
-    let baseFov = 68 + Math.min(20, speed * 0.24);
-    if (this.reduced) baseFov = 68 + Math.min(6, speed * 0.06);
+    // subtle speed FOV (PolyTrack-style): barely noticeable, never dramatic
+    let baseFov = 70 + Math.min(9, speed * 0.085);
+    if (this.reduced) baseFov = 70 + Math.min(3, speed * 0.03);
     let desired = v.set(0, 0, 0), target = v2.set(0, 0, 0);
-    let stiff = 12;
+    let stiff = 22;
     switch (mode) {
       case 0: case 1: case 2: {
-        const d = [6.4, 4.4, 9.8][mode], h = [2.2, 1.55, 3.4][mode];
+        // behind and slightly above, aimed well ahead of the car so the track in front stays readable
+        const d = [6.3, 4.8, 10][mode], h = [2.55, 1.9, 3.9][mode];
         desired.copy(pose.p).addScaledVector(this.sf, -d).addScaledVector(this.su, h);
-        target.copy(pose.p).addScaledVector(this.sf, 6 + speed * 0.07).addScaledVector(this.su, 0.9);
+        target.copy(pose.p).addScaledVector(this.sf, 11 + speed * 0.14).addScaledVector(this.su, 0.4);
         break; }
       case 3: desired.copy(pose.p).addScaledVector(pose.f, this.carLength * 0.12).addScaledVector(pose.u, this.carHeight * 0.52); target.copy(desired).addScaledVector(this.sf, 30).addScaledVector(pose.u, -0.2); stiff = 60; baseFov += 8; break;
       case 4: desired.copy(pose.p).addScaledVector(pose.f, this.carLength * 0.5).addScaledVector(pose.u, -0.1); target.copy(desired).addScaledVector(this.sf, 30); stiff = 60; baseFov += 6; break;
@@ -70,14 +73,14 @@ export class CameraRig {
       const h = ox * t.ux + oy * t.uy + oz * t.uz, d = ox * t.rx + oy * t.ry + oz * t.rz;
       if (Math.abs(d) < track.w[Math.min(track.n - 1, Math.round(fi))] / 2 + 1 && h < 0.8 && h > -2) this.pos.addScaledVector(v3.set(t.ux, t.uy, t.uz), 0.8 - h);
     }
-    this.look.lerp(target, mode >= 3 && mode <= 5 ? 1 : 1 - Math.exp(-dt * 16));
+    this.look.lerp(target, mode >= 3 && mode <= 5 ? 1 : 1 - Math.exp(-dt * 22));
     if (!this.look.lengthSq()) this.look.copy(target);
     cam.position.copy(this.pos);
     // shake
     this.shake = Math.max(0, this.shake - dt * 2.2);
     this.shakeT += dt * 60;
     const sx = this.shake * 0.12 * Math.sin(this.shakeT * 1.7), sy2 = this.shake * 0.12 * Math.sin(this.shakeT * 2.3 + 1);
-    const rumble = this.reduced ? 0 : Math.min(0.012, speed * 0.00006) * this.shakeScale;
+    const rumble = 0; // no constant rumble: the camera must never interfere with precise driving
     cam.position.x += sx + rumble * Math.sin(this.shakeT * 3.1); cam.position.y += sy2 + rumble * Math.sin(this.shakeT * 4.7);
     cam.up.copy(mode === 6 ? v.set(0, 1, 0) : this.su);
     cam.lookAt(this.look);

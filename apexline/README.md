@@ -1,6 +1,6 @@
 # APEXLINE — Every Millisecond Matters.
 
-A browser time-attack racing game: deterministic fixed-timestep driving physics, 275 seeded campaign tracks with simulation-derived medal targets and a verified benchmark ghost on every one, 24 vehicles, 530+ cosmetics, garage, shop, progression, ranked (offline practice rating), ghosts and replays, and a track editor. TypeScript, Vite, Three.js, React, Zustand.
+A browser time-attack racing game with a white-marble luxury look: deterministic fixed-timestep arcade driving physics (PolyTrack-style precision), 275 seeded campaign tracks with simulation-derived medal targets and a verified benchmark ghost on every one, 24 vehicles, 530+ cosmetics, garage, shop, progression, ranked (offline practice rating), ghosts and replays, and a track editor. TypeScript, Vite, Three.js, React, Zustand.
 
 ```bash
 npm install
@@ -9,10 +9,14 @@ npm run build && npm run preview   # production build
 ```
 Needs a modern desktop browser with WebGL 2 (Chrome, Edge, Firefox, Safari). The campaign data in `public/data` is committed, so no build step is needed to play.
 
+## Vehicles
+All 24 cars are assembled at runtime from the supplied `public/models/apexline_base_car.glb` (open-wheel low-poly racer): its wheels, section data and wing/suspension dimensions form a kit, and each vehicle has its own proportions (`variantOf` in `src/data/vehicles.ts`). Body paint, livery, rims, tyres, calipers, front/rear wings, splitter, skirts, diffuser, airbox, exhaust, bumpers, lights and underglow are separate meshes, so every shop/garage cosmetic maps onto a real part.
+
 ## Controls (remappable in Settings)
 W/↑ accelerate · S/↓ brake/reverse · A/D or ←/→ steer · Space handbrake · **R** restart · **Backspace** restart from checkpoint · **C** camera · **G** ghost · **Tab** leaderboard · **Esc** pause. Xbox/PlayStation pads (vibration supported) and on-screen touch controls are supported.
 
 ## How the competitive side works
+* Handling is **arcade**: steering commands a yaw rate directly (immediate, speed-sensitive, capped by the grip budget so the car understeers predictably), sideways slip is killed quickly, acceleration is strong and braking constant, loops/wall-rides get a surface "magnet", and jumps get a landing assist that levels the car. Old bicycle-model data is archived in `archive/physics-2/`.
 * Physics runs at a fixed **120 Hz** with engine-independent maths (`src/sim/dmath.ts`), so a recorded input stream always reproduces the same run. Finish time is interpolated to the millisecond.
 * **Ranked, campaign records, daily and weekly runs use one standardised car.** Purchases and cosmetics cannot change a record. Casual modes (Stunt, Endless, Free Drive, casual Time Trial) use each vehicle's own handling.
 * A **replay is just the inputs**. Validation re-simulates it (`validateReplay`), which is what the optional server does too.

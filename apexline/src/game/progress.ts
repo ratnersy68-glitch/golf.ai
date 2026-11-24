@@ -4,11 +4,12 @@ import { COSMETIC_MAP, DEFAULT_OWNED, COSMETICS_BY_CAT } from '../data/cosmetics
 import type { Medals, TrackMeta } from '../sim/campaign-types';
 import { Rng, hashStr } from '../sim/dmath';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+export const PHYSICS_VERSION = 'apexline-sim-3';
 export const MAX_LEVEL = 250;
 export const PRESTIGE_NAMES = ['None', 'Rookie', 'Challenger', 'Specialist', 'Expert', 'Elite', 'Champion', 'Legend', 'Apex'];
 export const MEDAL_NAMES = ['None', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Apex'];
-export const MEDAL_COLORS = ['#3a3f48', '#B07A45', '#C3CAD4', '#FFC400', '#9FE8FF', '#C6FF00'];
+export const MEDAL_COLORS = ['#B8BDC4', '#B07A45', '#C3CAD4', '#FFC400', '#9FE8FF', '#25282D'];
 
 // ------------------------------------------------------------------------------------------------ XP / levels
 export const xpForLevel = (l: number): number => Math.round(150 + 12 * l + 0.12 * l * l);
@@ -92,6 +93,15 @@ export function migrateSave(raw: any): { profile: Profile; settings: Settings } 
   if (v < 2) {
     // v1 -> v2: introduced prestige, ranked state, challenge streaks
     p.prestige ??= 0; p.ranked ??= defaultRanked(); p.daily ??= base.daily; p.weekly ??= base.weekly;
+  }
+  if (v < 3) {
+    // v2 -> v3: new arcade physics. Old times / medals / replays no longer reproduce, so they are archived (not deleted) and records restart.
+    const old = p.records ?? {};
+    if (Object.keys(old).length) {
+      p.archive = [...(p.archive ?? []), { physics: 'apexline-sim-2', at: Date.now(), records: old }];
+      p.unlockMedals = Math.max(p.unlockMedals ?? 0, Object.values<any>(old).filter(r => r.medal > 0).length);
+      p.records = {};
+    }
   }
   const profile: Profile = { ...base, ...p, stats: { ...base.stats, ...(p.stats ?? {}) }, ranked: { ...base.ranked, ...(p.ranked ?? {}) } };
   const settings: Settings = { ...baseS, ...s, vol: { ...baseS.vol, ...(s.vol ?? {}) }, hud: { ...baseS.hud, ...(s.hud ?? {}) }, keys: { ...baseS.keys, ...(s.keys ?? {}) } };

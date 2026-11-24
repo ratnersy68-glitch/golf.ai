@@ -153,7 +153,7 @@ function PersonalTab({ setup }: { setup: CarSetup }) {
 }
 
 export function AvatarArt({ id, size = 64 }: { id: string; size?: number }) {
-  const c = COSMETIC_MAP[id]; const d = c?.data ?? { glyph: 'bolt', fg: '#C6FF00', bg: '#101216' };
+  const c = COSMETIC_MAP[id]; const d = c?.data ?? { glyph: 'bolt', fg: '#25282D', bg: '#F5F5F3' };
   const g: Record<string, string> = {
     bolt: 'M13 2L4 14h6l-1 8 9-12h-6z', wheel: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 9a3 3 0 100 6 3 3 0 000-6zM12 3v6M12 15v6M3 12h6M15 12h6', helm: 'M4 14a8 8 0 0116 0v4H4zM8 12h8M12 6v6', flag: 'M5 3v18M5 4h14l-3 4 3 4H5', gear: 'M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3', crown: 'M3 18l2-10 5 5 2-8 2 8 5-5 2 10z',
     skull: 'M12 3a8 8 0 00-5 14v3h10v-3a8 8 0 00-5-14zM9 12h.01M15 12h.01M10 17v2M14 17v2', wing: 'M3 16c4-8 10-10 18-9-3 2-5 4-6 7 2-1 4-1 6-1-5 5-12 6-18 3z', star: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z', flame: 'M12 3c1 5 6 6 6 12a6 6 0 01-12 0c0-3 2-4 3-7 1 1 2 2 3-5z', arrow: 'M4 12h14M12 5l7 7-7 7', diamond: 'M12 3l8 9-8 9-8-9z',

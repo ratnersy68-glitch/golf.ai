@@ -30,7 +30,7 @@ export const ENV_STYLES: Record<string, EnvStyle> = {
   formula: { sky: ['#4a83d0', '#cfe2f5', '#e1eaf0'], fog: '#c8d9e8', fogDensity: 0.0011, sun: '#fff4e0', sunIntensity: 3.2, sunDir: [-0.4, 0.7, 0.4], hemi: ['#d6e6f5', '#3b5a2c', 0.55], exposure: 1, ground: ['#3f7a35', '#5a9a47'], bloom: 0.15 },
   hyper: { sky: ['#04061a', '#0d3a5e', '#134a7a'], fog: '#07203a', fogDensity: 0.0019, sun: '#6fd8ff', sunIntensity: 1.1, sunDir: [0.2, 0.5, 0.6], hemi: ['#2a7ab8', '#06121f', 0.6], exposure: 1.05, night: true, stars: true, ground: ['#06121f', '#0c2038'], bloom: 0.8 },
   gauntlet: { sky: ['#12080a', '#5a1a14', '#8a2a1a'], fog: '#2a0e0a', fogDensity: 0.0021, sun: '#ff7a3d', sunIntensity: 1.6, sunDir: [-0.5, 0.35, 0.5], hemi: ['#a04a2a', '#120808', 0.5], exposure: 1.02, night: true, ground: ['#1a0e0c', '#3a1a14'], bloom: 0.6 },
-  garage: { sky: ['#101216', '#272c34', '#272c34'], fog: '#0d0f12', fogDensity: 0.0, sun: '#ffffff', sunIntensity: 2.5, sunDir: [0.4, 0.8, 0.5], hemi: ['#a8afba', '#101216', 0.4], exposure: 1.05, ground: ['#16181c', '#272c34'], bloom: 0.12 },
+  garage: { sky: ['#F3F4F5', '#E9EAEC', '#D3D6DA'], fog: '#E4E6E9', fogDensity: 0.0, sun: '#ffffff', sunIntensity: 0.9, sunDir: [0.4, 0.8, 0.5], hemi: ['#ffffff', '#C4C8CE', 0.35], exposure: 0.72, ground: ['#E8EAED', '#FFFFFF'], bloom: 0 },
 };
 
 const SKY_VS = `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * p; gl_Position.z = gl_Position.w; }`;
@@ -150,7 +150,7 @@ export class Gfx {
     this.envRT?.dispose();
     this.envRT = pm.fromScene(es, 0.02);
     this.scene.environment = this.settings.reflections > 0 ? this.envRT.texture : null;
-    this.scene.environmentIntensity = this.settings.reflections === 0 ? 0 : 0.9;
+    this.scene.environmentIntensity = this.settings.reflections === 0 ? 0 : (name === 'garage' ? 0.55 : 0.9);
     pm.dispose(); (skyClone.material as THREE.Material).dispose(); skyClone.geometry.dispose();
     this.applySun(new THREE.Vector3());
   }

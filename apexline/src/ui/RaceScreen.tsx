@@ -142,11 +142,11 @@ function Hud({ sess, paused, replay, label }: { sess: RaceSession; paused: boole
     x.clearRect(0, 0, W, H);
     const b = sess.miniB; const w = b.maxX - b.minX || 1, hh = b.maxZ - b.minZ || 1; const s = Math.max(w, hh); const pad = 8;
     const P = (px: number, pz: number) => [pad + ((px - b.minX) / s + (1 - w / s) / 2) * (W - pad * 2), pad + ((pz - b.minZ) / s + (1 - hh / s) / 2) * (H - pad * 2)];
-    x.strokeStyle = 'rgba(245,247,250,.55)'; x.lineWidth = 3; x.lineJoin = 'round'; x.beginPath();
+    x.strokeStyle = 'rgba(37,40,45,.28)'; x.lineWidth = 4; x.lineJoin = 'round'; x.beginPath();
     for (let i = 0; i < tr.n; i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.stroke();
-    x.strokeStyle = '#C6FF00'; x.lineWidth = 1.5; x.beginPath(); for (let i = 0; i < Math.floor(h.progress * tr.n); i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.stroke();
-    tr.cps.forEach((ci) => { const [px, pz] = P(tr.px[ci], tr.pz[ci]); x.fillStyle = '#F5F7FA'; x.fillRect(px - 2, pz - 2, 4, 4); });
-    if (h.mini) { if (h.mini.gx !== undefined) { x.fillStyle = 'rgba(198,255,0,.5)'; x.beginPath(); x.arc(pad + h.mini.gx * (W - pad * 2), pad + (h.mini.gy ?? 0) * (H - pad * 2), 3.5, 0, 7); x.fill(); } x.fillStyle = '#C6FF00'; x.beginPath(); x.arc(pad + h.mini.x * (W - pad * 2), pad + h.mini.y * (H - pad * 2), 5, 0, 7); x.fill(); x.strokeStyle = '#101216'; x.lineWidth = 2; x.stroke(); }
+    x.strokeStyle = '#25282D'; x.lineWidth = 2.5; x.beginPath(); for (let i = 0; i < Math.floor(h.progress * tr.n); i += 3) { const [px, pz] = P(tr.px[i], tr.pz[i]); i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.stroke();
+    tr.cps.forEach((ci) => { const [px, pz] = P(tr.px[ci], tr.pz[ci]); x.fillStyle = '#25282D'; x.fillRect(px - 2, pz - 2, 4, 4); });
+    if (h.mini) { if (h.mini.gx !== undefined) { x.fillStyle = 'rgba(37,40,45,.45)'; x.beginPath(); x.arc(pad + h.mini.gx * (W - pad * 2), pad + (h.mini.gy ?? 0) * (H - pad * 2), 3.5, 0, 7); x.fill(); } x.fillStyle = '#25282D'; x.beginPath(); x.arc(pad + h.mini.x * (W - pad * 2), pad + h.mini.y * (H - pad * 2), 5, 0, 7); x.fill(); x.strokeStyle = '#FFFFFF'; x.lineWidth = 2; x.stroke(); }
   });
   const showTimer = !h.free;
   const seg = 24; const lit = Math.round(h.rpm * seg);

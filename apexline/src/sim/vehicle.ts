@@ -5,33 +5,32 @@ export const TICK_RATE = 120;
 export const DT = 1 / TICK_RATE;
 export const G = 9.81;
 const HUB = 0.45; // chassis centre height above the road surface
-const HALF_W = 0.95; // half car width used for walls
+const HALF_W = 1.05; // half car width (wheel to wheel) used for walls
 
 export interface VehicleParams {
   accel: number; // launch acceleration m/s^2
   power: number; // power / mass  (m^2/s^3)
   cd: number; // quadratic drag per unit mass (1/m)
-  brake: number; // peak braking decel m/s^2
-  mu: number; // tyre friction coefficient
-  stiff: number; // cornering stiffness (1/rad)
-  steerMax: number; // max steer angle at standstill (rad)
-  steerSpeed: number; // speed (m/s) at which steering authority halves in rate
-  steerRate: number; // rad/s steering actuator rate
+  brake: number; // braking decel m/s^2
+  mu: number; // lateral grip budget in g
+  grip: number; // how fast sideways slip is killed (1/s) - high = planted
+  yaw: number; // max yaw rate at low speed (rad/s)
+  yawResp: number; // steering response (1/s) - high = immediate
   downforce: number; // aero downforce factor (1/m)
-  inertia: number; // yaw radius of gyration^2 (m^2)
   airCtl: number; // air control multiplier
-  hbGrip: number; // rear grip multiplier with handbrake
-  driveRear: number; // fraction of drive torque at rear (1=RWD, .5=AWD, 0=FWD)
+  hbGrip: number; // grip multiplier while the handbrake is held (small = tail slides)
   boost: number; // boost pad acceleration m/s^2
   offroad: number; // 0..1 how much of the loose-surface grip penalty is cancelled
-  a: number; b: number; h: number; // CG->front axle, CG->rear axle, CG height (m)
 }
 
-/** The normalised vehicle used by every ranked / benchmark run so cosmetics and purchases can never change a record. */
+/**
+ * Arcade handling (PolyTrack-style): steering commands a yaw rate directly (immediate, speed-sensitive, capped by the grip budget so the car
+ * understeers predictably instead of spinning), sideways slip is killed quickly (planted), acceleration is strong and braking constant.
+ * The normalised vehicle below is used by every ranked / benchmark run so cosmetics and purchases can never change a record.
+ */
 export const STANDARD: VehicleParams = {
-  accel: 11.5, power: 125, cd: 0.00043, brake: 17, mu: 1.35, stiff: 7.5,
-  steerMax: 0.5, steerSpeed: 17, steerRate: 5.5, downforce: 0.0011, inertia: 2.3,
-  airCtl: 1, hbGrip: 0.42, driveRear: 0.7, boost: 26, offroad: 0, a: 1.25, b: 1.45, h: 0.52,
+  accel: 15, power: 150, cd: 0.00046, brake: 22, mu: 1.7, grip: 18, yaw: 2.7, yawResp: 16,
+  downforce: 0.0012, airCtl: 1, hbGrip: 0.3, boost: 28, offroad: 0,
 };
 
 export interface Input { thr: number; brk: number; steer: number; hb: number }
@@ -41,6 +40,7 @@ export const EV_CP = 1, EV_FINISH = 2, EV_LAND = 4, EV_WALL = 8, EV_CRASH = 16, 
 
 const MU_SURF = [1.0, 0.72, 0.5, 0.2, 0.62, 1.0];
 const RR_SURF = [0.2, 0.7, 1.5, 0.1, 2.0, 0.15];
+const STICK = 0.5; // arcade surface-magnet, in g (loops / wall rides)
 
 export class Sim {
   tick = 0;
@@ -139,91 +139,61 @@ export class Sim {
     if ((fl & F_GAP) || ((fl & F_NOWALL) && Math.abs(this.d) > wid * 0.5 + 0.25)) { this.takeOff(); this.stepAir(inp); return; }
 
     const vx = this.vx, vy = this.vy, v2 = vx * vx + vy * vy;
-    const N = v2 * kn + G * uy; // contact normal acceleration (<0 => detach)
+    // contact normal acceleration. "stick" is an arcade magnet that keeps the car on loops and wall rides at believable speeds.
+    const N = v2 * kn + G * uy + STICK * G;
     if (N < -0.6 && v2 > 4) { this.takeOff(); this.stepAir(inp); return; }
     if (uy < -0.2 && v2 < 4) { this.takeOff(); this.stepAir(inp); return; } // hanging upside down at a standstill
 
     const aV = Math.abs(vx);
-    const ms0 = MU_SURF[surf];
-    const muS = P.mu * (ms0 + (1 - ms0) * P.offroad * (surf === 3 ? 0.5 : 1));
-    const Ntot = Math.max(N, 0) + P.downforce * v2;
-    const L = P.a + P.b;
-    let Nf = Ntot * P.b / L - this.axLong * P.h / L;
-    let Nr = Ntot * P.a / L + this.axLong * P.h / L;
-    const nmin = Ntot * 0.08;
-    if (Nf < nmin) Nf = nmin; if (Nr < nmin) Nr = nmin;
-
-    // steering (speed sensitive, rate limited)
-    const target = inp.steer * P.steerMax / (1 + (aV / P.steerSpeed) * (aV / P.steerSpeed));
-    const maxStep = P.steerRate * DT;
-    this.steerA += clamp(target - this.steerA, -maxStep, maxStep);
-    const dl = this.steerA;
-    const cd = dcos(dl), sd = dsin(dl);
-
-    // drive / brake demands (accel units, positive = forward)
-    let drive = 0, brakeD = 0;
-    const thr = inp.thr, brk = inp.brk;
-    if (vx > 1) { drive = thr * Math.min(P.accel, P.power / Math.max(aV, 1)); brakeD = brk * P.brake; }
-    else if (vx < -1) { drive = -brk * 6; brakeD = thr * P.brake; }
-    else { drive = thr * Math.min(P.accel, P.power / Math.max(aV, 1)) - brk * 6; }
-    if (vx < -14 && drive < 0) drive = 0;
     const dirV = vx >= 0 ? 1 : -1;
+    const ms0 = MU_SURF[surf];
+    const surfK = ms0 + (1 - ms0) * P.offroad * (surf === 3 ? 0.5 : 1);
     const hbOn = inp.hb & 1;
-    const hbD = hbOn * 11;
-    // front: 60% brake, rear: 40% brake + handbrake
-    // ideal-ish brake distribution follows dynamic axle load, so hard braking never unloads and spins the rear
-    const frontShare = clamp(Nf / (Nf + Nr), 0.5, 0.95);
-    const rearBrake = (1 - frontShare) * 0.85;
-    let FxF = drive * (1 - P.driveRear) - dirV * brakeD * (1 - rearBrake);
-    let FxR = drive * P.driveRear - dirV * (brakeD * rearBrake + hbD);
-    const gripMul = hbOn ? P.hbGrip : 1;
-    const capF = muS * Nf, capR = muS * Nr * gripMul;
-    // keep sliding-friction direction consistent near standstill
-    if (aV < 0.4 && drive === 0) { FxF = 0; FxR = 0; }
-    const uF = clamp(FxF, -capF, capF), uR = clamp(FxR, -capR, capR);
-    const latF = Math.sqrt(Math.max(capF * capF - uF * uF, 0));
-    const latR = Math.sqrt(Math.max(capR * capR - uR * uR, 0));
-    // slip angles use |vx| so lateral tyre force always opposes sliding, also when the car moves backwards
-    const den = Math.max(aV, 2.5);
-    const alF = (vy + P.a * this.w) / den - dl * dirV;
-    const alR = (vy - P.b * this.w) / den;
-    const xf = P.stiff * alF, xr = P.stiff * alR;
-    const sF = xf / Math.sqrt(1 + xf * xf), sR = xr / Math.sqrt(1 + xr * xr);
-    const FyF = -latF * sF, FyR = -latR * sR;
-    this.slipR = Math.min(1, Math.abs(sR));
-    this.lastSlipF = Math.min(1, Math.abs(sF));
+    // lateral grip budget (m/s^2): friction x (contact load + aero downforce)
+    const aLatMax = Math.max(4, P.mu * surfK * (Math.max(N, 0) + G * 0.35 + P.downforce * v2)) * (hbOn ? P.hbGrip : 1);
+    const gripK = P.grip * (0.35 + 0.65 * surfK) * (hbOn ? P.hbGrip : 1);
 
-    // gravity in road plane (world gravity = -y): along tangent and left
-    const gT = -G * ty, gL = G * ry;
-    const hc = this.hc, hs = this.hs;
-    const gx = gT * hc + gL * hs, gy = -gT * hs + gL * hc;
-    // drag + rolling resistance
+    // ---- steering: commands yaw rate directly, immediate response, authority capped by the grip budget
+    const lowSpeed = clamp(aV / 3.5, 0, 1);
+    const speedRoll = 1 / (1 + (aV / 52) * (aV / 52));
+    const wCap = (0.96 * aLatMax) / Math.max(aV, 4);
+    const wAuth = Math.min(P.yaw * speedRoll * (hbOn ? 1.3 : 1), wCap);
+    const wTarget = inp.steer * wAuth * lowSpeed * dirV;
+    this.w += (wTarget - this.w) * Math.min(1, P.yawResp * DT);
+    // visual steering angle for the wheels
+    this.steerA += (inp.steer * 0.42 - this.steerA) * Math.min(1, 24 * DT);
+
+    // ---- longitudinal: strong, smooth acceleration; constant, predictable braking
+    const thr = inp.thr, brk = inp.brk;
+    let drive = 0, brakeD = 0;
+    const accelAt = Math.min(P.accel, P.power / Math.max(aV, 1)) * (0.55 + 0.45 * Math.min(1, surfK * 1.4));
+    if (vx > 0.8) { drive = thr * accelAt; brakeD = brk * P.brake * Math.min(1, 0.35 + surfK); }
+    else if (vx < -0.8) { drive = -brk * 9; brakeD = thr * P.brake * Math.min(1, 0.35 + surfK); }
+    else { drive = thr * accelAt - brk * 9; }
+    if (vx < -16 && drive < 0) drive = 0;
     const spd = Math.sqrt(v2);
-    const dragX = -P.cd * spd * vx, dragY = -P.cd * spd * vy;
     const rr = RR_SURF[surf];
     let boostA = 0;
     if ((fl & F_BOOST) && Math.abs(this.d) < wid * 0.32) { boostA = P.boost; this.events |= EV_BOOST; this.boosted++; }
 
-    const axT = uF * cd - FyF * sd + uR + dragX + gx + boostA * (vx >= 0 ? 1 : 0);
-    const ayT = FyF * cd + uF * sd + FyR + dragY + gy;
-    const wdot = (P.a * (FyF * cd + uF * sd) - P.b * FyR) / P.inertia - 0.7 * this.w;
+    // gravity in the road plane (world gravity = -y): along tangent and left, rotated into body axes
+    const gT = -G * ty, gL = G * ry;
+    const hc = this.hc, hs = this.hs;
+    const gx = gT * hc + gL * hs, gy = -gT * hs + gL * hc;
+    // sideways friction toward zero slip, limited by the grip budget (and a little by hard braking)
+    const brakeLoad = brakeD > 0 ? 0.88 : 1;
+    const ay = -clamp(gripK * vy, -aLatMax * brakeLoad, aLatMax * brakeLoad);
     const prevVx = vx;
-    this.vx += (axT + this.w * vy) * DT;
-    this.vy += (ayT - this.w * vx) * DT;
-    this.w += wdot * DT;
-    // rolling resistance: decelerates toward zero without sign flip
-    if (aV > 0.05) {
-      const m = rr * DT;
-      if (Math.abs(this.vx) <= m) this.vx = 0; else this.vx -= (this.vx > 0 ? 1 : -1) * m;
-    }
-    // braking/reverse sign flip protection when no drive demand
-    if (drive === 0 && prevVx * this.vx < 0) this.vx = 0;
-    this.axLong = axT - dragX - gx; // longitudinal tyre acceleration for next-step weight transfer
-    this.axLong = clamp(this.axLong, -20, 20);
-    // kill tiny lateral creep at standstill
+    this.vx += (drive - dirV * brakeD - P.cd * spd * vx + gx + boostA * (vx >= 0 ? 1 : 0) + this.w * vy) * DT;
+    this.vy += (ay + gy - P.cd * spd * vy - this.w * vx) * DT;
+    if (Math.abs(this.vx) > 0.05) { const m = rr * DT; if (Math.abs(this.vx) <= m) this.vx = 0; else this.vx -= (this.vx > 0 ? 1 : -1) * m; }
+    if (drive === 0 && brakeD > 0 && prevVx * this.vx < 0) this.vx = 0; // braking never flips the sign by itself
+    this.axLong = clamp(drive - dirV * brakeD, -25, 25);
     if (Math.abs(this.vx) < 0.3 && Math.abs(this.vy) < 0.3 && drive === 0) { this.vy *= 0.8; this.w *= 0.8; }
+    // slip indicator for effects / audio (slide only really happens on ice, loose surfaces or with the handbrake)
+    this.slipR = clamp((Math.abs(this.vy) / (Math.abs(this.vx) + 3)) * 4.5, 0, 1);
 
-    // heading relative to the road
+    // ---- heading relative to the road
     const vT0 = this.vx * hc - this.vy * hs;
     const sd0 = Math.max(1 + kh * this.d, 0.3);
     const sdot0 = vT0 / sd0;
@@ -232,14 +202,13 @@ export class Sim {
     let nhc = hc * cc - hs * ss, nhs = hs * cc + hc * ss;
     const nl = Math.sqrt(nhc * nhc + nhs * nhs); nhc /= nl; nhs /= nl;
     this.hc = nhc; this.hs = nhs;
-    // position update
     const vT = this.vx * nhc - this.vy * nhs;
     let vL = this.vx * nhs + this.vy * nhc;
     this.s += (vT / sd0) * DT;
     this.d += -vL * DT;
     if (this.s < 0.5) { this.s = 0.5; if (this.vx < 0) this.vx = 0; }
 
-    // walls
+    // ---- walls: consistent response - kill the outward speed, scrub a little forward speed by impact angle, turn the car along the wall
     const lim = wid * 0.5 - HALF_W;
     if (!(fl & F_NOWALL) && Math.abs(this.d) > lim) {
       const right = this.d > 0;
@@ -247,16 +216,19 @@ export class Sim {
       this.d = right ? lim : -lim;
       if (into) {
         const imp = Math.abs(vL);
-        let vT2 = vT * (1 - 0.1 * Math.min(1, imp / 7));
-        vL = -vL * 0.25;
-        const c = nhc, sn = nhs;
+        const ang = imp / Math.max(Math.abs(vT), 6);
+        const vT2 = vT * (1 - Math.min(0.35, 0.05 + ang * 0.5));
+        vL = -vL * 0.08;
+        // align heading with the wall (arcade: the car slides along it instead of spinning)
+        const hdg = this.hs * 0.55; const hn = Math.sqrt(1 - Math.min(0.95, hdg * hdg)); this.hs = hdg; this.hc = hn;
+        const c = this.hc, sn = this.hs;
         this.vx = vT2 * c + vL * sn; this.vy = -vT2 * sn + vL * c;
-        this.w *= 0.6;
+        this.w = 0;
         this.events |= EV_WALL; this.wallHits++; this.impact = Math.max(this.impact, imp);
-        if (imp > 10) { this.events |= EV_CRASH; this.crashes++; }
+        if (imp > 11) { this.events |= EV_CRASH; this.crashes++; }
       }
     }
-    // moving obstacles
+    // ---- moving obstacles
     for (let k = 0; k < tr.obstacles.length; k++) {
       const o = tr.obstacles[k];
       if (Math.abs(this.s - o.s) > o.len + 2.4) continue;
@@ -266,7 +238,7 @@ export class Sim {
         const sgn = od >= 0 ? 1 : -1;
         this.d = oc + sgn * (o.w + HALF_W + 0.02);
         if (this.tick - this.lastObst > 90) {
-          this.vx *= 0.5; this.vy *= 0.5; this.w *= 0.4;
+          this.vx *= 0.5; this.vy *= 0.5; this.w = 0;
           this.events |= EV_OBST | EV_CRASH; this.crashes++; this.impact = Math.max(this.impact, 8);
         }
         this.lastObst = this.tick;
@@ -320,6 +292,18 @@ export class Sim {
     const wid = tr.w[i];
     const road = !(tr.flags[i] & F_GAP) && !(tr.flags[i + 1] & F_GAP);
     const vn = this.vwx * t.ux + this.vwy * t.uy + this.vwz * t.uz;
+    // arcade landing assist: as the car comes down onto road it is eased level with the surface and pointed along its travel,
+    // so jumps land predictably instead of flipping the car
+    if (road && h < 9 && h > -1.5 && vn < 0 && Math.abs(dLat) <= wid * 0.5 + 4) {
+      const pit = Math.abs(inp.brk - inp.thr);
+      const k = Math.min(1, DT * (7 * (1 - Math.max(h, 0) / 9) + 2)) * (1 - 0.6 * pit);
+      let px = this.vwx - vn * t.ux, py = this.vwy - vn * t.uy, pz = this.vwz - vn * t.uz; const pl = Math.sqrt(px * px + py * py + pz * pz);
+      if (pl > 1) { px /= pl; py /= pl; pz /= pl; this.fx += (px - this.fx) * k; this.fy += (py - this.fy) * k; this.fz += (pz - this.fz) * k; }
+      this.ux += (t.ux - this.ux) * k; this.uy += (t.uy - this.uy) * k; this.uz += (t.uz - this.uz) * k;
+      let l2 = Math.sqrt(this.fx * this.fx + this.fy * this.fy + this.fz * this.fz); this.fx /= l2; this.fy /= l2; this.fz /= l2;
+      const dd2 = this.ux * this.fx + this.uy * this.fy + this.uz * this.fz; this.ux -= this.fx * dd2; this.uy -= this.fy * dd2; this.uz -= this.fz * dd2;
+      l2 = Math.sqrt(this.ux * this.ux + this.uy * this.uy + this.uz * this.uz); this.ux /= l2; this.uy /= l2; this.uz /= l2;
+    }
     if (road && Math.abs(dLat) <= wid * 0.5 + 0.2 && h <= 0 && h > -3.5 && vn < 1.5) {
       this.land(fi, dLat, vn);
       return;

@@ -50,7 +50,7 @@ export class World {
   constructor(public track: Track, public env: string, public quality: { particles: number; distance: number }) {}
 
   setCheckpointsPassed(n: number) {
-    this.gates.forEach((g, i) => { const on = i < n; g.mat.color.set(on ? '#2dff7a' : '#C6FF00'); g.mat.opacity = on ? 0.06 : 0.22; });
+    this.gates.forEach((g, i) => { const on = i < n; g.mat.color.set(on ? '#6FB58A' : '#FFFFFF'); g.mat.opacity = on ? 0.06 : 0.22; });
   }
   update(time: number) {
     if (this.boostTex) this.boostTex.offset.y = -((time * 1.6) % 1);
@@ -75,7 +75,7 @@ const SURF_COL: Record<number, { color: string; rough: number; metal: number }> 
 export function buildWorld(tr: Track, env: string, quality: { particles: number; distance: number }): World {
   const W = new World(tr, env, quality);
   const style = ENV_STYLES[env] ?? ENV_STYLES.academy;
-  const accent = CHAPTERS_INFO.find(c => c.env === env)?.accent ?? '#C6FF00';
+  const accent = CHAPTERS_INFO.find(c => c.env === env)?.accent ?? '#8A929C';
   const n = tr.n;
   const rng = new Rng(hashStr('world' + tr.def.id + env));
 
@@ -161,11 +161,11 @@ export function buildWorld(tr: Track, env: string, quality: { particles: number;
   if (boost.count) {
     W.boostTex = canvasTex(128, 256, c => {
       c.fillStyle = '#0b0d10'; c.fillRect(0, 0, 128, 256);
-      c.strokeStyle = '#C6FF00'; c.lineWidth = 16; c.lineJoin = 'miter';
+      c.strokeStyle = '#F5F5F3'; c.lineWidth = 16; c.lineJoin = 'miter';
       for (let k = 0; k < 2; k++) { c.beginPath(); c.moveTo(14, 70 + k * 128); c.lineTo(64, 20 + k * 128); c.lineTo(114, 70 + k * 128); c.stroke(); }
     });
     W.disposables.push(W.boostTex);
-    const bm = new THREE.MeshStandardMaterial({ map: W.boostTex, emissive: '#C6FF00', emissiveMap: W.boostTex, emissiveIntensity: 1.6, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, side: THREE.DoubleSide });
+    const bm = new THREE.MeshStandardMaterial({ map: W.boostTex, emissive: '#9FB4D6', emissiveMap: W.boostTex, emissiveIntensity: 1.1, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, side: THREE.DoubleSide });
     add(boost, bm, false, false);
   }
 
@@ -174,13 +174,13 @@ export function buildWorld(tr: Track, env: string, quality: { particles: number;
     const g = new THREE.Group();
     const w = tr.w[i] / 2 + 0.7; const H = 7;
     const postM = new THREE.MeshStandardMaterial({ color: '#272C34', roughness: 0.4, metalness: 0.8 });
-    const glow = new THREE.MeshBasicMaterial({ color: kind === 'finish' ? '#F5F7FA' : '#C6FF00', transparent: true, opacity: kind === 'cp' ? 0.22 : 0.0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+    const glow = new THREE.MeshBasicMaterial({ color: kind === 'finish' ? '#FFFFFF' : '#FFFFFF', transparent: true, opacity: kind === 'cp' ? 0.22 : 0.0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
     for (const sd of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.5, H, 0.5), postM); p.position.set(sd * w, H / 2, 0); g.add(p); W.disposables.push(p.geometry); }
     const bar = new THREE.Mesh(new THREE.BoxGeometry(w * 2 + 0.6, 1.1, 0.6), postM); bar.position.y = H; g.add(bar); W.disposables.push(bar.geometry);
     const lab = canvasTex(512, 96, c => {
-      c.fillStyle = '#101216'; c.fillRect(0, 0, 512, 96);
+      c.fillStyle = '#25282D'; c.fillRect(0, 0, 512, 96);
       if (kind === 'finish') { for (let x = 0; x < 512; x += 24) for (let y = 0; y < 96; y += 24) { c.fillStyle = ((x + y) / 24) % 2 ? '#F5F7FA' : '#101216'; c.fillRect(x, y, 24, 24); } c.fillStyle = 'rgba(16,18,22,.8)'; c.fillRect(150, 18, 212, 60); }
-      c.fillStyle = kind === 'finish' ? '#F5F7FA' : '#C6FF00'; c.font = '800 58px "Barlow Condensed", Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, 256, 52);
+      c.fillStyle = '#F5F5F3'; c.font = '800 58px "Barlow Condensed", Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, 256, 52);
     }, false);
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(8, w * 1.6), 1.0), new THREE.MeshBasicMaterial({ map: lab })); sign.position.set(0, H, -0.31); g.add(sign);
     const sign2 = sign.clone(); sign2.position.z = 0.31; sign2.rotation.y = Math.PI; g.add(sign2);

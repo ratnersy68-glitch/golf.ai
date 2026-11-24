@@ -1,7 +1,10 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './ui/App';
 import './ui/styles.css';
+import { installMarbleCss } from './ui/marble';
+installMarbleCss();
 import { useStore } from './game/store';
 import { unpackReplay } from './sim/replay';
-(window as any).__apx = { useStore, unpackReplay };
+import { checkCars } from './game/carcheck';
+(window as any).__apx = { useStore, unpackReplay, checkCars };
 createRoot(document.getElementById('root')!).render(<App />);

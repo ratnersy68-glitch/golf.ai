@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore, Screen } from '../game/store';
 import { initGfx, getGfx } from '../game/host';
 import { Showroom } from '../game/showroom';
+import { loadKit } from '../game/kit';
 import { loadCampaign, campaignSync, dailyTrackId } from '../game/campaign';
 import { input } from './runtime';
 import { audio } from '../audio/audio';
@@ -32,7 +33,7 @@ export function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gfxReady, setGfxReady] = useState(false);
 
-  useEffect(() => { init(); loadCampaign().then(() => setLoaded(true)).catch(e => setErr(String(e.message ?? e))); }, [init]);
+  useEffect(() => { init(); Promise.all([loadCampaign(), loadKit()]).then(() => setLoaded(true)).catch(e => setErr(String(e.message ?? e))); }, [init]);
   useEffect(() => {
     if (!ready || !canvasRef.current) return;
     try { const g = initGfx(canvasRef.current, useStore.getState().settings); audio.init(useStore.getState().settings); setGfxReady(true); void g; }
@@ -47,7 +48,7 @@ export function App() {
   return (
     <div className="app">
       <canvas ref={canvasRef} className="gl" />
-      {gfxReady && !inRace && <ShowroomHost screen={screen} />}
+      {gfxReady && loaded && !inRace && <ShowroomHost screen={screen} />}
       {err && <div className="boot"><div className="boot-card"><h1>APEXLINE</h1><p>{err}</p></div></div>}
       {!err && (!ready || !loaded || !gfxReady) && <div className="boot"><div className="boot-card"><h1>APEXLINE</h1><p className="muted">Loading track data…</p><div className="loadbar"><i /></div></div></div>}
       {!err && ready && loaded && gfxReady && (
@@ -92,7 +93,7 @@ function ShowroomHost({ screen }: { screen: Screen }) {
   useEffect(() => {
     const gfx = getGfx(); const sr = new Showroom(gfx, mode); sr.enter(); ref.current = sr; (window as any).__apx = { ...(window as any).__apx, sr };
     let raf = 0, last = performance.now();
-    sr.offsetX = mode === 'menu' ? -1.6 : 0;
+    sr.offsetX = mode === 'menu' ? -0.7 : 0;
     const loop = (t: number) => { raf = requestAnimationFrame(loop); const dt = Math.min(0.05, (t - last) / 1000); last = t; sr.frame(dt); };
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); sr.exit(); ref.current = null; };
@@ -102,7 +103,9 @@ function ShowroomHost({ screen }: { screen: Screen }) {
     const base = sanitiseSetup(profile, profile.setups[profile.selected] ?? defaultSetup(profile.selected));
     sr.setSetup(preview ?? base, (profile as any).garageEnv);
   }, [profile, preview, mode]);
-  useEffect(() => { const sr = ref.current; if (!sr) return; sr.targetDist = screen === 'garage' ? 6.4 : screen === 'shop' ? 6.8 : screen === 'menu' ? 8.6 : 10; }, [screen]);
+  const focusCat = useStore(s => (s as any).shopFocus) as string | null | undefined;
+  useEffect(() => { const sr = ref.current; if (sr && mode === 'garage') sr.focusPart(focusCat ?? null); }, [focusCat, mode]);
+  useEffect(() => { const sr = ref.current; if (!sr) return; sr.targetDist = screen === 'garage' ? 7.4 : screen === 'shop' ? 7.4 : screen === 'menu' ? 11 : 12; }, [screen]);
   return null;
 }
 

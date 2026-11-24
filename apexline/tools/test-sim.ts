@@ -29,9 +29,9 @@ console.log('Physics');
 const camp: CampaignFile = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/data/campaign.json'), 'utf8'));
 const tr1 = buildTrack(camp.tracks[0]);
 const trStraight = buildTrack({ id: 0, name: 's', chapter: 1, env: 'academy', seed: 1, pieces: [{ k: 'start', l: 44, w: 16 }, { k: 'straight', l: 2400, w: 16, f: 8 }, { k: 'finish', l: 60, w: 16 }] } as any);
-t('straight-line launch is plausible (0-100 km/h in 2.5-6 s)', () => {
+t('straight-line launch is plausible (0-100 km/h in 2-4.5 s)', () => {
   const s = new Sim(tr1); let t100 = 0; for (let i = 0; i < 120 * 10 && !s.finished; i++) { s.step({ thr: 1, brk: 0, steer: 0, hb: 0 }); if (!t100 && s.speed * 3.6 >= 100) t100 = i / TICK_RATE; }
-  ok(t100 > 2.5 && t100 < 6, `0-100 took ${t100}`);
+  ok(t100 > 2 && t100 < 4.5, `0-100 took ${t100}`);
 });
 t('braking from speed stops the car quickly and stably', () => {
   const s = new Sim(trStraight); for (let i = 0; i < 120 * 5; i++) s.step({ thr: 1, brk: 0, steer: 0, hb: 0 }); const v0 = s.speed; ok(v0 > 25);
@@ -46,6 +46,33 @@ t('identical inputs give bit-identical state (determinism)', () => {
   eq(run(), run());
 });
 t('vehicle classes differ but all derive from STANDARD', () => { const p = paramsFor('singularity'); ok(p.power > STANDARD.power * 1.5); eq(paramsFor('standard'), STANDARD); });
+
+console.log('Arcade handling feel');
+const cruise = (v: number, track = trStraight) => { const s = new Sim(track); for (let i = 0; i < 120 * 12 && s.speed < v; i++) s.step({ thr: 1, brk: 0, steer: 0, hb: 0 }); return s; };
+t('steering is immediate: yaw reaches 85% of its value within 0.2 s', () => {
+  const s = cruise(40); const w: number[] = []; for (let i = 0; i < 120 * 0.6; i++) { s.step({ thr: 0.3, brk: 0, steer: 1, hb: 0 }); w.push(s.w); }
+  const final = w[w.length - 1]; ok(final > 0.3, 'no yaw'); ok(w[Math.round(120 * 0.2)] > final * 0.85, `yaw@0.2s ${w[24]} vs ${final}`);
+});
+t('cornering is planted: <6 degrees of slip in a sustained hard turn at 40 m/s', () => {
+  const s = cruise(40); for (let i = 0; i < 240; i++) s.step({ thr: 0.3, brk: 0, steer: 1, hb: 0 }); ok(Math.abs(Math.atan2(s.vy, s.vx)) < 0.105, `slip ${Math.atan2(s.vy, s.vx)}`);
+});
+t('no input = dead straight at speed (no wander, no steering delay residue)', () => {
+  const s = cruise(55); const d0 = s.d, h0 = s.hs; for (let i = 0; i < 600; i++) s.step({ thr: 0.5, brk: 0, steer: 0, hb: 0 }); ok(Math.abs(s.d - d0) < 0.01 && Math.abs(s.hs - h0) < 1e-6);
+});
+t('hard braking from 200+ km/h stays straight and stops in < 4 s', () => {
+  const s = cruise(58); let tt = -1; for (let i = 0; i < 120 * 6; i++) { s.step({ thr: 0, brk: 1, steer: 0, hb: 0 }); if (s.speed < 1) { tt = i / 120; break; } } ok(tt > 0 && tt < 4, `stop ${tt}`); ok(Math.abs(s.d) < 0.05);
+});
+t('fuzzed keyboard-like inputs for 4 simulated minutes never blow up', () => {
+  const s = new Sim(trStraight); let seed = 1; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; let st = 0, maxVy = 0, maxV = 0;
+  for (let i = 0; i < 120 * 240; i++) { if (i % 18 === 0) st = rnd() < 0.4 ? 0 : rnd() < 0.5 ? 1 : -1; s.step({ thr: rnd() < 0.9 ? 1 : 0, brk: rnd() < 0.08 ? 1 : 0, steer: st, hb: rnd() < 0.03 ? 1 : 0 }); maxVy = Math.max(maxVy, Math.abs(s.vy)); maxV = Math.max(maxV, s.speed); if (s.finished) s.reset(); ok(isFinite(s.vx + s.vy + s.s + s.d), 'NaN'); }
+  ok(maxVy < 18 && maxV < 120, `maxVy ${maxVy} maxV ${maxV}`);
+});
+t('jumps land predictably: random air-control inputs never flip the car (>= 90% clean landings)', () => {
+  const jt = buildTrack({ id: 0, name: 'j', chapter: 1, env: 'academy', seed: 1, pieces: [{ k: 'start', l: 44, w: 16 }, { k: 'straight', l: 240, w: 16 }, { k: 'ramp', l: 12, dp: 0.25, w: 16 }, { k: 'jump', l: 26, dp: -0.5, f: 1, w: 16 }, { k: 'land', l: 16, dp: 0.25, w: 16 }, { k: 'straight', l: 120, w: 16, f: 8 }, { k: 'finish', l: 60, w: 16 }] } as any);
+  let clean = 0; const N = 40; let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let n = 0; n < N; n++) { const s = new Sim(jt); let pit = 0, yawI = 0; for (let i = 0; i < 120 * 40 && !s.finished && s.respawns === 0; i++) { if (s.air && i % 12 === 0) { pit = rnd() * 2 - 1; yawI = rnd() * 2 - 1; } s.step({ thr: s.air ? Math.max(0, -pit) : 1, brk: s.air ? Math.max(0, pit) : 0, steer: s.air ? yawI : 0, hb: 0 }); } if (s.finished && s.crashes === 0 && s.respawns === 0) clean++; }
+  ok(clean >= N * 0.9, `${clean}/${N} clean`);
+});
 
 console.log('Campaign data');
 t('275 tracks in 11 chapters of 25', () => { eq(camp.tracks.length, 275); for (let c = 1; c <= 11; c++) eq(camp.tracks.filter(x => x.chapter === c).length, 25, 'chapter ' + c); });

@@ -71,10 +71,10 @@ export function makePlan(tr: Track, g: Genes, P: VehicleParams): Plan {
     const kappa = Math.abs(tr.kh[i] / Math.max(0.25, 1 + tr.kh[i] * line[i]) - dpp);
     const muS = P.mu * MU_SURF[tr.surf[i]];
     const assist = G * tr.ry[i] * (tr.kh[i] >= 0 ? 1 : -1);
-    const aLat = gLat * muS * G * Math.max(0.3, tr.uy[i]) + Math.max(-0.4 * G, assist) * 0.9 + 0.5;
+    const aLat = gLat * muS * (G * Math.max(0.3, tr.uy[i]) + 0.35 * G + P.downforce * 1600) + Math.max(-0.4 * G, assist) * 0.9 + 0.5;
     let v = kappa > 1e-4 ? Math.sqrt(Math.max(aLat, 2) / kappa) : vmax;
     // inverted / loop sections need a speed floor so the car stays on the road: N = v^2 kn + g uy >= 0
-    if (tr.kn[i] > 0.008 && tr.uy[i] < 0.3) { const need = Math.sqrt(G / tr.kn[i]) * 1.35 + 2; if (v < need) v = need; }
+    if (tr.kn[i] > 0.008 && tr.uy[i] < 0.3) { const need = Math.sqrt(0.55 * G / tr.kn[i]) * 1.25 + 2; if (v < need) v = need; }
     vplan[i] = Math.min(v, vmax);
   }
   // jump gaps: required launch speed (override plan over the run-up)
@@ -100,7 +100,7 @@ export function makePlan(tr: Track, g: Genes, P: VehicleParams): Plan {
   const bf = g[3];
   for (let i = n - 2; i >= 0; i--) {
     const muS = P.mu * MU_SURF[tr.surf[i]];
-    const decel = Math.min(P.brake, muS * G * 1.05) * bf;
+    const decel = P.brake * Math.min(1, 0.35 + muS) * bf;
     const cap = Math.sqrt(vplan[i + 1] * vplan[i + 1] + 2 * decel * DS);
     if (vplan[i] > cap) vplan[i] = cap;
   }
@@ -140,11 +140,11 @@ export class Driver {
     const bx = dxT * sim.hc + dyL * sim.hs;
     const by = -dxT * sim.hs + dyL * sim.hc;
     const kappa = (2 * by) / (bx * bx + by * by);
-    const dWant = (P.a + P.b) * kappa * g[4];
-    const dMax = P.steerMax / (1 + (v / P.steerSpeed) * (v / P.steerSpeed));
-    let steer = dWant / dMax;
+    const wDes = kappa * Math.max(v, 3) * g[4];
+    const wAuth = P.yaw / (1 + (v / 52) * (v / 52)) * Math.min(1, v / 3.5 + 0.001);
+    let steer = wDes / Math.max(wAuth, 0.2);
     // damp sideslip / yaw oscillation
-    steer -= 0.35 * (sim.vy / Math.max(v, 6));
+    steer -= 0.25 * (sim.vy / Math.max(v, 6));
     steer = clamp(steer, -1, 1);
     // longitudinal: track the speed plan
     const ia = clamp(i + 1 + Math.round(v * 0.02 / DS * 10), 0, n - 1);

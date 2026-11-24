@@ -59,14 +59,14 @@ function Viewport({ track, sel }: { track: Track; sel: number[] }) {
       for (let i = 0; i < tr.n; i++) {
         minX = Math.min(minX, tr.px[i]); maxX = Math.max(maxX, tr.px[i]); minY = Math.min(minY, tr.py[i]); maxY = Math.max(maxY, tr.py[i]); minZ = Math.min(minZ, tr.pz[i]); maxZ = Math.max(maxZ, tr.pz[i]);
         const w = tr.w[i] / 2; const isSel = selRanges.some(([a, b]) => i >= a && i < b);
-        c.set(isSel ? '#C6FF00' : tr.flags[i] & F_GAP ? '#2a2f38' : tr.flags[i] & F_BOOST ? '#7fd1ff' : tr.surf[i] === SURF_ICE ? '#9FD6FF' : tr.surf[i] === SURF_DIRT ? '#a37a4e' : tr.surf[i] === SURF_GRASS ? '#5da24a' : '#8a919c');
+        c.set(isSel ? '#25282D' : tr.flags[i] & F_GAP ? '#D8DCE0' : tr.flags[i] & F_BOOST ? '#7fd1ff' : tr.surf[i] === SURF_ICE ? '#9FD6FF' : tr.surf[i] === SURF_DIRT ? '#a37a4e' : tr.surf[i] === SURF_GRASS ? '#5da24a' : '#8a919c');
         for (const sd of [-1, 1]) { pos.push(tr.px[i] + tr.rx[i] * sd * w, tr.py[i] + tr.ry[i] * sd * w, tr.pz[i] + tr.rz[i] * sd * w); col.push(c.r, c.g, c.b); }
         if (i < tr.n - 1 && !(tr.flags[i] & F_GAP) && !(tr.flags[i + 1] & F_GAP)) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
       }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
       group.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .7 })));
       const mk = (i: number, color: string, r: number) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), new THREE.MeshBasicMaterial({ color })); m.position.set(tr.px[i], tr.py[i] + r, tr.pz[i]); group!.add(m); };
-      mk(2, '#C6FF00', 5); mk(tr.finish, '#ffffff', 5); tr.cps.forEach(i => mk(i, '#ffb84d', 3));
+      mk(2, '#25282D', 5); mk(tr.finish, '#ffffff', 5); tr.cps.forEach(i => mk(i, '#ffb84d', 3));
       scene.add(group);
       grid.position.y = minY - 2;
       if (S.fit) { S.target.set((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2); S.dist = Math.max(120, Math.max(maxX - minX, maxZ - minZ, maxY - minY) * 1.25); S.fit = false; }

@@ -17,7 +17,7 @@ const top = (o: Record<string, number>) => Object.entries(o).sort((a, b) => b[1]
 export function ProfileScreen() {
   const st = useStore(); const p = st.profile; const lv = levelFromXp(p.xp); const s = p.stats;
   const [tab, setTab] = useState<'stats' | 'challenges' | 'rewards' | 'ranked'>('stats');
-  const banner = COSMETIC_MAP[p.banner]?.data ?? { c1: '#101216', c2: '#C6FF00' };
+  const banner = COSMETIC_MAP[p.banner]?.data ?? { c1: '#E8EAED', c2: '#B8BDC4' };
   const camp = campaignSync()!;
   const recs = Object.entries(p.records).filter(([, r]) => r.finishes);
   const avg = recs.length ? recs.reduce((a, [, r]) => a + (r.lastMs ?? r.bestMs), 0) / recs.length : 0;
@@ -96,5 +96,5 @@ export function RankChart() {
   if (h.length < 2) return <div className="empty">Play ranked runs to build a history.</div>;
   const w = 560, ht = 120; const max = Math.max(...h.map(x => x.rating), 100), min = Math.min(...h.map(x => x.rating), 0);
   const pts = h.map((x, i) => `${(i / (h.length - 1)) * w},${ht - ((x.rating - min) / (max - min || 1)) * (ht - 10) - 5}`).join(' ');
-  return <svg viewBox={`0 0 ${w} ${ht}`} width="100%" style={{ maxWidth: 640, background: '#14171c' }}><polyline points={pts} fill="none" stroke="#C6FF00" strokeWidth="2" /></svg>;
+  return <svg viewBox={`0 0 ${w} ${ht}`} width="100%" style={{ maxWidth: 640, background: '#FFFFFF' }}><polyline points={pts} fill="none" stroke="#25282D" strokeWidth="2" /></svg>;
 }

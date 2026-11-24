@@ -28,7 +28,7 @@ export function CampaignScreen() {
   const [filter, setFilter] = useState<'all' | 'done' | 'todo' | 'fav'>('all');
   const [medalF, setMedalF] = useState<number>(-1); const [diff, setDiff] = useState<'all' | 'easy' | 'mid' | 'hard'>('all');
   const [board, setBoard] = useState(false);
-  const medalCount = Object.values(p.records).filter(r => r.medal > 0).length;
+  const medalCount = Math.max(Object.values(p.records).filter(r => r.medal > 0).length, p.unlockMedals ?? 0);
   const tracks = useMemo(() => camp.tracks.slice((chapter - 1) * 25, chapter * 25).filter(t => {
     const r = p.records[t.id];
     if (filter === 'done' && !r?.finishes) return false; if (filter === 'todo' && r?.finishes) return false; if (filter === 'fav' && !p.favorites.includes(t.id)) return false;

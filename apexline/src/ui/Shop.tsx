@@ -8,7 +8,24 @@ import { dailyPicks, weeklyCollection } from './shopLogic';
 import { Back } from './Campaign';
 import { Btn, Currency, Icon, Modal, Panel, RarityTag, Segmented, Tabs } from './kit';
 import { audio } from '../audio/audio';
+import { getPreview, has3DPreview } from '../game/preview';
 import { useInterval } from './kit';
+
+function Thumb({ c }: { c: Cosmetic }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const ref = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!has3DPreview(c)) return; let live = true; const el = ref.current;
+    const go = () => getPreview(c).then(u => { if (live) setSrc(u); });
+    if (!el || !('IntersectionObserver' in window)) { go(); return () => { live = false; }; }
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '120px' }); io.observe(el);
+    return () => { live = false; io.disconnect(); };
+  }, [c.id]);
+  if (src) return <div ref={ref} className="pthumb"><img src={src} alt="" /></div>;
+  if (c.data.color) return <div ref={ref}><i className="swatchbig" style={{ ['--c' as any]: c.data.color }} /></div>;
+  if (c.data.c1) return <div ref={ref}><i className="swatchbig" style={{ background: `linear-gradient(90deg, ${c.data.c1}, ${c.data.c2 ?? c.data.c1})` }} /></div>;
+  return <div ref={ref}><i className="swatchbig" style={{ background: 'repeating-linear-gradient(135deg,#E8EAED 0 6px,#F5F5F3 6px 12px)' }} /></div>;
+}
 
 type ShopTab = 'featured' | 'vehicles' | 'bundles' | 'wish' | string;
 
@@ -38,7 +55,8 @@ export function ShopScreen() {
     const base = sanitiseSetup(p, p.setups[p.selected] ?? defaultSetup(p.selected));
     useStore.setState({ previewSetup: applyCosmetic(base, sel) } as any);
   }, [sel, p.selected]);
-  useEffect(() => () => { useStore.setState({ previewSetup: undefined } as any); }, []);
+  useEffect(() => { useStore.setState({ shopFocus: sel ? sel.cat : null } as any); }, [sel]);
+  useEffect(() => () => { useStore.setState({ previewSetup: undefined, shopFocus: null } as any); }, []);
 
   const group = SHOP_GROUPS.find(g => g.id === tab);
   let items: Cosmetic[] = [];
@@ -55,7 +73,7 @@ export function ShopScreen() {
     return (
       <div className={`icard ${sel?.id === c.id ? 'on' : ''}`} style={{ ['--rc' as any]: RARITY_COLOR[c.rarity] }} onClick={() => { audio.click(); setSel(c); }} role="button" tabIndex={0}>
         {own ? <span className={`chip ${eq ? 'eq' : 'owned'}`}>{eq ? 'EQUIPPED' : 'OWNED'}</span> : c.shop === 'earned' ? <span className="chip earn">EARN</span> : null}
-        {c.data.color ? <i className="swatchbig" style={{ ['--c' as any]: c.data.color }} /> : c.data.c1 ? <i className="swatchbig" style={{ background: `linear-gradient(90deg, ${c.data.c1}, ${c.data.c2 ?? c.data.c1})` }} /> : <i className="swatchbig" style={{ background: 'repeating-linear-gradient(135deg,#1f242c 0 6px,#171a20 6px 12px)' }} />}
+        <Thumb c={c} />
         <b>{c.name}</b>
         <span className="tag">{CAT_LABEL[c.cat]}</span>
         <div className="row" style={{ justifyContent: 'space-between' }}><RarityTag r={c.rarity} />{!own && c.shop !== 'earned' && <span>{d > 0 && <s className="muted" style={{ marginRight: 6, fontSize: 11 }}>{c.price.credits}</s>}<Currency credits={price.credits} tokens={price.tokens} /></span>}</div>
@@ -106,7 +124,7 @@ export function ShopScreen() {
                 const remaining = b.items.filter(i => !p.owned.includes(i)); const total = remaining.reduce((a, i) => a + (COSMETIC_MAP[i].price.credits ?? 0), 0); const tok = remaining.reduce((a, i) => a + (COSMETIC_MAP[i].price.tokens ?? 0), 0);
                 const cost = { credits: Math.round(total * (1 - b.discount)), tokens: Math.round(tok * (1 - b.discount)) };
                 return (
-                  <div key={b.id} className="icard" style={{ ['--rc' as any]: '#C6FF00' }}>
+                  <div key={b.id} className="icard" style={{ ['--rc' as any]: '#25282D' }}>
                     <b>{b.name}</b><p className="desc" style={{ margin: 0 }}>{b.desc}</p>
                     <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--silver)' }}>{b.items.map(i => <li key={i} style={{ textDecoration: p.owned.includes(i) ? 'line-through' : 'none' }}>{COSMETIC_MAP[i].name} <em style={{ opacity: .6 }}>({CAT_LABEL[COSMETIC_MAP[i].cat]})</em></li>)}</ul>
                     <div className="row" style={{ justifyContent: 'space-between' }}><span className="muted">−{Math.round(b.discount * 100)}%</span><Btn small kind="primary" disabled={!remaining.length || !st.canAfford(cost)} onClick={() => { if (st.buyBundle(b.id)) { audio.purchase(); st.toast({ kind: 'reward', title: `${b.name} purchased` }); } }}>{remaining.length ? <>Buy <Currency credits={cost.credits} tokens={cost.tokens || undefined} /></> : 'Owned'}</Btn></div>

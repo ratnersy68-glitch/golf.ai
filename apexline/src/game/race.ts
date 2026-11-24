@@ -143,7 +143,7 @@ export class RaceSession {
   private removeGhost() { if (this.ghostCar) { this.gfx.scene.remove(this.ghostCar.group); this.ghostCar.dispose(); this.ghostCar = undefined; } this.ghostSim = undefined; }
   private makeGhost() {
     this.removeGhost(); if (!this.ghostLog) return;
-    const gs: CarSetup = { ...this.setup, paint: { ...this.setup.paint, primary: '#C6FF00', secondary: '#101216', accent: '#F5F7FA', finish: 'finish_gloss' }, livery: { preset: 'livery_l01', layers: [], useBase: false }, lights: { ...this.setup.lights, underglow: 'underglow_none' } };
+    const gs: CarSetup = { ...this.setup, paint: { ...this.setup.paint, primary: '#B8BDC4', secondary: '#25282D', accent: '#FFFFFF', finish: 'finish_gloss' }, livery: { preset: 'livery_l01', layers: [], useBase: false }, lights: { ...this.setup.lights, underglow: 'underglow_none' } };
     this.ghostCar = new CarModel(gs, { ghost: true }); this.gfx.scene.add(this.ghostCar.group);
     this.ghostSim = new Sim(this.track, STANDARD); this.ghostCar.group.visible = this.ghostOn;
   }
@@ -390,7 +390,7 @@ export class RaceSession {
   }
   private finishFx() {
     if (!this.init.settings.particles) return; const kind = COSMETIC_MAP[this.setup.fx.finish]?.data.kind ?? 'confetti'; const p = this.car.group.position;
-    const colors = ['#C6FF00', '#F5F7FA', '#FFC400', '#FF3B30', '#3A8DFF', '#FF2DCB'];
+    const colors = ['#FFFFFF', '#E8EAED', '#D8DCE0', '#B8BDC4', '#C9A24D', '#7C98C9'];
     const n = kind === 'firework' || kind === 'nova' ? 160 : 120;
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, e = kind === 'firework' || kind === 'nova' ? Math.random() * Math.PI : 0.9 + Math.random() * 0.5, sp = kind === 'burst' ? 14 : 8 + Math.random() * 10;
